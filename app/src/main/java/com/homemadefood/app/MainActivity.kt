@@ -28,7 +28,13 @@ import com.homemadefood.app.ui.auth.RegisterScreen
 import com.homemadefood.app.ui.customer.CustomerHomeScreen
 import com.homemadefood.app.ui.customer.CustomerHomeViewModel
 import com.homemadefood.app.ui.customer.CustomerHomeViewModelFactory
+import com.homemadefood.app.ui.food.FoodDetailScreen
+import com.homemadefood.app.ui.food.FoodDetailViewModel
+import com.homemadefood.app.ui.food.FoodDetailViewModelFactory
 import com.homemadefood.app.ui.theme.HomemadeFoodTheme
+import com.homemadefood.app.ui.favorite.FavoritesScreen
+import com.homemadefood.app.ui.favorite.FavoritesViewModel
+import com.homemadefood.app.ui.favorite.FavoritesViewModelFactory
 
 class MainActivity : ComponentActivity() {
 
@@ -71,6 +77,13 @@ private fun HomemadeFoodApp() {
         mutableStateOf(false)
     }
 
+    var selectedFoodId by rememberSaveable {
+        mutableStateOf<Int?>(null)
+    }
+    var showFavoritesScreen by rememberSaveable {
+        mutableStateOf(false)
+    }
+
     LaunchedEffect(
         authUiState.registrationSuccessful
     ) {
@@ -102,66 +115,167 @@ private fun HomemadeFoodApp() {
                     authUiState.userRole ==
                     "Customer" -> {
 
-                val customerHomeViewModel:
-                        CustomerHomeViewModel =
-                    viewModel(
-                        factory =
-                            CustomerHomeViewModelFactory()
+                val foodId =
+                    selectedFoodId
+
+                if (foodId != null) {
+
+                    val foodDetailViewModel:
+                            FoodDetailViewModel =
+                        viewModel(
+                            key = "food_detail_$foodId",
+
+                            factory =
+                                FoodDetailViewModelFactory(
+                                    context = context,
+                                    foodId = foodId
+                                )
+                        )
+
+                    val foodDetailUiState by
+                    foodDetailViewModel.uiState
+                        .collectAsStateWithLifecycle()
+                    LaunchedEffect(foodId) {
+                        foodDetailViewModel.loadFood()
+                    }
+
+
+                    FoodDetailScreen(
+                        uiState = foodDetailUiState,
+
+                        onBackClick = {
+                            selectedFoodId = null
+                            showFavoritesScreen = false
+                        },
+
+                        onRetryClick = {
+                            foodDetailViewModel.loadFood()
+                        },
+
+                        onFavoriteClick = {
+                            foodDetailViewModel.toggleFavorite()
+                        },
+
+                        modifier =
+                            Modifier.padding(
+                                innerPadding
+                            )
                     )
 
-                val customerHomeUiState by
-                customerHomeViewModel.uiState
-                    .collectAsStateWithLifecycle()
-
-                CustomerHomeScreen(
-                    uiState =
-                        customerHomeUiState,
-
-                    onSearchQueryChange = {
-                            query ->
-
-                        customerHomeViewModel
-                            .updateSearchQuery(query)
-                    },
-
-                    onSearchClick = {
-                        customerHomeViewModel
-                            .searchFoods()
-                    },
-
-                    onCategoryClick = {
-                            categoryId ->
-
-                        customerHomeViewModel
-                            .selectCategory(
-                                categoryId
-                            )
-                    },
-
-                    onClearFiltersClick = {
-                        customerHomeViewModel
-                            .clearFilters()
-                    },
-
-                    onRetryCategoriesClick = {
-                        customerHomeViewModel
-                            .loadCategories()
-                    },
-
-                    onRetryFoodsClick = {
-                        customerHomeViewModel
-                            .loadFoods()
-                    },
-
-                    onLogoutClick = {
-                        authViewModel.logout()
-                    },
-
-                    modifier =
-                        Modifier.padding(
-                            innerPadding
+                } else if (showFavoritesScreen) {
+                    val favoritesViewModel:
+                            FavoritesViewModel =
+                        viewModel(
+                            key = "favorites_screen",
+                            factory =
+                                FavoritesViewModelFactory(
+                                    context = context
+                                )
                         )
-                )
+
+                    val favoritesUiState by
+                    favoritesViewModel.uiState
+                        .collectAsStateWithLifecycle()
+                    LaunchedEffect(Unit) {
+                        favoritesViewModel.loadFavorites()
+                    }
+
+                    FavoritesScreen(
+                        uiState = favoritesUiState,
+
+                        onBackClick = {
+                            selectedFoodId = null
+                            showFavoritesScreen = false
+                        },
+
+                        onRetryClick = {
+                            favoritesViewModel.loadFavorites()
+                        },
+
+                        onRemoveFavoriteClick = { foodId ->
+                            favoritesViewModel.removeFavorite(
+                                foodId = foodId
+                            )
+                        },
+
+                        modifier =
+                            Modifier.padding(
+                                innerPadding
+                            )
+                    )
+                } else {
+                    val customerHomeViewModel:
+                            CustomerHomeViewModel =
+                        viewModel(
+                            factory =
+                                CustomerHomeViewModelFactory()
+                        )
+
+                    val customerHomeUiState by
+                    customerHomeViewModel.uiState
+                        .collectAsStateWithLifecycle()
+
+                    CustomerHomeScreen(
+                        uiState =
+                            customerHomeUiState,
+
+                        onSearchQueryChange = {
+                                query ->
+
+                            customerHomeViewModel
+                                .updateSearchQuery(query)
+                        },
+
+                        onSearchClick = {
+                            customerHomeViewModel
+                                .searchFoods()
+                        },
+
+                        onCategoryClick = {
+                                categoryId ->
+
+                            customerHomeViewModel
+                                .selectCategory(
+                                    categoryId
+                                )
+                        },
+
+                        onClearFiltersClick = {
+                            customerHomeViewModel
+                                .clearFilters()
+                        },
+
+                        onRetryCategoriesClick = {
+                            customerHomeViewModel
+                                .loadCategories()
+                        },
+
+                        onRetryFoodsClick = {
+                            customerHomeViewModel
+                                .loadFoods()
+                        },
+
+                        onFoodClick = { clickedFoodId ->
+                            showFavoritesScreen = false
+                            selectedFoodId = clickedFoodId
+                        },
+
+                        onFavoritesClick = {
+                            selectedFoodId = null
+                            showFavoritesScreen = true
+                        },
+
+                        onLogoutClick = {
+                            selectedFoodId = null
+                            showFavoritesScreen = false
+                            authViewModel.logout()
+                        },
+                        modifier =
+                            Modifier.padding(
+                                innerPadding
+                            )
+                    )
+                }
             }
 
             showRegisterScreen -> {

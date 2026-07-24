@@ -30,6 +30,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.homemadefood.app.data.model.FoodResponse
 import java.util.Locale
+import androidx.compose.foundation.clickable
 
 @Composable
 fun CustomerHomeScreen(
@@ -40,8 +41,11 @@ fun CustomerHomeScreen(
     onClearFiltersClick: () -> Unit,
     onRetryCategoriesClick: () -> Unit,
     onRetryFoodsClick: () -> Unit,
+    onFoodClick: (Int) -> Unit,
+    onFavoritesClick: () -> Unit,
     onLogoutClick: () -> Unit,
     modifier: Modifier = Modifier
+
 ) {
     Column(
         modifier = modifier
@@ -318,7 +322,10 @@ fun CustomerHomeScreen(
             else -> {
                 uiState.foods.forEach { food ->
                     FoodCard(
-                        food = food
+                        food = food,
+                        onClick = {
+                            onFoodClick(food.id)
+                        }
                     )
                 }
             }
@@ -368,11 +375,8 @@ fun CustomerHomeScreen(
         )
 
         Button(
-            onClick = {
-                // Favoriler ekranı daha sonra bağlanacak.
-            },
-            modifier =
-                Modifier.fillMaxWidth()
+            onClick = onFavoritesClick,
+            modifier = Modifier.fillMaxWidth()
         ) {
             Text("Favorilerim")
         }
@@ -381,13 +385,17 @@ fun CustomerHomeScreen(
 
 @Composable
 private fun FoodCard(
-    food: FoodResponse
+    food: FoodResponse,
+    onClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(
                 vertical = 7.dp
+            )
+            .clickable(
+                onClick = onClick
             ),
 
         elevation =

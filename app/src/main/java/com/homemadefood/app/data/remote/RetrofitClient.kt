@@ -50,4 +50,11 @@ object RetrofitClient {
             FoodApiService::class.java
         )
     }
+    val favoriteApiService:
+            FavoriteApiService by lazy {
+
+        retrofit.create(
+            FavoriteApiService::class.java
+        )
+    }
 }
