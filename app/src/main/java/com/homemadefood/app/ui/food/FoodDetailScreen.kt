@@ -28,8 +28,9 @@ fun FoodDetailScreen(
     onBackClick: () -> Unit,
     onRetryClick: () -> Unit,
     onFavoriteClick: () -> Unit,
+    onAddToCartClick: () -> Unit,
     modifier: Modifier = Modifier
-) {
+){
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -208,18 +209,38 @@ fun FoodDetailScreen(
                 Spacer(
                     modifier = Modifier.height(12.dp)
                 )
+                if (!uiState.cartMessage.isNullOrBlank()) {
+                    Spacer(
+                        modifier = Modifier.height(14.dp)
+                    )
+
+                    Text(
+                        text = uiState.cartMessage,
+                        color =
+                            if (uiState.isCartError) {
+                                MaterialTheme.colorScheme.error
+                            } else {
+                                MaterialTheme.colorScheme.primary
+                            },
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
 
                 Button(
-                    onClick = {
-                        /*
-                         * Sepete ekleme daha sonra
-                         * bağlanacak.
-                         */
-                    },
+                    onClick = onAddToCartClick,
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = food.isAvailable
+                    enabled =
+                        food.isAvailable &&
+                                !uiState.isCartActionLoading
                 ) {
-                    Text("Sepete Ekle")
+                    if (uiState.isCartActionLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.height(22.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text("Sepete Ekle")
+                    }
                 }
             }
 

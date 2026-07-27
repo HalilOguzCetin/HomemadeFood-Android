@@ -1,16 +1,13 @@
-package com.homemadefood.app.ui.food
+package com.homemadefood.app.ui.cart
 
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.homemadefood.app.data.local.SessionManager
-import com.homemadefood.app.data.repository.FavoriteRepository
-import com.homemadefood.app.data.repository.FoodRepository
 import com.homemadefood.app.data.repository.CartRepository
 
-class FoodDetailViewModelFactory(
-    private val context: Context,
-    private val foodId: Int
+class CartViewModelFactory(
+    private val context: Context
 ) : ViewModelProvider.Factory {
 
     override fun <T : ViewModel> create(
@@ -18,14 +15,9 @@ class FoodDetailViewModelFactory(
     ): T {
         if (
             modelClass.isAssignableFrom(
-                FoodDetailViewModel::class.java
+                CartViewModel::class.java
             )
         ) {
-            val foodRepository =
-                FoodRepository()
-
-            val favoriteRepository =
-                FavoriteRepository()
             val cartRepository =
                 CartRepository()
 
@@ -35,15 +27,7 @@ class FoodDetailViewModelFactory(
                 )
 
             @Suppress("UNCHECKED_CAST")
-            return FoodDetailViewModel(
-                foodId = foodId,
-
-                foodRepository =
-                    foodRepository,
-
-                favoriteRepository =
-                    favoriteRepository,
-
+            return CartViewModel(
                 cartRepository =
                     cartRepository,
 

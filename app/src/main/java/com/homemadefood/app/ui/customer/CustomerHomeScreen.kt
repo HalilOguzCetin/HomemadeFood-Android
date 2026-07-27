@@ -43,7 +43,9 @@ fun CustomerHomeScreen(
     onRetryFoodsClick: () -> Unit,
     onFoodClick: (Int) -> Unit,
     onFavoritesClick: () -> Unit,
+    onCartClick: () -> Unit,
     onLogoutClick: () -> Unit,
+    onAddressesClick: () -> Unit,
     modifier: Modifier = Modifier
 
 ) {
@@ -359,6 +361,16 @@ fun CustomerHomeScreen(
         Spacer(
             modifier = Modifier.height(12.dp)
         )
+        Button(
+            onClick = onCartClick,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Sepetim")
+        }
+
+        Spacer(
+            modifier = Modifier.height(12.dp)
+        )
 
         Button(
             onClick = {
@@ -368,6 +380,16 @@ fun CustomerHomeScreen(
                 Modifier.fillMaxWidth()
         ) {
             Text("Siparişlerim")
+        }
+
+        Spacer(
+            modifier = Modifier.height(12.dp)
+        )
+        Button(
+            onClick = onAddressesClick,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Adreslerim")
         }
 
         Spacer(

@@ -13,11 +13,13 @@ import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.io.IOException
 import kotlinx.coroutines.Job
+import com.homemadefood.app.data.repository.CartRepository
 
 class FoodDetailViewModel(
     private val foodId: Int,
     private val foodRepository: FoodRepository,
     private val favoriteRepository: FavoriteRepository,
+    private val cartRepository: CartRepository,
     private val sessionManager: SessionManager
 ) : ViewModel() {
 
@@ -290,6 +292,89 @@ class FoodDetailViewModel(
             }
         }
     }
+    fun addToCart() {
+        if (
+            _uiState.value.isCartActionLoading ||
+            _uiState.value.food == null
+        ) {
+            return
+        }
+
+        viewModelScope.launch {
+            val token =
+                sessionManager.token.first()
+
+            if (token.isNullOrBlank()) {
+                showCartError(
+                    "Oturum bilgisi bulunamadı. Yeniden giriş yapın."
+                )
+
+                return@launch
+            }
+
+            val food =
+                _uiState.value.food
+
+            if (food?.isAvailable != true) {
+                showCartError(
+                    "Bu yemek şu anda satışta değil."
+                )
+
+                return@launch
+            }
+
+            _uiState.value =
+                _uiState.value.copy(
+                    isCartActionLoading = true,
+                    cartMessage = null,
+                    isCartError = false
+                )
+
+            try {
+                val response =
+                    cartRepository.addItem(
+                        token = token,
+                        foodId = foodId,
+                        quantity = 1,
+                        recommendationSearchId = null
+                    )
+
+                val responseBody =
+                    response.body()
+
+                if (
+                    response.isSuccessful &&
+                    responseBody?.success == true &&
+                    responseBody.data != null
+                ) {
+                    _uiState.value =
+                        _uiState.value.copy(
+                            isCartActionLoading = false,
+                            cartMessage =
+                                responseBody.message.ifBlank {
+                                    "Yemek sepete eklendi."
+                                },
+                            isCartError = false
+                        )
+                } else {
+                    showCartError(
+                        parseErrorMessage(
+                            response.errorBody()
+                                ?.string()
+                        ) ?: "Yemek sepete eklenemedi."
+                    )
+                }
+            } catch (_: IOException) {
+                showCartError(
+                    "Sunucuya bağlanılamadı."
+                )
+            } catch (_: Exception) {
+                showCartError(
+                    "Sepete ekleme sırasında bir hata oluştu."
+                )
+            }
+        }
+    }
 
     fun clearFavoriteMessage() {
         _uiState.value =
@@ -307,6 +392,16 @@ class FoodDetailViewModel(
                 isFavoriteActionLoading = false,
                 favoriteMessage = message,
                 isFavoriteError = true
+            )
+    }
+    private fun showCartError(
+        message: String
+    ) {
+        _uiState.value =
+            _uiState.value.copy(
+                isCartActionLoading = false,
+                cartMessage = message,
+                isCartError = true
             )
     }
 
