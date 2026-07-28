@@ -47,7 +47,18 @@ import com.homemadefood.app.ui.address.EditAddressViewModelFactory
 import com.homemadefood.app.ui.cart.CartScreen
 import com.homemadefood.app.ui.cart.CartViewModel
 import com.homemadefood.app.ui.cart.CartViewModelFactory
-
+import com.homemadefood.app.ui.order.CreateOrderScreen
+import com.homemadefood.app.ui.order.CreateOrderViewModel
+import com.homemadefood.app.ui.order.CreateOrderViewModelFactory
+import com.homemadefood.app.ui.order.OrdersScreen
+import com.homemadefood.app.ui.order.OrdersViewModel
+import com.homemadefood.app.ui.order.OrdersViewModelFactory
+import com.homemadefood.app.ui.order.OrderDetailScreen
+import com.homemadefood.app.ui.order.OrderDetailViewModel
+import com.homemadefood.app.ui.order.OrderDetailViewModelFactory
+import com.homemadefood.app.ui.recommendation.RecommendationScreen
+import com.homemadefood.app.ui.recommendation.RecommendationViewModel
+import com.homemadefood.app.ui.recommendation.RecommendationViewModelFactory
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(
@@ -115,6 +126,30 @@ private fun HomemadeFoodApp() {
     var showCartScreen by rememberSaveable {
         mutableStateOf(false)
     }
+    var showCreateOrderScreen by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    var createOrderScreenKey by rememberSaveable {
+        mutableStateOf(0)
+    }
+    var showOrdersScreen by rememberSaveable {
+        mutableStateOf(false)
+    }
+    var selectedOrderId by rememberSaveable {
+        mutableStateOf<Int?>(null)
+    }
+    var showRecommendationScreen by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    var recommendationScreenKey by rememberSaveable {
+        mutableStateOf(0)
+    }
+
+    var returnToRecommendationAfterFoodDetail by rememberSaveable {
+        mutableStateOf(false)
+    }
 
     LaunchedEffect(
         authUiState.registrationSuccessful
@@ -178,6 +213,13 @@ private fun HomemadeFoodApp() {
                         onBackClick = {
                             selectedFoodId = null
                             showFavoritesScreen = false
+
+                            if (returnToRecommendationAfterFoodDetail) {
+                                showRecommendationScreen = true
+
+                                returnToRecommendationAfterFoodDetail =
+                                    false
+                            }
                         },
 
                         onRetryClick = {
@@ -231,6 +273,99 @@ private fun HomemadeFoodApp() {
                             favoritesViewModel.removeFavorite(
                                 foodId = foodId
                             )
+                        },
+
+                        modifier =
+                            Modifier.padding(
+                                innerPadding
+                            )
+                    )
+                } else if (showRecommendationScreen) {
+
+                    val recommendationViewModel:
+                            RecommendationViewModel =
+                        viewModel(
+                            key =
+                                "recommendation_$recommendationScreenKey",
+
+                            factory =
+                                RecommendationViewModelFactory(
+                                    context = context
+                                )
+                        )
+
+                    val recommendationUiState by
+                    recommendationViewModel.uiState
+                        .collectAsStateWithLifecycle()
+
+                    LaunchedEffect(
+                        recommendationScreenKey
+                    ) {
+                        recommendationViewModel.loadAddresses()
+                    }
+
+                    RecommendationScreen(
+                        uiState = recommendationUiState,
+
+                        onBackClick = {
+                            showRecommendationScreen = false
+                        },
+
+                        onRetryAddressesClick = {
+                            recommendationViewModel.loadAddresses()
+                        },
+
+                        onManageAddressesClick = {
+                            selectedFoodId = null
+                            selectedEditAddressId = null
+
+                            showRecommendationScreen = false
+                            showAddAddressScreen = false
+                            showAddressesScreen = true
+                        },
+
+                        onSearchTextChange = { value ->
+                            recommendationViewModel
+                                .updateSearchText(value)
+                        },
+
+                        onQuantityTextChange = { value ->
+                            recommendationViewModel
+                                .updateQuantityText(value)
+                        },
+
+                        onAddressSelected = { addressId ->
+                            recommendationViewModel
+                                .selectAddress(
+                                    addressId = addressId
+                                )
+                        },
+
+                        onSearchClick = {
+                            recommendationViewModel
+                                .searchRecommendations()
+                        },
+
+                        onSelectRecommendationClick = { foodId ->
+                            recommendationViewModel
+                                .selectRecommendation(
+                                    foodId = foodId
+                                )
+                        },
+                        onAddSelectedToCartClick = {
+                            recommendationViewModel
+                                .addSelectedRecommendationToCart()
+                        },
+                        onGoToCartClick = {
+                            showRecommendationScreen = false
+                            showCartScreen = true
+                        },
+
+                        onOpenFoodClick = { foodId ->
+                            returnToRecommendationAfterFoodDetail = true
+
+                            showRecommendationScreen = false
+                            selectedFoodId = foodId
                         },
 
                         modifier =
@@ -321,6 +456,179 @@ private fun HomemadeFoodApp() {
                                 innerPadding
                             )
                     )
+                } else if (showCreateOrderScreen) {
+
+                    val createOrderViewModel:
+                            CreateOrderViewModel =
+                        viewModel(
+                            key =
+                                "create_order_$createOrderScreenKey",
+
+                            factory =
+                                CreateOrderViewModelFactory(
+                                    context = context
+                                )
+                        )
+
+                    val createOrderUiState by
+                    createOrderViewModel.uiState
+                        .collectAsStateWithLifecycle()
+
+                    LaunchedEffect(
+                        createOrderScreenKey
+                    ) {
+                        createOrderViewModel.loadData()
+                    }
+
+                    CreateOrderScreen(
+                        uiState = createOrderUiState,
+
+                        onBackClick = {
+                            showCreateOrderScreen = false
+                            showCartScreen = true
+                        },
+
+                        onRetryClick = {
+                            createOrderViewModel.loadData()
+                        },
+
+                        onAddressSelected = { addressId ->
+                            createOrderViewModel.selectAddress(
+                                addressId = addressId
+                            )
+                        },
+
+                        onPaymentMethodSelected = {
+                                paymentMethod ->
+
+                            createOrderViewModel
+                                .selectPaymentMethod(
+                                    paymentMethod
+                                )
+                        },
+
+                        onCustomerNoteChange = { value ->
+                            createOrderViewModel
+                                .updateCustomerNote(value)
+                        },
+
+                        onCreateOrderClick = {
+                            createOrderViewModel.createOrder()
+                        },
+
+                        onReturnHomeClick = {
+                            createOrderViewModel
+                                .resetCreatedOrder()
+
+                            selectedFoodId = null
+                            selectedEditAddressId = null
+
+                            showFavoritesScreen = false
+                            showAddressesScreen = false
+                            showAddAddressScreen = false
+                            showCartScreen = false
+                            showCreateOrderScreen = false
+                            showOrdersScreen = false
+                        },
+
+                        modifier =
+                            Modifier.padding(
+                                innerPadding
+                            )
+                    )
+                } else if (selectedOrderId != null) {
+
+                    val orderId =
+                        selectedOrderId!!
+
+                    val orderDetailViewModel:
+                            OrderDetailViewModel =
+                        viewModel(
+                            key = "order_detail_$orderId",
+
+                            factory =
+                                OrderDetailViewModelFactory(
+                                    context = context,
+                                    orderId = orderId
+                                )
+                        )
+
+                    val orderDetailUiState by
+                    orderDetailViewModel.uiState
+                        .collectAsStateWithLifecycle()
+
+                    LaunchedEffect(orderId) {
+                        orderDetailViewModel.loadOrder()
+                    }
+
+                    OrderDetailScreen(
+                        uiState = orderDetailUiState,
+
+                        onBackClick = {
+                            selectedOrderId = null
+                            showOrdersScreen = true
+                        },
+
+                        onRetryClick = {
+                            orderDetailViewModel.loadOrder()
+                        },
+
+                        onCancelOrderClick = {
+                            orderDetailViewModel.cancelOrder()
+                        },
+
+                        modifier =
+                            Modifier.padding(
+                                innerPadding
+                            )
+                    )
+                } else if (showOrdersScreen) {
+
+                    val ordersViewModel:
+                            OrdersViewModel =
+                        viewModel(
+                            key = "orders_screen",
+
+                            factory =
+                                OrdersViewModelFactory(
+                                    context = context
+                                )
+                        )
+
+                    val ordersUiState by
+                    ordersViewModel.uiState
+                        .collectAsStateWithLifecycle()
+
+                    LaunchedEffect(Unit) {
+                        ordersViewModel.loadOrders()
+                    }
+
+                    OrdersScreen(
+                        uiState = ordersUiState,
+
+                        onBackClick = {
+                            showOrdersScreen = false
+                        },
+
+                        onRetryClick = {
+                            ordersViewModel.loadOrders()
+                        },
+
+                        onCancelOrderClick = { orderId ->
+                            ordersViewModel.cancelOrder(
+                                orderId = orderId
+                            )
+                        },
+                        onOrderClick = { orderId ->
+                            selectedOrderId = orderId
+                            showOrdersScreen = false
+                        },
+
+                        modifier =
+                            Modifier.padding(
+                                innerPadding
+                            )
+                    )
                 } else if (showCartScreen) {
 
                     val cartViewModel:
@@ -388,10 +696,10 @@ private fun HomemadeFoodApp() {
                         },
 
                         onCreateOrderClick = {
-                            /*
-                             * Sipariş oluşturma ekranını
-                             * sonraki aşamada bağlayacağız.
-                             */
+                            createOrderScreenKey += 1
+                            showOrdersScreen = false
+                            showCartScreen = false
+                            showCreateOrderScreen = true
                         },
 
                         modifier =
@@ -589,41 +897,67 @@ private fun HomemadeFoodApp() {
                         },
 
                         onFoodClick = { clickedFoodId ->
+                            returnToRecommendationAfterFoodDetail = false
+
                             showFavoritesScreen = false
                             showAddressesScreen = false
                             showAddAddressScreen = false
                             showCartScreen = false
+                            showCreateOrderScreen = false
+                            showOrdersScreen = false
+                            showRecommendationScreen = false
+
                             selectedEditAddressId = null
+                            selectedOrderId = null
                             selectedFoodId = clickedFoodId
                         },
 
                         onFavoritesClick = {
                             selectedFoodId = null
                             selectedEditAddressId = null
+
                             showAddressesScreen = false
                             showAddAddressScreen = false
                             showCartScreen = false
+                            showCreateOrderScreen = false
+                            showOrdersScreen = false
+                            showRecommendationScreen = false
+
                             showFavoritesScreen = true
                         },
 
                         onAddressesClick = {
                             selectedFoodId = null
                             selectedEditAddressId = null
+
                             showFavoritesScreen = false
-                            showCartScreen = false
                             showAddAddressScreen = false
+                            showCartScreen = false
+                            showCreateOrderScreen = false
+                            showOrdersScreen = false
+                            showRecommendationScreen = false
+
                             showAddressesScreen = true
                         },
 
                         onLogoutClick = {
                             selectedFoodId = null
                             selectedEditAddressId = null
+                            selectedOrderId = null
+
+                            returnToRecommendationAfterFoodDetail = false
+
                             showFavoritesScreen = false
                             showAddressesScreen = false
                             showAddAddressScreen = false
-                            authViewModel.logout()
                             showCartScreen = false
+                            showCreateOrderScreen = false
+                            showOrdersScreen = false
+                            showRecommendationScreen = false
+
+                            authViewModel.logout()
                         },
+
                         onCartClick = {
                             selectedFoodId = null
                             selectedEditAddressId = null
@@ -631,7 +965,43 @@ private fun HomemadeFoodApp() {
                             showFavoritesScreen = false
                             showAddressesScreen = false
                             showAddAddressScreen = false
+                            showCreateOrderScreen = false
+                            showOrdersScreen = false
+                            showRecommendationScreen = false
+
                             showCartScreen = true
+                        },
+
+                        onOrdersClick = {
+                            selectedFoodId = null
+                            selectedEditAddressId = null
+                            selectedOrderId = null
+
+                            showFavoritesScreen = false
+                            showAddressesScreen = false
+                            showAddAddressScreen = false
+                            showCartScreen = false
+                            showCreateOrderScreen = false
+                            showRecommendationScreen = false
+
+                            showOrdersScreen = true
+                        },
+                        onRecommendationClick = {
+                            selectedFoodId = null
+                            selectedEditAddressId = null
+                            selectedOrderId = null
+
+                            returnToRecommendationAfterFoodDetail = false
+
+                            showFavoritesScreen = false
+                            showAddressesScreen = false
+                            showAddAddressScreen = false
+                            showCartScreen = false
+                            showCreateOrderScreen = false
+                            showOrdersScreen = false
+
+                            recommendationScreenKey += 1
+                            showRecommendationScreen = true
                         },
                         modifier =
                             Modifier.padding(

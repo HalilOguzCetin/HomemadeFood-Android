@@ -71,4 +71,18 @@ object RetrofitClient {
             CartApiService::class.java
         )
     }
+    val orderApiService:
+            OrderApiService by lazy {
+
+        retrofit.create(
+            OrderApiService::class.java
+        )
+    }
+    val producerRecommendationApiService:
+            ProducerRecommendationApiService by lazy {
+
+        retrofit.create(
+            ProducerRecommendationApiService::class.java
+        )
+    }
 }
