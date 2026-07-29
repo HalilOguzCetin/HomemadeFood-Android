@@ -59,6 +59,19 @@ import com.homemadefood.app.ui.order.OrderDetailViewModelFactory
 import com.homemadefood.app.ui.recommendation.RecommendationScreen
 import com.homemadefood.app.ui.recommendation.RecommendationViewModel
 import com.homemadefood.app.ui.recommendation.RecommendationViewModelFactory
+import com.homemadefood.app.ui.producer.ProducerHomeScreen
+import com.homemadefood.app.ui.producer.ProducerApplicationScreen
+import com.homemadefood.app.ui.producer.ProducerApplicationViewModel
+import com.homemadefood.app.ui.producer.ProducerApplicationViewModelFactory
+import com.homemadefood.app.ui.producer.ProducerFoodsScreen
+import com.homemadefood.app.ui.producer.ProducerFoodsViewModel
+import com.homemadefood.app.ui.producer.ProducerFoodsViewModelFactory
+import com.homemadefood.app.ui.producer.CreateFoodScreen
+import com.homemadefood.app.ui.producer.CreateFoodViewModel
+import com.homemadefood.app.ui.producer.CreateFoodViewModelFactory
+import com.homemadefood.app.ui.producer.EditFoodScreen
+import com.homemadefood.app.ui.producer.EditFoodViewModel
+import com.homemadefood.app.ui.producer.EditFoodViewModelFactory
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(
@@ -99,6 +112,16 @@ private fun HomemadeFoodApp() {
     var showRegisterScreen by rememberSaveable {
         mutableStateOf(false)
     }
+    var showEditFoodScreen by remember {
+        mutableStateOf(false)
+    }
+
+    var selectedProducerFoodId by remember {
+        mutableStateOf<Int?>(null)
+    }
+    var editFoodScreenKey by remember {
+        mutableStateOf(0)
+    }
 
     var selectedFoodId by rememberSaveable {
         mutableStateOf<Int?>(null)
@@ -110,6 +133,15 @@ private fun HomemadeFoodApp() {
         mutableStateOf(false)
     }
     var showAddAddressScreen by rememberSaveable {
+        mutableStateOf(false)
+    }
+    var showProducerApplicationScreen by remember {
+        mutableStateOf(false)
+    }
+    var showProducerFoodsScreen by remember {
+        mutableStateOf(false)
+    }
+    var showCreateFoodScreen by remember {
         mutableStateOf(false)
     }
 
@@ -1011,6 +1043,336 @@ private fun HomemadeFoodApp() {
                 }
             }
 
+
+            authUiState.isLoggedIn &&
+                    authUiState.userRole ==
+                    "Producer" -> {
+
+                if (showProducerApplicationScreen) {
+
+                    val producerApplicationViewModel:
+                            ProducerApplicationViewModel =
+                        viewModel(
+                            key = "producer_application_screen",
+
+                            factory =
+                                ProducerApplicationViewModelFactory(
+                                    context = context
+                                )
+                        )
+
+                    val producerApplicationUiState by
+                    producerApplicationViewModel.uiState
+                        .collectAsStateWithLifecycle()
+
+                    LaunchedEffect(Unit) {
+                        producerApplicationViewModel
+                            .loadApplication()
+                    }
+
+                    ProducerApplicationScreen(
+                        uiState =
+                            producerApplicationUiState,
+
+                        onBackClick = {
+                            showProducerApplicationScreen = false
+                        },
+
+                        onRetryClick = {
+                            producerApplicationViewModel
+                                .loadApplication()
+                        },
+
+                        modifier =
+                            Modifier.padding(
+                                innerPadding
+                            )
+                    )
+                } else if (showCreateFoodScreen) {
+
+                    val createFoodViewModel:
+                            CreateFoodViewModel =
+                        viewModel(
+                            key = "create_food_screen",
+
+                            factory =
+                                CreateFoodViewModelFactory(
+                                    context = context
+                                )
+                        )
+
+                    val createFoodUiState by
+                    createFoodViewModel.uiState
+                        .collectAsStateWithLifecycle()
+
+                    LaunchedEffect(
+                        createFoodUiState.createdFood?.id
+                    ) {
+                        if (
+                            createFoodUiState.createdFood != null
+                        ) {
+                            createFoodViewModel.resetForm()
+
+                            showCreateFoodScreen = false
+                            showProducerFoodsScreen = true
+                        }
+                    }
+
+                    CreateFoodScreen(
+                        uiState = createFoodUiState,
+
+                        onCategoryIdChange = {
+                            createFoodViewModel
+                                .onCategoryIdChange(it)
+                        },
+
+                        onNameChange = {
+                            createFoodViewModel
+                                .onNameChange(it)
+                        },
+
+                        onDescriptionChange = {
+                            createFoodViewModel
+                                .onDescriptionChange(it)
+                        },
+
+                        onPriceChange = {
+                            createFoodViewModel
+                                .onPriceChange(it)
+                        },
+
+                        onPreparationTimeChange = {
+                            createFoodViewModel
+                                .onPreparationTimeChange(it)
+                        },
+
+                        onImageUrlChange = {
+                            createFoodViewModel
+                                .onImageUrlChange(it)
+                        },
+
+                        onSaveClick = {
+                            createFoodViewModel.createFood()
+                        },
+
+                        onBackClick = {
+                            createFoodViewModel.resetForm()
+
+                            showCreateFoodScreen = false
+                            showProducerFoodsScreen = true
+                        },
+                        modifier =
+                            Modifier.padding(
+                                innerPadding
+                            )
+                    )
+                } else if (showEditFoodScreen) {
+
+                    val foodId = selectedProducerFoodId
+
+                    if (foodId == null) {
+
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+
+                        LaunchedEffect(Unit) {
+                            showEditFoodScreen = false
+                            showProducerFoodsScreen = true
+                        }
+
+                    } else {
+
+                        val editFoodViewModel:
+                                EditFoodViewModel =
+                            viewModel(
+                                key = "edit_food_${foodId}_$editFoodScreenKey",
+
+                                factory =
+                                    EditFoodViewModelFactory(
+                                        context = context
+                                    )
+                            )
+
+                        val editFoodUiState by
+                        editFoodViewModel.uiState
+                            .collectAsStateWithLifecycle()
+
+                        LaunchedEffect(
+                            foodId,
+                            editFoodScreenKey
+                        ) {
+                            editFoodViewModel.loadFood(
+                                foodId = foodId
+                            )
+                        }
+
+                        LaunchedEffect(
+                            editFoodUiState.updatedFood?.id
+                        ) {
+                            if (
+                                editFoodUiState.updatedFood != null
+                            ) {
+                                selectedProducerFoodId = null
+                                showEditFoodScreen = false
+                                showProducerFoodsScreen = true
+                            }
+                        }
+
+                        EditFoodScreen(
+                            uiState = editFoodUiState,
+
+                            onCategoryIdChange = {
+                                editFoodViewModel
+                                    .onCategoryIdChange(it)
+                            },
+
+                            onNameChange = {
+                                editFoodViewModel
+                                    .onNameChange(it)
+                            },
+
+                            onDescriptionChange = {
+                                editFoodViewModel
+                                    .onDescriptionChange(it)
+                            },
+
+                            onPriceChange = {
+                                editFoodViewModel
+                                    .onPriceChange(it)
+                            },
+
+                            onPreparationTimeChange = {
+                                editFoodViewModel
+                                    .onPreparationTimeChange(it)
+                            },
+
+                            onImageUrlChange = {
+                                editFoodViewModel
+                                    .onImageUrlChange(it)
+                            },
+
+                            onAvailabilityChange = {
+                                editFoodViewModel
+                                    .onAvailabilityChange(it)
+                            },
+
+                            onSaveClick = {
+                                editFoodViewModel.updateFood()
+                            },
+
+                            onRetryClick = {
+                                editFoodViewModel.resetState()
+                                editFoodViewModel.loadFood(foodId)
+                            },
+
+                            onBackClick = {
+                                selectedProducerFoodId = null
+                                showEditFoodScreen = false
+                                showProducerFoodsScreen = true
+                            },
+
+                            modifier =
+                                Modifier.padding(
+                                    innerPadding
+                                )
+                        )
+                    }
+
+                } else if (showProducerFoodsScreen) {
+
+                    val producerFoodsViewModel:
+                            ProducerFoodsViewModel =
+                        viewModel(
+                            key = "producer_foods_screen",
+
+                            factory =
+                                ProducerFoodsViewModelFactory(
+                                    context = context
+                                )
+                        )
+
+                    val producerFoodsUiState by
+                    producerFoodsViewModel.uiState
+                        .collectAsStateWithLifecycle()
+
+                    LaunchedEffect(Unit) {
+                        producerFoodsViewModel.loadFoods()
+                    }
+
+                    ProducerFoodsScreen(
+                        uiState = producerFoodsUiState,
+
+                        onBackClick = {
+                            showProducerFoodsScreen = false
+                        },
+
+                        onRetryClick = {
+                            producerFoodsViewModel.loadFoods()
+                        },
+
+                        onAddFoodClick = {
+                            showProducerFoodsScreen = false
+                            showCreateFoodScreen = true
+                        },
+
+                        onEditFoodClick = { foodId ->
+                            editFoodScreenKey += 1
+                            selectedProducerFoodId = foodId
+
+                            showProducerFoodsScreen = false
+                            showEditFoodScreen = true
+                        },
+
+                        modifier =
+                            Modifier.padding(
+                                innerPadding
+                            )
+                    )
+
+                } else {
+
+                    ProducerHomeScreen(
+                        onApplicationStatusClick = {
+                            showProducerFoodsScreen = false
+                            showProducerApplicationScreen = true
+                        },
+
+                        onFoodsClick = {
+                            showProducerApplicationScreen = false
+                            showCreateFoodScreen = false
+                            showEditFoodScreen = false
+
+                            selectedProducerFoodId = null
+                            showProducerFoodsScreen = true
+                        },
+
+                        onOrdersClick = {
+                            // Gelen siparişler sonraki aşamada bağlanacak.
+                        },
+
+                        onLogoutClick = {
+                            showProducerApplicationScreen = false
+                            showProducerFoodsScreen = false
+                            showCreateFoodScreen = false
+                            showEditFoodScreen = false
+
+                            selectedProducerFoodId = null
+
+                            authViewModel.logout()
+                        },
+
+                        modifier =
+                            Modifier.padding(
+                                innerPadding
+                            )
+                    )
+                }
+            }
+
             showRegisterScreen -> {
                 RegisterScreen(
                     uiState = authUiState,
@@ -1030,11 +1392,8 @@ private fun HomemadeFoodApp() {
                     },
 
                     onNavigateToLogin = {
-                        authViewModel
-                            .clearMessage()
-
-                        showRegisterScreen =
-                            false
+                        authViewModel.clearMessage()
+                        showRegisterScreen = false
                     },
 
                     modifier =
@@ -1059,11 +1418,8 @@ private fun HomemadeFoodApp() {
                     },
 
                     onNavigateToRegister = {
-                        authViewModel
-                            .clearMessage()
-
-                        showRegisterScreen =
-                            true
+                        authViewModel.clearMessage()
+                        showRegisterScreen = true
                     },
 
                     modifier =
