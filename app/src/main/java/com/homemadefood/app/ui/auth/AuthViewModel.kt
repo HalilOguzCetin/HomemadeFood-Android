@@ -70,7 +70,7 @@ class AuthViewModel(
                                 "Oturumunuz açık.",
                             isError = false,
                             userRole =
-                                profile.role
+                                profile.role.trim()
                         )
                 } else {
                     sessionManager.clearSession()
@@ -151,7 +151,7 @@ class AuthViewModel(
                                 responseBody.message,
                             isError = false,
                             userRole =
-                                loginData.role
+                                loginData.role.trim()
                         )
                 } else {
                     val errorMessage =

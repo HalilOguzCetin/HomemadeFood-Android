@@ -72,6 +72,17 @@ import com.homemadefood.app.ui.producer.CreateFoodViewModelFactory
 import com.homemadefood.app.ui.producer.EditFoodScreen
 import com.homemadefood.app.ui.producer.EditFoodViewModel
 import com.homemadefood.app.ui.producer.EditFoodViewModelFactory
+import com.homemadefood.app.ui.producer.ProducerOrdersScreen
+import com.homemadefood.app.ui.producer.ProducerOrdersViewModel
+import com.homemadefood.app.ui.producer.ProducerOrdersViewModelFactory
+import com.homemadefood.app.ui.admin.AdminHomeScreen
+import com.homemadefood.app.ui.admin.AdminApplicationsScreen
+import com.homemadefood.app.ui.admin.AdminApplicationsViewModel
+import com.homemadefood.app.ui.admin.AdminApplicationsViewModelFactory
+import com.homemadefood.app.ui.admin.RecommendationAnalyticsScreen
+import com.homemadefood.app.ui.admin.RecommendationAnalyticsViewModel
+import com.homemadefood.app.ui.admin.RecommendationAnalyticsViewModelFactory
+
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(
@@ -144,6 +155,15 @@ private fun HomemadeFoodApp() {
     var showCreateFoodScreen by remember {
         mutableStateOf(false)
     }
+    var showProducerOrdersScreen by remember {
+        mutableStateOf(false)
+    }
+    var showAdminApplicationsScreen by remember {
+        mutableStateOf(false)
+    }
+    var showRecommendationAnalyticsScreen by remember {
+        mutableStateOf(false)
+    }
 
     var addAddressFormKey by rememberSaveable {
         mutableStateOf(0)
@@ -211,8 +231,12 @@ private fun HomemadeFoodApp() {
             }
 
             authUiState.isLoggedIn &&
-                    authUiState.userRole ==
-                    "Customer" -> {
+                    authUiState.userRole
+                        ?.trim()
+                        ?.equals(
+                            "Customer",
+                            ignoreCase = true
+                        ) == true -> {
 
                 val foodId =
                     selectedFoodId
@@ -1045,8 +1069,12 @@ private fun HomemadeFoodApp() {
 
 
             authUiState.isLoggedIn &&
-                    authUiState.userRole ==
-                    "Producer" -> {
+                    authUiState.userRole
+                        ?.trim()
+                        ?.equals(
+                            "Producer",
+                            ignoreCase = true
+                        ) == true -> {
 
                 if (showProducerApplicationScreen) {
 
@@ -1332,17 +1360,93 @@ private fun HomemadeFoodApp() {
                                 innerPadding
                             )
                     )
+                } else if (showProducerOrdersScreen) {
+
+                    val producerOrdersViewModel:
+                            ProducerOrdersViewModel =
+                        viewModel(
+                            key = "producer_orders_screen",
+
+                            factory =
+                                ProducerOrdersViewModelFactory(
+                                    context = context
+                                )
+                        )
+
+                    val producerOrdersUiState by
+                    producerOrdersViewModel.uiState
+                        .collectAsStateWithLifecycle()
+
+                    LaunchedEffect(Unit) {
+                        producerOrdersViewModel.loadOrders()
+                    }
+
+                    ProducerOrdersScreen(
+                        uiState = producerOrdersUiState,
+
+                        onBackClick = {
+                            showProducerOrdersScreen = false
+                        },
+
+                        onRetryClick = {
+                            producerOrdersViewModel.loadOrders()
+                        },
+
+                        onAcceptClick = { orderId ->
+                            producerOrdersViewModel.acceptOrder(
+                                orderId = orderId
+                            )
+                        },
+
+                        onRejectClick = { orderId ->
+                            producerOrdersViewModel.rejectOrder(
+                                orderId = orderId
+                            )
+                        },
+
+                        onStartPreparingClick = { orderId ->
+                            producerOrdersViewModel.startPreparing(
+                                orderId = orderId
+                            )
+                        },
+
+                        onMarkReadyClick = { orderId ->
+                            producerOrdersViewModel.markReady(
+                                orderId = orderId
+                            )
+                        },
+
+                        onOutForDeliveryClick = { orderId ->
+                            producerOrdersViewModel
+                                .markOutForDelivery(
+                                    orderId = orderId
+                                )
+                        },
+
+                        onDeliveredClick = { orderId ->
+                            producerOrdersViewModel.markDelivered(
+                                orderId = orderId
+                            )
+                        },
+
+                        modifier =
+                            Modifier.padding(
+                                innerPadding
+                            )
+                    )
 
                 } else {
 
                     ProducerHomeScreen(
                         onApplicationStatusClick = {
                             showProducerFoodsScreen = false
+                            showProducerOrdersScreen = false
                             showProducerApplicationScreen = true
                         },
 
                         onFoodsClick = {
                             showProducerApplicationScreen = false
+                            showProducerOrdersScreen = false
                             showCreateFoodScreen = false
                             showEditFoodScreen = false
 
@@ -1351,7 +1455,14 @@ private fun HomemadeFoodApp() {
                         },
 
                         onOrdersClick = {
-                            // Gelen siparişler sonraki aşamada bağlanacak.
+                            showProducerApplicationScreen = false
+                            showProducerFoodsScreen = false
+                            showCreateFoodScreen = false
+                            showEditFoodScreen = false
+
+                            selectedProducerFoodId = null
+
+                            showProducerOrdersScreen = true
                         },
 
                         onLogoutClick = {
@@ -1359,6 +1470,7 @@ private fun HomemadeFoodApp() {
                             showProducerFoodsScreen = false
                             showCreateFoodScreen = false
                             showEditFoodScreen = false
+                            showProducerOrdersScreen = false
 
                             selectedProducerFoodId = null
 
@@ -1370,6 +1482,168 @@ private fun HomemadeFoodApp() {
                                 innerPadding
                             )
                     )
+                }
+            }
+            authUiState.isLoggedIn &&
+                    authUiState.userRole
+                        ?.trim()
+                        ?.equals(
+                            "Admin",
+                            ignoreCase = true
+                        ) == true -> {
+
+                when {
+                    showAdminApplicationsScreen -> {
+
+                        val adminApplicationsViewModel:
+                                AdminApplicationsViewModel =
+                            viewModel(
+                                key =
+                                    "admin_applications_screen",
+
+                                factory =
+                                    AdminApplicationsViewModelFactory(
+                                        context = context
+                                    )
+                            )
+
+                        val adminApplicationsUiState by
+                        adminApplicationsViewModel
+                            .uiState
+                            .collectAsStateWithLifecycle()
+
+                        LaunchedEffect(Unit) {
+                            adminApplicationsViewModel
+                                .loadApplications()
+                        }
+
+                        AdminApplicationsScreen(
+                            uiState =
+                                adminApplicationsUiState,
+
+                            onBackClick = {
+                                showAdminApplicationsScreen =
+                                    false
+                            },
+
+                            onRetryClick = {
+                                adminApplicationsViewModel
+                                    .loadApplications()
+                            },
+
+                            onApproveClick = {
+                                    producerProfileId ->
+
+                                adminApplicationsViewModel
+                                    .approveApplication(
+                                        producerProfileId
+                                    )
+                            },
+
+                            onRejectClick = {
+                                    producerProfileId,
+                                    reason ->
+
+                                adminApplicationsViewModel
+                                    .rejectApplication(
+                                        producerProfileId =
+                                            producerProfileId,
+
+                                        reason = reason
+                                    )
+                            },
+
+                            onClearMessage = {
+                                adminApplicationsViewModel
+                                    .clearMessage()
+                            },
+
+                            modifier =
+                                Modifier.padding(
+                                    innerPadding
+                                )
+                        )
+                    }
+
+                    showRecommendationAnalyticsScreen -> {
+
+                        val recommendationAnalyticsViewModel:
+                                RecommendationAnalyticsViewModel =
+                            viewModel(
+                                key =
+                                    "recommendation_analytics_screen",
+
+                                factory =
+                                    RecommendationAnalyticsViewModelFactory(
+                                        context = context
+                                    )
+                            )
+
+                        val recommendationAnalyticsUiState by
+                        recommendationAnalyticsViewModel
+                            .uiState
+                            .collectAsStateWithLifecycle()
+
+                        LaunchedEffect(Unit) {
+                            recommendationAnalyticsViewModel
+                                .loadAnalytics()
+                        }
+
+                        RecommendationAnalyticsScreen(
+                            uiState =
+                                recommendationAnalyticsUiState,
+
+                            onBackClick = {
+                                showRecommendationAnalyticsScreen =
+                                    false
+                            },
+
+                            onRetryClick = {
+                                recommendationAnalyticsViewModel
+                                    .loadAnalytics()
+                            },
+
+                            modifier =
+                                Modifier.padding(
+                                    innerPadding
+                                )
+                        )
+                    }
+
+                    else -> {
+                        AdminHomeScreen(
+                            onProducerApplicationsClick = {
+                                showRecommendationAnalyticsScreen =
+                                    false
+
+                                showAdminApplicationsScreen =
+                                    true
+                            },
+
+                            onRecommendationAnalyticsClick = {
+                                showAdminApplicationsScreen =
+                                    false
+
+                                showRecommendationAnalyticsScreen =
+                                    true
+                            },
+
+                            onLogoutClick = {
+                                showAdminApplicationsScreen =
+                                    false
+
+                                showRecommendationAnalyticsScreen =
+                                    false
+
+                                authViewModel.logout()
+                            },
+
+                            modifier =
+                                Modifier.padding(
+                                    innerPadding
+                                )
+                        )
+                    }
                 }
             }
 
