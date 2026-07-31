@@ -24,7 +24,11 @@ data class RecommendationUiState(
     List<ProducerRecommendationResponse> =
         emptyList(),
 
+
     val selectingFoodId: Int? = null,
+
+    val selectedFoodId: Int? = null,
+
     val isAddingToCart: Boolean = false,
 
     val cartMessage: String? = null,

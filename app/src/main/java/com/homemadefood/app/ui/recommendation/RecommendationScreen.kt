@@ -366,15 +366,12 @@ fun RecommendationScreen(
                                         recommendation.foodId,
 
                             isSelected =
-                                uiState
-                                    .selectedRecommendation
-                                    ?.foodId ==
+                                uiState.selectedFoodId ==
                                         recommendation.foodId,
 
                             isAddingToCart =
                                 uiState.isAddingToCart &&
-                                        uiState.selectedRecommendation
-                                            ?.foodId ==
+                                        uiState.selectedFoodId ==
                                         recommendation.foodId,
 
                             isAddedToCart =
@@ -722,7 +719,7 @@ private fun RecommendationCard(
                     )
                 }
             }
-            if (isSelected) {
+            if (isSelected && !isAddedToCart) {
                 Spacer(
                     modifier = Modifier.height(10.dp)
                 )
@@ -734,32 +731,21 @@ private fun RecommendationCard(
                     modifier =
                         Modifier.fillMaxWidth(),
 
-                    enabled =
-                        !isAddingToCart &&
-                                !isAddedToCart
+                    enabled = !isAddingToCart
                 ) {
-                    when {
-                        isAddingToCart -> {
-                            CircularProgressIndicator(
-                                modifier =
-                                    Modifier.height(22.dp),
-                                strokeWidth = 2.dp
-                            )
-                        }
-
-                        isAddedToCart -> {
-                            Text("Sepete Eklendi")
-                        }
-
-                        else -> {
-                            Text(
-                                "Seçilen Öneriyi Sepete Ekle"
-                            )
-                        }
+                    if (isAddingToCart) {
+                        CircularProgressIndicator(
+                            modifier =
+                                Modifier.height(22.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text(
+                            "Seçilen Öneriyi Sepete Ekle"
+                        )
                     }
                 }
             }
-
             Spacer(
                 modifier = Modifier.height(10.dp)
             )

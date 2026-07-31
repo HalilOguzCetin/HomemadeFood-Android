@@ -258,6 +258,7 @@ class RecommendationViewModel(
                         isSearching = true,
                         recommendationSearchId = null,
                         recommendations = emptyList(),
+                        selectedFoodId = null,
                         selectedRecommendation = null,
                         addedToCartFoodId = null,
                         cartMessage = null,
@@ -379,6 +380,7 @@ class RecommendationViewModel(
             _uiState.value =
                 _uiState.value.copy(
                     selectingFoodId = foodId,
+                    selectedFoodId = null,
                     selectedRecommendation = null,
                     addedToCartFoodId = null,
                     cartMessage = null,
@@ -409,6 +411,8 @@ class RecommendationViewModel(
                     _uiState.value =
                         _uiState.value.copy(
                             selectingFoodId = null,
+
+                            selectedFoodId = foodId,
 
                             selectedRecommendation =
                                 responseBody.data,
@@ -449,12 +453,13 @@ class RecommendationViewModel(
             return
         }
 
-        val selectedRecommendation =
-            _uiState.value.selectedRecommendation
+        val selectedFoodId =
+            _uiState.value.selectedFoodId
+
         if (
-            selectedRecommendation != null &&
+            selectedFoodId != null &&
             _uiState.value.addedToCartFoodId ==
-            selectedRecommendation.foodId
+            selectedFoodId
         ) {
             showError(
                 "Bu öneri zaten sepete eklendi."
@@ -471,7 +476,7 @@ class RecommendationViewModel(
                 .toIntOrNull()
 
         when {
-            selectedRecommendation == null -> {
+            selectedFoodId == null -> {
                 showError(
                     "Önce önerilerden birini seçin."
                 )
@@ -523,7 +528,7 @@ class RecommendationViewModel(
                         token = token,
 
                         foodId =
-                            selectedRecommendation.foodId,
+                            selectedFoodId,
 
                         quantity = quantity,
 
@@ -544,7 +549,7 @@ class RecommendationViewModel(
                             isAddingToCart = false,
 
                             addedToCartFoodId =
-                                selectedRecommendation.foodId,
+                                selectedFoodId,
 
                             cartMessage =
                                 responseBody.message
