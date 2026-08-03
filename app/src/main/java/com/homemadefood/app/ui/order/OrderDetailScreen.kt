@@ -30,13 +30,19 @@ import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import com.homemadefood.app.data.model.OrderStatus
-
+import androidx.compose.material3.OutlinedTextField
+import com.homemadefood.app.data.model.ReviewResponse
 @Composable
 fun OrderDetailScreen(
     uiState: OrderDetailUiState,
     onBackClick: () -> Unit,
     onRetryClick: () -> Unit,
     onCancelOrderClick: () -> Unit,
+    onShowReviewFormClick: () -> Unit,
+    onHideReviewFormClick: () -> Unit,
+    onRatingSelected: (Int) -> Unit,
+    onReviewCommentChange: (String) -> Unit,
+    onSubmitReviewClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var showCancelDialog by remember {
@@ -435,6 +441,33 @@ fun OrderDetailScreen(
                             }
                         }
                     }
+                    if (orderStatus == OrderStatus.DELIVERED) {
+                        Spacer(
+                            modifier = Modifier.height(20.dp)
+                        )
+
+                        ReviewSection(
+                            uiState = uiState,
+
+                            onRetryClick =
+                                onRetryClick,
+
+                            onShowReviewFormClick =
+                                onShowReviewFormClick,
+
+                            onHideReviewFormClick =
+                                onHideReviewFormClick,
+
+                            onRatingSelected =
+                                onRatingSelected,
+
+                            onReviewCommentChange =
+                                onReviewCommentChange,
+
+                            onSubmitReviewClick =
+                                onSubmitReviewClick
+                        )
+                    }
 
                     if (orderStatus == OrderStatus.PENDING) {
                         Spacer(
@@ -565,4 +598,301 @@ private fun formatOrderDate(
     }.getOrElse {
         value
     }
+}
+@Composable
+private fun ReviewSection(
+    uiState: OrderDetailUiState,
+    onRetryClick: () -> Unit,
+    onShowReviewFormClick: () -> Unit,
+    onHideReviewFormClick: () -> Unit,
+    onRatingSelected: (Int) -> Unit,
+    onReviewCommentChange: (String) -> Unit,
+    onSubmitReviewClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = "Sipariş Değerlendirmesi",
+                style =
+                    MaterialTheme.typography
+                        .titleLarge
+            )
+
+            Spacer(
+                modifier = Modifier.height(12.dp)
+            )
+
+            when {
+                uiState.isReviewStatusLoading -> {
+                    CircularProgressIndicator(
+                        modifier =
+                            Modifier.align(
+                                Alignment.CenterHorizontally
+                            )
+                    )
+                }
+
+                !uiState.hasCheckedReview -> {
+                    Text(
+                        text =
+                            "Değerlendirme durumu kontrol edilemedi.",
+                        color =
+                            MaterialTheme.colorScheme.error
+                    )
+
+                    Spacer(
+                        modifier = Modifier.height(10.dp)
+                    )
+
+                    Button(
+                        onClick = onRetryClick,
+                        modifier =
+                            Modifier.fillMaxWidth()
+                    ) {
+                        Text("Tekrar Kontrol Et")
+                    }
+                }
+
+                uiState.existingReview != null -> {
+                    ExistingReviewContent(
+                        review =
+                            uiState.existingReview
+                    )
+                }
+
+                uiState.isReviewFormVisible -> {
+                    ReviewFormContent(
+                        selectedRating =
+                            uiState.selectedRating,
+
+                        comment =
+                            uiState.reviewComment,
+
+                        isSubmitting =
+                            uiState.isSubmittingReview,
+
+                        onRatingSelected =
+                            onRatingSelected,
+
+                        onCommentChange =
+                            onReviewCommentChange,
+
+                        onSubmitClick =
+                            onSubmitReviewClick,
+
+                        onCancelClick =
+                            onHideReviewFormClick
+                    )
+                }
+
+                else -> {
+                    Text(
+                        text =
+                            "Siparişiniz teslim edildi. Üreticiyi ve siparişinizi değerlendirebilirsiniz."
+                    )
+
+                    Spacer(
+                        modifier = Modifier.height(12.dp)
+                    )
+
+                    Button(
+                        onClick =
+                            onShowReviewFormClick,
+
+                        modifier =
+                            Modifier.fillMaxWidth()
+                    ) {
+                        Text("Siparişi Değerlendir")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ExistingReviewContent(
+    review: ReviewResponse
+) {
+    Text(
+        text =
+            buildRatingStars(
+                review.rating
+            ),
+
+        style =
+            MaterialTheme.typography
+                .headlineSmall,
+
+        color =
+            MaterialTheme.colorScheme.primary
+    )
+
+    Spacer(
+        modifier = Modifier.height(8.dp)
+    )
+
+    Text(
+        text =
+            if (review.comment.isBlank()) {
+                "Yorum yazılmadı."
+            } else {
+                review.comment
+            },
+
+        style =
+            MaterialTheme.typography
+                .bodyLarge
+    )
+
+    Spacer(
+        modifier = Modifier.height(8.dp)
+    )
+
+    Text(
+        text =
+            "Değerlendirme tarihi: " +
+                    formatOrderDate(
+                        review.createdAt
+                    ),
+
+        style =
+            MaterialTheme.typography
+                .bodySmall
+    )
+}
+
+@Composable
+private fun ReviewFormContent(
+    selectedRating: Int,
+    comment: String,
+    isSubmitting: Boolean,
+    onRatingSelected: (Int) -> Unit,
+    onCommentChange: (String) -> Unit,
+    onSubmitClick: () -> Unit,
+    onCancelClick: () -> Unit
+) {
+    Text(
+        text = "Puanınız",
+        style =
+            MaterialTheme.typography
+                .titleMedium
+    )
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement =
+            Arrangement.SpaceEvenly
+    ) {
+        (1..5).forEach { rating ->
+            TextButton(
+                onClick = {
+                    onRatingSelected(rating)
+                },
+                enabled = !isSubmitting
+            ) {
+                Text(
+                    text =
+                        if (
+                            rating <= selectedRating
+                        ) {
+                            "★"
+                        } else {
+                            "☆"
+                        },
+
+                    style =
+                        MaterialTheme.typography
+                            .headlineSmall
+                )
+            }
+        }
+    }
+
+    Text(
+        text =
+            if (selectedRating == 0) {
+                "Henüz puan seçilmedi."
+            } else {
+                "$selectedRating / 5 puan"
+            },
+
+        style =
+            MaterialTheme.typography.bodySmall
+    )
+
+    Spacer(
+        modifier = Modifier.height(12.dp)
+    )
+
+    OutlinedTextField(
+        value = comment,
+        onValueChange = onCommentChange,
+        modifier = Modifier.fillMaxWidth(),
+        label = {
+            Text("Yorumunuz")
+        },
+        placeholder = {
+            Text(
+                "Sipariş ve üretici hakkındaki düşüncelerinizi yazabilirsiniz."
+            )
+        },
+        supportingText = {
+            Text("${comment.length}/1000")
+        },
+        minLines = 3,
+        maxLines = 6,
+        enabled = !isSubmitting
+    )
+
+    Spacer(
+        modifier = Modifier.height(16.dp)
+    )
+
+    Button(
+        onClick = onSubmitClick,
+        modifier = Modifier.fillMaxWidth(),
+        enabled =
+            !isSubmitting &&
+                    selectedRating in 1..5
+    ) {
+        if (isSubmitting) {
+            CircularProgressIndicator(
+                modifier =
+                    Modifier.height(22.dp),
+                strokeWidth = 2.dp
+            )
+        } else {
+            Text("Değerlendirmeyi Gönder")
+        }
+    }
+
+    Spacer(
+        modifier = Modifier.height(8.dp)
+    )
+
+    TextButton(
+        onClick = onCancelClick,
+        modifier = Modifier.fillMaxWidth(),
+        enabled = !isSubmitting
+    ) {
+        Text("Vazgeç")
+    }
+}
+
+private fun buildRatingStars(
+    rating: Int
+): String {
+    val safeRating =
+        rating.coerceIn(
+            minimumValue = 0,
+            maximumValue = 5
+        )
+
+    return "★".repeat(safeRating) +
+            "☆".repeat(5 - safeRating)
 }

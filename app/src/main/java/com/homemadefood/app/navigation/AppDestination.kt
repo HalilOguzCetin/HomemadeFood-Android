@@ -160,6 +160,10 @@ sealed class AppDestination(
         AppDestination(
             route = "producer/orders"
         )
+    data object ProducerReviews :
+        AppDestination(
+            route = "producer/reviews"
+        )
 
     // -------------------------
     // Admin ekranları

@@ -777,6 +777,30 @@ private fun NavGraphBuilder.orderDetailDestination(
             onCancelOrderClick = {
                 orderDetailViewModel.cancelOrder()
             },
+            onShowReviewFormClick = {
+                orderDetailViewModel
+                    .showReviewForm()
+            },
+
+            onHideReviewFormClick = {
+                orderDetailViewModel
+                    .hideReviewForm()
+            },
+
+            onRatingSelected = { rating ->
+                orderDetailViewModel
+                    .selectRating(rating)
+            },
+
+            onReviewCommentChange = { value ->
+                orderDetailViewModel
+                    .updateReviewComment(value)
+            },
+
+            onSubmitReviewClick = {
+                orderDetailViewModel
+                    .submitReview()
+            },
 
             modifier = Modifier.fillMaxSize()
         )

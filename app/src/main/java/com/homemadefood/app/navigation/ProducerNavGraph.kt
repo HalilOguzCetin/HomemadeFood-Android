@@ -29,7 +29,9 @@ import com.homemadefood.app.ui.producer.ProducerFoodsViewModelFactory
 import com.homemadefood.app.ui.producer.ProducerOrdersScreen
 import com.homemadefood.app.ui.producer.ProducerOrdersViewModel
 import com.homemadefood.app.ui.producer.ProducerOrdersViewModelFactory
-
+import com.homemadefood.app.ui.producer.ProducerReviewsScreen
+import com.homemadefood.app.ui.producer.ProducerReviewsViewModel
+import com.homemadefood.app.ui.producer.ProducerReviewsViewModelFactory
 
 fun NavGraphBuilder.producerNavGraph(
     navController: NavHostController,
@@ -68,6 +70,10 @@ fun NavGraphBuilder.producerNavGraph(
             navController = navController,
             context = context
         )
+        producerReviewsDestination(
+            navController = navController,
+            context = context
+        )
     }
 }
 
@@ -100,6 +106,13 @@ private fun NavGraphBuilder.producerHomeDestination(
                 navController.navigate(
                     AppDestination
                         .ProducerOrders
+                        .route
+                )
+            },
+            onReviewsClick = {
+                navController.navigate(
+                    AppDestination
+                        .ProducerReviews
                         .route
                 )
             },
@@ -472,6 +485,53 @@ private fun NavGraphBuilder.producerOrdersDestination(
             },
 
             modifier = Modifier.fillMaxSize()
+        )
+    }
+}
+private fun NavGraphBuilder.producerReviewsDestination(
+    navController: NavHostController,
+    context: Context
+) {
+    composable(
+        route =
+            AppDestination
+                .ProducerReviews
+                .route
+    ) {
+        val producerReviewsViewModel:
+                ProducerReviewsViewModel =
+            viewModel(
+                factory =
+                    ProducerReviewsViewModelFactory(
+                        context = context
+                    )
+            )
+
+        val producerReviewsUiState by
+        producerReviewsViewModel
+            .uiState
+            .collectAsStateWithLifecycle()
+
+        LaunchedEffect(Unit) {
+            producerReviewsViewModel
+                .loadReviews()
+        }
+
+        ProducerReviewsScreen(
+            uiState =
+                producerReviewsUiState,
+
+            onBackClick = {
+                navController.popBackStack()
+            },
+
+            onRetryClick = {
+                producerReviewsViewModel
+                    .loadReviews()
+            },
+
+            modifier =
+                Modifier.fillMaxSize()
         )
     }
 }

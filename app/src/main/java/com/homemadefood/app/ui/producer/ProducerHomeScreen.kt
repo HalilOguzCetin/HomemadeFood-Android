@@ -23,7 +23,9 @@ fun ProducerHomeScreen(
     onApplicationStatusClick: () -> Unit,
     onFoodsClick: () -> Unit,
     onOrdersClick: () -> Unit,
+    onReviewsClick: () -> Unit,
     onLogoutClick: () -> Unit,
+
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -76,6 +78,14 @@ fun ProducerHomeScreen(
                 "Yeni siparişleri görüntüleyin ve durumlarını güncelleyin.",
             buttonText = "Siparişleri Gör",
             onClick = onOrdersClick
+        )
+
+        ProducerMenuCard(
+            title = "Değerlendirmelerim",
+            description =
+                "Müşterilerinizin verdiği puanları ve yorumları görüntüleyin.",
+            buttonText = "Değerlendirmeleri Gör",
+            onClick = onReviewsClick
         )
 
         Spacer(

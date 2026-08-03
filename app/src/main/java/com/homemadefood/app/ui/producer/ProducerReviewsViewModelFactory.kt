@@ -1,14 +1,14 @@
-package com.homemadefood.app.ui.order
+package com.homemadefood.app.ui.producer
 
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.homemadefood.app.data.local.SessionManager
-import com.homemadefood.app.data.repository.OrderRepository
+import com.homemadefood.app.data.repository.ProducerRepository
 import com.homemadefood.app.data.repository.ReviewRepository
-class OrderDetailViewModelFactory(
-    private val context: Context,
-    private val orderId: Int
+
+class ProducerReviewsViewModelFactory(
+    private val context: Context
 ) : ViewModelProvider.Factory {
 
     override fun <T : ViewModel> create(
@@ -16,25 +16,30 @@ class OrderDetailViewModelFactory(
     ): T {
         if (
             modelClass.isAssignableFrom(
-                OrderDetailViewModel::class.java
+                ProducerReviewsViewModel::class.java
             )
         ) {
-            val orderRepository =
-                OrderRepository()
+            val producerRepository =
+                ProducerRepository()
+
+            val reviewRepository =
+                ReviewRepository()
 
             val sessionManager =
                 SessionManager(
                     context.applicationContext
                 )
-            val reviewRepository =
-                ReviewRepository()
 
             @Suppress("UNCHECKED_CAST")
-            return OrderDetailViewModel(
-                orderId = orderId,
-                orderRepository = orderRepository,
-                reviewRepository = reviewRepository,
-                sessionManager = sessionManager
+            return ProducerReviewsViewModel(
+                producerRepository =
+                    producerRepository,
+
+                reviewRepository =
+                    reviewRepository,
+
+                sessionManager =
+                    sessionManager
             ) as T
         }
 
