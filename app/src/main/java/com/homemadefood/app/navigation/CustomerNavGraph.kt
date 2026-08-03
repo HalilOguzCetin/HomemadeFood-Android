@@ -46,7 +46,9 @@ import com.homemadefood.app.ui.order.OrdersViewModelFactory
 import com.homemadefood.app.ui.recommendation.RecommendationScreen
 import com.homemadefood.app.ui.recommendation.RecommendationViewModel
 import com.homemadefood.app.ui.recommendation.RecommendationViewModelFactory
-
+import com.homemadefood.app.ui.customer.CustomerProducerApplicationScreen
+import com.homemadefood.app.ui.customer.CustomerProducerApplicationViewModel
+import com.homemadefood.app.ui.customer.CustomerProducerApplicationViewModelFactory
 
 fun NavGraphBuilder.customerNavGraph(
     navController: NavHostController,
@@ -106,6 +108,10 @@ fun NavGraphBuilder.customerNavGraph(
             context = context
         )
         recommendationDestination(
+            navController = navController,
+            context = context
+        )
+        customerProducerApplicationDestination(
             navController = navController,
             context = context
         )
@@ -199,6 +205,13 @@ private fun NavGraphBuilder.customerHomeDestination(
             onRecommendationClick = {
                 navController.navigate(
                     AppDestination.Recommendation.route
+                )
+            },
+            onProducerApplicationClick = {
+                navController.navigate(
+                    AppDestination
+                        .CustomerProducerApplication
+                        .route
                 )
             },
 
@@ -909,6 +922,97 @@ private fun NavGraphBuilder.recommendationDestination(
                     AppDestination.FoodDetail
                         .createRoute(foodId)
                 )
+            },
+
+            modifier = Modifier.fillMaxSize()
+        )
+    }
+}
+private fun NavGraphBuilder
+        .customerProducerApplicationDestination(
+    navController: NavHostController,
+    context: Context
+) {
+
+    composable(
+        route =
+            AppDestination
+                .CustomerProducerApplication
+                .route
+    ) {
+        val applicationViewModel:
+                CustomerProducerApplicationViewModel =
+            viewModel(
+                factory =
+                    CustomerProducerApplicationViewModelFactory(
+                        context = context
+                    )
+            )
+
+        val applicationUiState by
+        applicationViewModel.uiState
+            .collectAsStateWithLifecycle()
+
+        LaunchedEffect(Unit) {
+            applicationViewModel
+                .loadApplication()
+        }
+
+        CustomerProducerApplicationScreen(
+            uiState = applicationUiState,
+
+            onBackClick = {
+                navController.popBackStack()
+            },
+
+            onRetryClick = {
+                applicationViewModel
+                    .loadApplication()
+            },
+
+            onBusinessNameChange = { value ->
+                applicationViewModel
+                    .updateBusinessName(value)
+            },
+
+            onDescriptionChange = { value ->
+                applicationViewModel
+                    .updateDescription(value)
+            },
+
+            onAddressChange = { value ->
+                applicationViewModel
+                    .updateAddress(value)
+            },
+
+            onLatitudeChange = { value ->
+                applicationViewModel
+                    .updateLatitudeText(value)
+            },
+
+            onLongitudeChange = { value ->
+                applicationViewModel
+                    .updateLongitudeText(value)
+            },
+
+            onDailyCapacityChange = { value ->
+                applicationViewModel
+                    .updateDailyCapacityText(value)
+            },
+
+            onSubmitClick = {
+                applicationViewModel
+                    .submitApplication()
+            },
+
+            onShowReapplicationFormClick = {
+                applicationViewModel
+                    .showReapplicationForm()
+            },
+
+            onHideReapplicationFormClick = {
+                applicationViewModel
+                    .hideReapplicationForm()
             },
 
             modifier = Modifier.fillMaxSize()

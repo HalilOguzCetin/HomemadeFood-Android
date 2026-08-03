@@ -116,9 +116,10 @@ sealed class AppDestination(
             route = "customer/recommendation"
         )
 
-    // -------------------------
-    // Producer ekranları
-    // -------------------------
+    data object CustomerProducerApplication :
+        AppDestination(
+            route = "customer/producer-application"
+        )
 
     data object ProducerHome :
         AppDestination(

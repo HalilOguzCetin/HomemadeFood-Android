@@ -46,6 +46,7 @@ fun CustomerHomeScreen(
     onCartClick: () -> Unit,
     onOrdersClick: () -> Unit,
     onRecommendationClick: () -> Unit,
+    onProducerApplicationClick: () -> Unit,
     onLogoutClick: () -> Unit,
     onAddressesClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -402,6 +403,16 @@ fun CustomerHomeScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Favorilerim")
+        }
+        Spacer(
+            modifier = Modifier.height(12.dp)
+        )
+
+        Button(
+            onClick = onProducerApplicationClick,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Üretici Ol")
         }
     }
 }
