@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import com.homemadefood.app.data.model.AddressResponse
 import com.homemadefood.app.data.model.PaymentMethods
 import java.util.Locale
+import com.homemadefood.app.data.model.OrderStatus
 
 @Composable
 fun CreateOrderScreen(
@@ -46,7 +47,10 @@ fun CreateOrderScreen(
             OrderSuccessContent(
                 orderId = uiState.createdOrder.orderId,
                 totalPrice = uiState.createdOrder.totalPrice,
-                status = uiState.createdOrder.status,
+                status =
+                    OrderStatus.fromBackendValue(
+                        uiState.createdOrder.status
+                    ),
                 onReturnHomeClick = onReturnHomeClick,
                 modifier = modifier
             )
@@ -511,7 +515,7 @@ private fun OrderInformationRow(
 private fun OrderSuccessContent(
     orderId: Int,
     totalPrice: Double,
-    status: String,
+    status: OrderStatus,
     onReturnHomeClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -551,7 +555,7 @@ private fun OrderSuccessContent(
         )
 
         Text(
-            text = "Durum: ${translateOrderStatus(status)}"
+            text = "Durum: ${status.displayName}"
         )
 
         Spacer(
@@ -577,18 +581,3 @@ private fun formatPrice(
     )
 }
 
-private fun translateOrderStatus(
-    status: String
-): String {
-    return when (status) {
-        "Pending" -> "Onay Bekliyor"
-        "Accepted" -> "Kabul Edildi"
-        "Preparing" -> "Hazırlanıyor"
-        "Ready" -> "Hazır"
-        "OutForDelivery" -> "Teslimatta"
-        "Delivered" -> "Teslim Edildi"
-        "Rejected" -> "Reddedildi"
-        "Cancelled" -> "İptal Edildi"
-        else -> status
-    }
-}

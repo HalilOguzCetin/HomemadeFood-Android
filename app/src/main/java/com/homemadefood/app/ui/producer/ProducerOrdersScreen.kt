@@ -30,6 +30,7 @@ import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import com.homemadefood.app.data.model.OrderStatus
 
 @Composable
 fun ProducerOrdersScreen(
@@ -241,13 +242,11 @@ private fun ProducerOrderCard(
 
                 Text(
                     text =
-                        translateProducerOrderStatus(
-                            order.status
-                        ),
+                        order.orderStatus.displayName,
 
                     color =
                         getProducerOrderStatusColor(
-                            order.status
+                            order.orderStatus
                         ),
 
                     style =
@@ -435,7 +434,7 @@ private fun ProducerOrderCard(
             )
 
             ProducerOrderActionSection(
-                status = order.status,
+                status = order.orderStatus,
                 isUpdating = isUpdating,
                 onAcceptClick = onAcceptClick,
                 onRejectClick = onRejectClick,
@@ -452,7 +451,7 @@ private fun ProducerOrderCard(
 
 @Composable
 private fun ProducerOrderActionSection(
-    status: String,
+    status: OrderStatus,
     isUpdating: Boolean,
     onAcceptClick: () -> Unit,
     onRejectClick: () -> Unit,
@@ -487,7 +486,7 @@ private fun ProducerOrderActionSection(
     }
 
     when (status) {
-        "Pending" -> {
+        OrderStatus.PENDING -> {
             Column(
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -511,7 +510,7 @@ private fun ProducerOrderActionSection(
             }
         }
 
-        "Accepted" -> {
+        OrderStatus.ACCEPTED -> {
             Button(
                 onClick = onStartPreparingClick,
                 modifier = Modifier.fillMaxWidth()
@@ -520,7 +519,7 @@ private fun ProducerOrderActionSection(
             }
         }
 
-        "Preparing" -> {
+        OrderStatus.PREPARING -> {
             Button(
                 onClick = onMarkReadyClick,
                 modifier = Modifier.fillMaxWidth()
@@ -529,7 +528,7 @@ private fun ProducerOrderActionSection(
             }
         }
 
-        "Ready" -> {
+        OrderStatus.READY -> {
             Button(
                 onClick = onOutForDeliveryClick,
                 modifier = Modifier.fillMaxWidth()
@@ -538,7 +537,7 @@ private fun ProducerOrderActionSection(
             }
         }
 
-        "OutForDelivery" -> {
+        OrderStatus.OUT_FOR_DELIVERY -> {
             Button(
                 onClick = onDeliveredClick,
                 modifier = Modifier.fillMaxWidth()
@@ -547,30 +546,43 @@ private fun ProducerOrderActionSection(
             }
         }
 
-        "Delivered" -> {
+        OrderStatus.DELIVERED -> {
             Text(
                 text = "Sipariş süreci tamamlandı.",
-                color = MaterialTheme.colorScheme.primary,
+                color =
+                    MaterialTheme.colorScheme.primary,
                 style =
                     MaterialTheme.typography.titleSmall
             )
         }
 
-        "Rejected" -> {
+        OrderStatus.REJECTED -> {
             Text(
                 text = "Sipariş reddedildi.",
-                color = MaterialTheme.colorScheme.error,
+                color =
+                    MaterialTheme.colorScheme.error,
                 style =
                     MaterialTheme.typography.titleSmall
             )
         }
 
-        "Cancelled" -> {
+        OrderStatus.CANCELLED -> {
             Text(
                 text =
                     "Sipariş müşteri tarafından iptal edildi.",
+                color =
+                    MaterialTheme.colorScheme.error,
+                style =
+                    MaterialTheme.typography.titleSmall
+            )
+        }
 
-                color = MaterialTheme.colorScheme.error,
+        OrderStatus.UNKNOWN -> {
+            Text(
+                text =
+                    "Sipariş durumu tanınamadı.",
+                color =
+                    MaterialTheme.colorScheme.error,
                 style =
                     MaterialTheme.typography.titleSmall
             )
@@ -604,42 +616,37 @@ private fun ProducerOrderInformationRow(
 
 @Composable
 private fun getProducerOrderStatusColor(
-    status: String
+    status: OrderStatus
 ) = when (status) {
-    "Pending" ->
+
+    OrderStatus.PENDING ->
         MaterialTheme.colorScheme.tertiary
 
-    "Accepted",
-    "Preparing",
-    "Ready",
-    "OutForDelivery",
-    "Delivered" ->
+    OrderStatus.ACCEPTED,
+    OrderStatus.PREPARING,
+    OrderStatus.READY,
+    OrderStatus.OUT_FOR_DELIVERY,
+    OrderStatus.DELIVERED ->
         MaterialTheme.colorScheme.primary
 
-    "Rejected",
-    "Cancelled" ->
+    OrderStatus.REJECTED,
+    OrderStatus.CANCELLED ->
         MaterialTheme.colorScheme.error
 
-    else ->
+    OrderStatus.UNKNOWN ->
         MaterialTheme.colorScheme.onSurface
 }
 
-private fun translateProducerOrderStatus(
-    status: String
-): String {
-    return when (status) {
-        "Pending" -> "Onay Bekliyor"
-        "Accepted" -> "Kabul Edildi"
-        "Preparing" -> "Hazırlanıyor"
-        "Ready" -> "Hazır"
-        "OutForDelivery" -> "Teslimatta"
-        "Delivered" -> "Teslim Edildi"
-        "Rejected" -> "Reddedildi"
-        "Cancelled" -> "İptal Edildi"
-        else -> status
-    }
-}
 
+private fun formatProducerOrderPrice(
+    price: Double
+): String {
+    return String.format(
+        Locale("tr", "TR"),
+        "%.2f TL",
+        price
+    )
+}
 private fun translateProducerPaymentMethod(
     paymentMethod: String
 ): String {
@@ -653,16 +660,6 @@ private fun translateProducerPaymentMethod(
         else ->
             paymentMethod
     }
-}
-
-private fun formatProducerOrderPrice(
-    price: Double
-): String {
-    return String.format(
-        Locale("tr", "TR"),
-        "%.2f TL",
-        price
-    )
 }
 
 private fun formatProducerOrderDate(

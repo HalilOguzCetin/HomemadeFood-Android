@@ -29,6 +29,7 @@ import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import com.homemadefood.app.data.model.OrderStatus
 
 @Composable
 fun OrderDetailScreen(
@@ -130,6 +131,8 @@ fun OrderDetailScreen(
 
         else -> {
             val order = uiState.order
+            val orderStatus =
+                order.orderStatus
 
             LazyColumn(
                 modifier = modifier
@@ -163,13 +166,13 @@ fun OrderDetailScreen(
 
                         Text(
                             text =
-                                translateOrderStatus(
-                                    order.status
-                                ),
+                                orderStatus.displayName,
+
                             color =
                                 getOrderStatusColor(
-                                    order.status
+                                    orderStatus
                                 ),
+
                             style =
                                 MaterialTheme.typography.titleMedium
                         )
@@ -433,7 +436,7 @@ fun OrderDetailScreen(
                         }
                     }
 
-                    if (order.status == "Pending") {
+                    if (orderStatus == OrderStatus.PENDING) {
                         Spacer(
                             modifier = Modifier.height(20.dp)
                         )
@@ -494,41 +497,28 @@ private fun OrderDetailInformationRow(
 
 @Composable
 private fun getOrderStatusColor(
-    status: String
+    status: OrderStatus
 ) = when (status) {
-    "Pending" ->
+
+    OrderStatus.PENDING ->
         MaterialTheme.colorScheme.tertiary
 
-    "Accepted",
-    "Preparing",
-    "Ready",
-    "OutForDelivery",
-    "Delivered" ->
+    OrderStatus.ACCEPTED,
+    OrderStatus.PREPARING,
+    OrderStatus.READY,
+    OrderStatus.OUT_FOR_DELIVERY,
+    OrderStatus.DELIVERED ->
         MaterialTheme.colorScheme.primary
 
-    "Rejected",
-    "Cancelled" ->
+    OrderStatus.REJECTED,
+    OrderStatus.CANCELLED ->
         MaterialTheme.colorScheme.error
 
-    else ->
+    OrderStatus.UNKNOWN ->
         MaterialTheme.colorScheme.onSurface
 }
 
-private fun translateOrderStatus(
-    status: String
-): String {
-    return when (status) {
-        "Pending" -> "Onay Bekliyor"
-        "Accepted" -> "Kabul Edildi"
-        "Preparing" -> "Hazırlanıyor"
-        "Ready" -> "Hazır"
-        "OutForDelivery" -> "Teslimatta"
-        "Delivered" -> "Teslim Edildi"
-        "Rejected" -> "Reddedildi"
-        "Cancelled" -> "İptal Edildi"
-        else -> status
-    }
-}
+
 
 private fun translatePaymentMethod(
     paymentMethod: String

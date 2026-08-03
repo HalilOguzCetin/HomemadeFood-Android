@@ -26,4 +26,10 @@ data class ProducerOrderResponse(
     val statusUpdatedAt: String,
 
     val items: List<OrderItemResponse>
-)
+) {
+    val orderStatus: OrderStatus
+        get() =
+            OrderStatus.fromBackendValue(
+                status
+            )
+}

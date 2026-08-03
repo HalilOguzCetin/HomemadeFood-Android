@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import com.homemadefood.app.data.model.OrderResponse
 import java.util.Locale
 import androidx.compose.foundation.clickable
+import com.homemadefood.app.data.model.OrderStatus
 
 @Composable
 fun OrdersScreen(
@@ -222,15 +223,17 @@ private fun OrderCard(
     isCancelling: Boolean,
     onOrderClick: () -> Unit,
     onCancelClick: () -> Unit
-
 ) {
+    val orderStatus =
+        order.orderStatus
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(
                 onClick = onOrderClick
             )
-    ){
+    ) {
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
@@ -247,9 +250,16 @@ private fun OrderCard(
                 )
 
                 Text(
-                    text = translateOrderStatus(order.status),
-                    color = getStatusColor(order.status),
-                    style = MaterialTheme.typography.titleSmall
+                    text =
+                        orderStatus.displayName,
+
+                    color =
+                        getStatusColor(
+                            orderStatus
+                        ),
+
+                    style =
+                        MaterialTheme.typography.titleSmall
                 )
             }
 
@@ -347,7 +357,7 @@ private fun OrderCard(
                 }
             }
 
-            if (order.status == "Pending") {
+            if (orderStatus == OrderStatus.PENDING) {
                 Spacer(
                     modifier = Modifier.height(16.dp)
                 )
@@ -398,43 +408,28 @@ private fun OrderDetailRow(
 
 @Composable
 private fun getStatusColor(
-    status: String
+    status: OrderStatus
 ) = when (status) {
-    "Pending" ->
+
+    OrderStatus.PENDING ->
         MaterialTheme.colorScheme.tertiary
 
-    "Accepted",
-    "Preparing",
-    "Ready",
-    "OutForDelivery" ->
+    OrderStatus.ACCEPTED,
+    OrderStatus.PREPARING,
+    OrderStatus.READY,
+    OrderStatus.OUT_FOR_DELIVERY,
+    OrderStatus.DELIVERED ->
         MaterialTheme.colorScheme.primary
 
-    "Delivered" ->
-        MaterialTheme.colorScheme.primary
-
-    "Rejected",
-    "Cancelled" ->
+    OrderStatus.REJECTED,
+    OrderStatus.CANCELLED ->
         MaterialTheme.colorScheme.error
 
-    else ->
+    OrderStatus.UNKNOWN ->
         MaterialTheme.colorScheme.onSurface
 }
 
-private fun translateOrderStatus(
-    status: String
-): String {
-    return when (status) {
-        "Pending" -> "Onay Bekliyor"
-        "Accepted" -> "Kabul Edildi"
-        "Preparing" -> "Hazırlanıyor"
-        "Ready" -> "Hazır"
-        "OutForDelivery" -> "Teslimatta"
-        "Delivered" -> "Teslim Edildi"
-        "Rejected" -> "Reddedildi"
-        "Cancelled" -> "İptal Edildi"
-        else -> status
-    }
-}
+
 
 private fun translatePaymentMethod(
     paymentMethod: String
