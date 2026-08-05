@@ -18,6 +18,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -28,7 +30,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.homemadefood.app.data.model.PendingProducerResponse
+import com.homemadefood.app.data.model.AdminProducerApplicationResponse
+import com.homemadefood.app.data.model.ProducerApplicationStatus
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
@@ -39,13 +42,18 @@ fun AdminApplicationsScreen(
     uiState: AdminApplicationsUiState,
     onBackClick: () -> Unit,
     onRetryClick: () -> Unit,
+    onStatusSelected:
+        (ProducerApplicationStatus) -> Unit,
     onApproveClick: (Int) -> Unit,
     onRejectClick: (Int, String) -> Unit,
     onClearMessage: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var selectedApplicationForReject by remember {
-        mutableStateOf<PendingProducerResponse?>(null)
+    var selectedApplicationForReject by
+    remember {
+        mutableStateOf<
+                AdminProducerApplicationResponse?
+                >(null)
     }
 
     var rejectReason by remember {
@@ -55,26 +63,59 @@ fun AdminApplicationsScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(20.dp)
+            .padding(
+                horizontal = 20.dp,
+                vertical = 16.dp
+            )
     ) {
         TextButton(
-            onClick = onBackClick
+            onClick = onBackClick,
+            enabled =
+                uiState.updatingApplicationId == null
         ) {
             Text("← Admin Paneline Dön")
         }
+
+        Spacer(
+            modifier = Modifier.height(4.dp)
+        )
+
+        Text(
+            text = "Üretici Başvuruları",
+            style =
+                MaterialTheme.typography
+                    .headlineMedium
+        )
 
         Spacer(
             modifier = Modifier.height(6.dp)
         )
 
         Text(
-            text = "Üretici Başvuruları",
-            style = MaterialTheme.typography.headlineMedium
+            text =
+                applicationScreenDescription(
+                    status = uiState.selectedStatus
+                ),
+            style =
+                MaterialTheme.typography
+                    .bodyMedium
         )
 
-        Text(
-            text = "Onay bekleyen üretici başvurularını inceleyebilir, onaylayabilir veya reddedebilirsiniz.",
-            style = MaterialTheme.typography.bodyMedium
+        Spacer(
+            modifier = Modifier.height(18.dp)
+        )
+
+        ApplicationStatusTabs(
+            selectedStatus =
+                uiState.selectedStatus,
+
+            isEnabled =
+                !uiState.isLoading &&
+                        uiState.updatingApplicationId ==
+                        null,
+
+            onStatusSelected =
+                onStatusSelected
         )
 
         Spacer(
@@ -82,25 +123,12 @@ fun AdminApplicationsScreen(
         )
 
         uiState.successMessage?.let { message ->
-            Card(
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(14.dp)
-                ) {
-                    Text(
-                        text = message,
-                        color = MaterialTheme.colorScheme.primary,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-
-                    TextButton(
-                        onClick = onClearMessage
-                    ) {
-                        Text("Kapat")
-                    }
-                }
-            }
+            ApplicationMessageCard(
+                message = message,
+                isError = false,
+                onCloseClick =
+                    onClearMessage
+            )
 
             Spacer(
                 modifier = Modifier.height(12.dp)
@@ -111,25 +139,15 @@ fun AdminApplicationsScreen(
             uiState.errorMessage != null &&
             uiState.applications.isNotEmpty()
         ) {
-            Card(
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(14.dp)
-                ) {
-                    Text(
-                        text = uiState.errorMessage,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+            ApplicationMessageCard(
+                message =
+                    uiState.errorMessage,
 
-                    TextButton(
-                        onClick = onClearMessage
-                    ) {
-                        Text("Kapat")
-                    }
-                }
-            }
+                isError = true,
+
+                onCloseClick =
+                    onClearMessage
+            )
 
             Spacer(
                 modifier = Modifier.height(12.dp)
@@ -138,76 +156,68 @@ fun AdminApplicationsScreen(
 
         when {
             uiState.isLoading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
+                ApplicationsLoadingContent()
             }
 
             uiState.errorMessage != null &&
                     uiState.applications.isEmpty() -> {
 
-                Column(
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = uiState.errorMessage,
-                        color = MaterialTheme.colorScheme.error
-                    )
+                ApplicationsErrorContent(
+                    message =
+                        uiState.errorMessage,
 
-                    Spacer(
-                        modifier = Modifier.height(14.dp)
-                    )
-
-                    Button(
-                        onClick = onRetryClick,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Tekrar Dene")
-                    }
-                }
+                    onRetryClick =
+                        onRetryClick
+                )
             }
 
             uiState.applications.isEmpty() -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Onay bekleyen üretici başvurusu bulunmuyor.",
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                }
+                ApplicationsEmptyContent(
+                    message =
+                        uiState.emptyMessage
+                )
             }
 
             else -> {
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier =
+                        Modifier.fillMaxSize(),
+
                     verticalArrangement =
                         Arrangement.spacedBy(14.dp)
                 ) {
                     items(
-                        items = uiState.applications,
+                        items =
+                            uiState.applications,
+
                         key = { application ->
-                            application.producerProfileId
+                            application
+                                .producerProfileId
                         }
                     ) { application ->
 
                         AdminApplicationCard(
-                            application = application,
+                            application =
+                                application,
+
+                            selectedStatus =
+                                uiState.selectedStatus,
 
                             isUpdating =
-                                uiState.updatingApplicationId ==
-                                        application.producerProfileId,
+                                uiState
+                                    .updatingApplicationId ==
+                                        application
+                                            .producerProfileId,
 
                             isAnyApplicationUpdating =
-                                uiState.updatingApplicationId != null,
+                                uiState
+                                    .updatingApplicationId !=
+                                        null,
 
                             onApproveClick = {
                                 onApproveClick(
-                                    application.producerProfileId
+                                    application
+                                        .producerProfileId
                                 )
                             },
 
@@ -222,7 +232,8 @@ fun AdminApplicationsScreen(
 
                     item {
                         Spacer(
-                            modifier = Modifier.height(24.dp)
+                            modifier =
+                                Modifier.height(24.dp)
                         )
                     }
                 }
@@ -230,118 +241,227 @@ fun AdminApplicationsScreen(
         }
     }
 
-    selectedApplicationForReject?.let { application ->
+    selectedApplicationForReject
+        ?.let { application ->
 
-        AlertDialog(
-            onDismissRequest = {
-                if (
-                    uiState.updatingApplicationId == null
-                ) {
-                    selectedApplicationForReject = null
+            RejectApplicationDialog(
+                application =
+                    application,
+
+                rejectReason =
+                    rejectReason,
+
+                isUpdating =
+                    uiState
+                        .updatingApplicationId !=
+                            null,
+
+                onReasonChange = { newValue ->
+                    if (newValue.length <= 500) {
+                        rejectReason =
+                            newValue
+                    }
+                },
+
+                onConfirmClick = {
+                    onRejectClick(
+                        application
+                            .producerProfileId,
+
+                        rejectReason
+                    )
+
+                    selectedApplicationForReject =
+                        null
+
+                    rejectReason = ""
+                },
+
+                onDismissClick = {
+                    selectedApplicationForReject =
+                        null
+
                     rejectReason = ""
                 }
-            },
+            )
+        }
+}
 
-            title = {
-                Text("Başvuruyu Reddet")
-            },
+@Composable
+private fun ApplicationStatusTabs(
+    selectedStatus:
+    ProducerApplicationStatus,
+    isEnabled: Boolean,
+    onStatusSelected:
+        (ProducerApplicationStatus) -> Unit
+) {
+    val statuses =
+        listOf(
+            ProducerApplicationStatus.PENDING,
+            ProducerApplicationStatus.APPROVED,
+            ProducerApplicationStatus.REJECTED
+        )
 
-            text = {
-                Column {
+    val selectedIndex =
+        statuses.indexOf(selectedStatus)
+            .coerceAtLeast(0)
+
+    TabRow(
+        selectedTabIndex =
+            selectedIndex
+    ) {
+        statuses.forEach { status ->
+            Tab(
+                selected =
+                    selectedStatus == status,
+
+                onClick = {
+                    onStatusSelected(status)
+                },
+
+                enabled =
+                    isEnabled,
+
+                text = {
                     Text(
                         text =
-                            "${application.businessName} başvurusunu reddetme nedeninizi yazın."
+                            status.displayName
                     )
-
-                    Spacer(
-                        modifier = Modifier.height(12.dp)
-                    )
-
-                    OutlinedTextField(
-                        value = rejectReason,
-
-                        onValueChange = { newValue ->
-                            if (newValue.length <= 500) {
-                                rejectReason = newValue
-                            }
-                        },
-
-                        label = {
-                            Text("Red nedeni")
-                        },
-
-                        supportingText = {
-                            Text(
-                                "${rejectReason.length}/500 karakter"
-                            )
-                        },
-
-                        minLines = 3,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    if (
-                        rejectReason.isNotBlank() &&
-                        rejectReason.trim().length < 10
-                    ) {
-                        Spacer(
-                            modifier = Modifier.height(6.dp)
-                        )
-
-                        Text(
-                            text =
-                                "Red nedeni en az 10 karakter olmalıdır.",
-
-                            color =
-                                MaterialTheme.colorScheme.error,
-
-                            style =
-                                MaterialTheme.typography.bodySmall
-                        )
-                    }
                 }
-            },
+            )
+        }
+    }
+}
 
-            confirmButton = {
-                Button(
-                    onClick = {
-                        onRejectClick(
-                            application.producerProfileId,
-                            rejectReason
-                        )
+@Composable
+private fun ApplicationMessageCard(
+    message: String,
+    isError: Boolean,
+    onCloseClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier =
+                Modifier.padding(14.dp)
+        ) {
+            Text(
+                text = message,
 
-                        selectedApplicationForReject = null
-                        rejectReason = ""
+                color =
+                    if (isError) {
+                        MaterialTheme
+                            .colorScheme.error
+                    } else {
+                        MaterialTheme
+                            .colorScheme.primary
                     },
 
-                    enabled =
-                        rejectReason.trim().length in 10..500 &&
-                                uiState.updatingApplicationId == null
-                ) {
-                    Text("Başvuruyu Reddet")
-                }
-            },
+                style =
+                    MaterialTheme.typography
+                        .bodyMedium
+            )
 
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        selectedApplicationForReject = null
-                        rejectReason = ""
-                    },
-
-                    enabled =
-                        uiState.updatingApplicationId == null
-                ) {
-                    Text("Vazgeç")
-                }
+            TextButton(
+                onClick =
+                    onCloseClick
+            ) {
+                Text("Kapat")
             }
+        }
+    }
+}
+
+@Composable
+private fun ApplicationsLoadingContent() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment =
+            Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment =
+                Alignment.CenterHorizontally
+        ) {
+            CircularProgressIndicator()
+
+            Spacer(
+                modifier =
+                    Modifier.height(12.dp)
+            )
+
+            Text(
+                text =
+                    "Başvurular yükleniyor..."
+            )
+        }
+    }
+}
+
+@Composable
+private fun ApplicationsErrorContent(
+    message: String,
+    onRetryClick: () -> Unit
+) {
+    Column(
+        modifier =
+            Modifier.fillMaxWidth(),
+
+        horizontalAlignment =
+            Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = message,
+            color =
+                MaterialTheme.colorScheme.error,
+            style =
+                MaterialTheme.typography
+                    .bodyLarge
+        )
+
+        Spacer(
+            modifier = Modifier.height(14.dp)
+        )
+
+        Button(
+            onClick =
+                onRetryClick,
+
+            modifier =
+                Modifier.fillMaxWidth()
+        ) {
+            Text("Tekrar Dene")
+        }
+    }
+}
+
+@Composable
+private fun ApplicationsEmptyContent(
+    message: String
+) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment =
+            Alignment.Center
+    ) {
+        Text(
+            text = message,
+            style =
+                MaterialTheme.typography
+                    .bodyLarge
         )
     }
 }
 
 @Composable
 private fun AdminApplicationCard(
-    application: PendingProducerResponse,
+    application:
+    AdminProducerApplicationResponse,
+
+    selectedStatus:
+    ProducerApplicationStatus,
+
     isUpdating: Boolean,
     isAnyApplicationUpdating: Boolean,
     onApproveClick: () -> Unit,
@@ -351,11 +471,19 @@ private fun AdminApplicationCard(
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier =
+                Modifier.padding(16.dp)
         ) {
             Text(
-                text = application.businessName,
-                style = MaterialTheme.typography.titleLarge
+                text =
+                    application.businessName
+                        .ifBlank {
+                            "İşletme"
+                        },
+
+                style =
+                    MaterialTheme.typography
+                        .titleLarge
             )
 
             Spacer(
@@ -365,44 +493,80 @@ private fun AdminApplicationCard(
             Text(
                 text =
                     translateApplicationStatus(
-                        application.verificationStatus
+                        application
+                            .verificationStatus
                     ),
 
                 color =
-                    MaterialTheme.colorScheme.tertiary,
+                    applicationStatusColor(
+                        application
+                            .verificationStatus
+                    ),
 
                 style =
-                    MaterialTheme.typography.titleSmall
+                    MaterialTheme.typography
+                        .titleSmall
             )
 
             Spacer(
-                modifier = Modifier.height(12.dp)
+                modifier = Modifier.height(14.dp)
             )
 
             AdminApplicationInformation(
                 title = "Başvuru numarası",
                 value =
-                    application.producerProfileId.toString()
-            )
-
-            AdminApplicationInformation(
-                title = "Kullanıcı numarası",
-                value = application.userId.toString()
+                    application
+                        .producerProfileId
+                        .toString()
             )
 
             AdminApplicationInformation(
                 title = "Başvuru sahibi",
-                value = application.fullName
+                value =
+                    application.fullName
+                        .ifBlank {
+                            "-"
+                        }
             )
 
             AdminApplicationInformation(
                 title = "E-posta",
-                value = application.email
+                value =
+                    application.email
+                        .ifBlank {
+                            "-"
+                        }
+            )
+
+            AdminApplicationInformation(
+                title = "Kullanıcı rolü",
+                value =
+                    application.userRole
+                        .ifBlank {
+                            "-"
+                        }
             )
 
             AdminApplicationInformation(
                 title = "Günlük kapasite",
-                value = "${application.dailyCapacity} adet"
+                value =
+                    "${application.dailyCapacity} adet"
+            )
+
+            AdminApplicationInformation(
+                title = "Kalan kapasite",
+                value =
+                    "${application.remainingCapacity} adet"
+            )
+
+            AdminApplicationInformation(
+                title = "Sipariş alma durumu",
+                value =
+                    if (application.isAvailable) {
+                        "Açık"
+                    } else {
+                        "Kapalı"
+                    }
             )
 
             AdminApplicationInformation(
@@ -412,6 +576,54 @@ private fun AdminApplicationCard(
                         application.createdAt
                     )
             )
+
+            when (selectedStatus) {
+                ProducerApplicationStatus.PENDING -> {
+                    // Ek durum bilgisi yok.
+                }
+
+                ProducerApplicationStatus.APPROVED -> {
+                    AdminApplicationInformation(
+                        title = "Onay tarihi",
+                        value =
+                            formatAdminApplicationDate(
+                                application.approvedAt
+                            )
+                    )
+
+                    AdminApplicationInformation(
+                        title =
+                            "Onaylayan Admin ID",
+
+                        value =
+                            application
+                                .approvedByAdminId
+                                ?.toString()
+                                ?: "-"
+                    )
+                }
+
+                ProducerApplicationStatus.REJECTED -> {
+                    AdminApplicationInformation(
+                        title = "Red tarihi",
+                        value =
+                            formatAdminApplicationDate(
+                                application.rejectedAt
+                            )
+                    )
+
+                    AdminApplicationInformation(
+                        title =
+                            "Reddeden Admin ID",
+
+                        value =
+                            application
+                                .rejectedByAdminId
+                                ?.toString()
+                                ?: "-"
+                    )
+                }
+            }
 
             Spacer(
                 modifier = Modifier.height(12.dp)
@@ -425,7 +637,9 @@ private fun AdminApplicationCard(
 
             Text(
                 text = "İşletme Açıklaması",
-                style = MaterialTheme.typography.titleMedium
+                style =
+                    MaterialTheme.typography
+                        .titleMedium
             )
 
             Spacer(
@@ -433,8 +647,15 @@ private fun AdminApplicationCard(
             )
 
             Text(
-                text = application.description,
-                style = MaterialTheme.typography.bodyMedium
+                text =
+                    application.description
+                        .ifBlank {
+                            "-"
+                        },
+
+                style =
+                    MaterialTheme.typography
+                        .bodyMedium
             )
 
             Spacer(
@@ -443,7 +664,9 @@ private fun AdminApplicationCard(
 
             Text(
                 text = "İşletme Adresi",
-                style = MaterialTheme.typography.titleMedium
+                style =
+                    MaterialTheme.typography
+                        .titleMedium
             )
 
             Spacer(
@@ -451,51 +674,123 @@ private fun AdminApplicationCard(
             )
 
             Text(
-                text = application.address,
-                style = MaterialTheme.typography.bodyMedium
+                text =
+                    application.address
+                        .ifBlank {
+                            "-"
+                        },
+
+                style =
+                    MaterialTheme.typography
+                        .bodyMedium
             )
 
             Spacer(
-                modifier = Modifier.height(18.dp)
+                modifier = Modifier.height(12.dp)
             )
 
-            if (isUpdating) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp),
+            AdminApplicationInformation(
+                title = "Konum",
+                value =
+                    "${application.latitude}, " +
+                            application.longitude
+            )
 
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            } else {
-                Button(
-                    onClick = onApproveClick,
-
-                    enabled =
-                        !isAnyApplicationUpdating,
-
-                    modifier =
-                        Modifier.fillMaxWidth()
-                ) {
-                    Text("Onayla")
-                }
-
+            if (
+                selectedStatus ==
+                ProducerApplicationStatus.REJECTED
+            ) {
                 Spacer(
-                    modifier = Modifier.height(8.dp)
+                    modifier = Modifier.height(12.dp)
                 )
 
-                OutlinedButton(
-                    onClick = onRejectClick,
+                HorizontalDivider()
 
-                    enabled =
-                        !isAnyApplicationUpdating,
+                Spacer(
+                    modifier = Modifier.height(12.dp)
+                )
 
-                    modifier =
-                        Modifier.fillMaxWidth()
-                ) {
-                    Text("Reddet")
+                Text(
+                    text = "Red Nedeni",
+                    style =
+                        MaterialTheme.typography
+                            .titleMedium,
+
+                    color =
+                        MaterialTheme.colorScheme
+                            .error
+                )
+
+                Spacer(
+                    modifier = Modifier.height(5.dp)
+                )
+
+                Text(
+                    text =
+                        application
+                            .rejectionReason
+                            ?.takeIf {
+                                it.isNotBlank()
+                            }
+                            ?: "Red nedeni bulunmuyor.",
+
+                    style =
+                        MaterialTheme.typography
+                            .bodyMedium
+                )
+            }
+
+            if (
+                selectedStatus ==
+                ProducerApplicationStatus.PENDING
+            ) {
+                Spacer(
+                    modifier = Modifier.height(18.dp)
+                )
+
+                if (isUpdating) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(8.dp),
+
+                        contentAlignment =
+                            Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                } else {
+                    Button(
+                        onClick =
+                            onApproveClick,
+
+                        enabled =
+                            !isAnyApplicationUpdating,
+
+                        modifier =
+                            Modifier.fillMaxWidth()
+                    ) {
+                        Text("Onayla")
+                    }
+
+                    Spacer(
+                        modifier =
+                            Modifier.height(8.dp)
+                    )
+
+                    OutlinedButton(
+                        onClick =
+                            onRejectClick,
+
+                        enabled =
+                            !isAnyApplicationUpdating,
+
+                        modifier =
+                            Modifier.fillMaxWidth()
+                    ) {
+                        Text("Reddet")
+                    }
                 }
             }
         }
@@ -508,48 +803,203 @@ private fun AdminApplicationInformation(
     value: String
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp)
     ) {
         Text(
             text = title,
-            style = MaterialTheme.typography.bodySmall
+            style =
+                MaterialTheme.typography
+                    .bodySmall
         )
 
         Text(
             text = value,
-            style = MaterialTheme.typography.titleSmall
+            style =
+                MaterialTheme.typography
+                    .titleSmall
         )
+    }
+}
+
+@Composable
+private fun RejectApplicationDialog(
+    application:
+    AdminProducerApplicationResponse,
+
+    rejectReason: String,
+    isUpdating: Boolean,
+    onReasonChange: (String) -> Unit,
+    onConfirmClick: () -> Unit,
+    onDismissClick: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = {
+            if (!isUpdating) {
+                onDismissClick()
+            }
+        },
+
+        title = {
+            Text("Başvuruyu Reddet")
+        },
+
+        text = {
+            Column {
+                Text(
+                    text =
+                        "${application.businessName} " +
+                                "başvurusunu reddetme nedeninizi yazın."
+                )
+
+                Spacer(
+                    modifier = Modifier.height(12.dp)
+                )
+
+                OutlinedTextField(
+                    value = rejectReason,
+
+                    onValueChange =
+                        onReasonChange,
+
+                    label = {
+                        Text("Red nedeni")
+                    },
+
+                    supportingText = {
+                        Text(
+                            "${rejectReason.length}/500 karakter"
+                        )
+                    },
+
+                    minLines = 3,
+
+                    modifier =
+                        Modifier.fillMaxWidth(),
+
+                    enabled = !isUpdating
+                )
+
+                if (
+                    rejectReason.isNotBlank() &&
+                    rejectReason.trim().length < 10
+                ) {
+                    Spacer(
+                        modifier =
+                            Modifier.height(6.dp)
+                    )
+
+                    Text(
+                        text =
+                            "Red nedeni en az 10 karakter olmalıdır.",
+
+                        color =
+                            MaterialTheme.colorScheme
+                                .error,
+
+                        style =
+                            MaterialTheme.typography
+                                .bodySmall
+                    )
+                }
+            }
+        },
+
+        confirmButton = {
+            Button(
+                onClick =
+                    onConfirmClick,
+
+                enabled =
+                    rejectReason.trim()
+                        .length in 10..500 &&
+                            !isUpdating
+            ) {
+                Text("Başvuruyu Reddet")
+            }
+        },
+
+        dismissButton = {
+            TextButton(
+                onClick =
+                    onDismissClick,
+
+                enabled =
+                    !isUpdating
+            ) {
+                Text("Vazgeç")
+            }
+        }
+    )
+}
+
+private fun applicationScreenDescription(
+    status: ProducerApplicationStatus
+): String {
+    return when (status) {
+        ProducerApplicationStatus.PENDING ->
+            "Bekleyen başvuruları inceleyebilir, onaylayabilir veya reddedebilirsiniz."
+
+        ProducerApplicationStatus.APPROVED ->
+            "Onaylanmış üretici başvurularını ve hesap bilgilerini görüntüleyebilirsiniz."
+
+        ProducerApplicationStatus.REJECTED ->
+            "Reddedilmiş başvuruları ve red nedenlerini görüntüleyebilirsiniz."
     }
 }
 
 private fun translateApplicationStatus(
     status: String
 ): String {
-    return when {
-        status.equals(
-            "Pending",
-            ignoreCase = true
-        ) -> "Onay Bekliyor"
+    return when (
+        ProducerApplicationStatus
+            .fromBackendValue(status)
+    ) {
+        ProducerApplicationStatus.PENDING ->
+            "Onay Bekliyor"
 
-        status.equals(
-            "Approved",
-            ignoreCase = true
-        ) -> "Onaylandı"
+        ProducerApplicationStatus.APPROVED ->
+            "Onaylandı"
 
-        status.equals(
-            "Rejected",
-            ignoreCase = true
-        ) -> "Reddedildi"
+        ProducerApplicationStatus.REJECTED ->
+            "Reddedildi"
 
-        else -> status
+        null ->
+            status.ifBlank {
+                "Bilinmeyen Durum"
+            }
     }
 }
 
+@Composable
+private fun applicationStatusColor(
+    status: String
+) = when (
+    ProducerApplicationStatus
+        .fromBackendValue(status)
+) {
+    ProducerApplicationStatus.PENDING ->
+        MaterialTheme.colorScheme.tertiary
+
+    ProducerApplicationStatus.APPROVED ->
+        MaterialTheme.colorScheme.primary
+
+    ProducerApplicationStatus.REJECTED ->
+        MaterialTheme.colorScheme.error
+
+    null ->
+        MaterialTheme.colorScheme.onSurface
+}
+
 private fun formatAdminApplicationDate(
-    value: String
+    value: String?
 ): String {
+    if (value.isNullOrBlank()) {
+        return "-"
+    }
+
     val formatter =
         DateTimeFormatter.ofPattern(
             "dd.MM.yyyy HH:mm",

@@ -1,7 +1,7 @@
 package com.homemadefood.app.data.repository
 
+import com.homemadefood.app.data.model.AdminProducerApplicationResponse
 import com.homemadefood.app.data.model.ApiResponse
-import com.homemadefood.app.data.model.PendingProducerResponse
 import com.homemadefood.app.data.model.RecommendationPerformanceResponse
 import com.homemadefood.app.data.model.RejectProducerApplicationRequest
 import com.homemadefood.app.data.remote.AdminApiService
@@ -15,15 +15,17 @@ class AdminRepository(
 ) {
 
     suspend fun getProducerApplications(
-        token: String
+        token: String,
+        status: String = "Pending"
     ): Response<
             ApiResponse<
-                    List<PendingProducerResponse>
+                    List<AdminProducerApplicationResponse>
                     >
             > {
         return adminApiService
             .getProducerApplications(
-                authorization = "Bearer $token"
+                authorization = "Bearer $token",
+                status = status
             )
     }
 
@@ -31,10 +33,10 @@ class AdminRepository(
         token: String,
         producerProfileId: Int
     ): Response<ApiResponse<Any?>> {
-
         return adminApiService
             .approveProducerApplication(
                 authorization = "Bearer $token",
+
                 producerProfileId =
                     producerProfileId
             )
@@ -45,7 +47,6 @@ class AdminRepository(
         producerProfileId: Int,
         reason: String
     ): Response<ApiResponse<Any?>> {
-
         return adminApiService
             .rejectProducerApplication(
                 authorization = "Bearer $token",

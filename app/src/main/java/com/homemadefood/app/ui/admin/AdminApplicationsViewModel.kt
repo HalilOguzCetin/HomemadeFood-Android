@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.homemadefood.app.data.local.SessionManager
 import com.homemadefood.app.data.model.ApiResponse
+import com.homemadefood.app.data.model.ProducerApplicationStatus
 import com.homemadefood.app.data.repository.AdminRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,11 +17,15 @@ import retrofit2.Response
 import java.io.IOException
 
 class AdminApplicationsViewModel(
-    private val adminRepository: AdminRepository,
-    private val sessionManager: SessionManager
+    private val adminRepository:
+    AdminRepository,
+
+    private val sessionManager:
+    SessionManager
 ) : ViewModel() {
 
     private var loadApplicationsJob: Job? = null
+    private var updateApplicationJob: Job? = null
 
     private val _uiState =
         MutableStateFlow(
@@ -31,7 +36,11 @@ class AdminApplicationsViewModel(
             StateFlow<AdminApplicationsUiState> =
         _uiState.asStateFlow()
 
-    fun loadApplications() {
+    fun loadApplications(
+        status:
+        ProducerApplicationStatus =
+            _uiState.value.selectedStatus
+    ) {
         loadApplicationsJob?.cancel()
 
         loadApplicationsJob =
@@ -39,6 +48,8 @@ class AdminApplicationsViewModel(
                 _uiState.value =
                     _uiState.value.copy(
                         isLoading = true,
+                        selectedStatus = status,
+                        applications = emptyList(),
                         successMessage = null,
                         errorMessage = null
                     )
@@ -47,12 +58,9 @@ class AdminApplicationsViewModel(
                     sessionManager.token.first()
 
                 if (token.isNullOrBlank()) {
-                    _uiState.value =
-                        AdminApplicationsUiState(
-                            isLoading = false,
-                            errorMessage =
-                                "Oturum bilgisi bulunamadı."
-                        )
+                    showLoadError(
+                        "Oturum bilgisi bulunamadı."
+                    )
 
                     return@launch
                 }
@@ -61,7 +69,10 @@ class AdminApplicationsViewModel(
                     val response =
                         adminRepository
                             .getProducerApplications(
-                                token = token
+                                token = token,
+
+                                status =
+                                    status.backendValue
                             )
 
                     val responseBody =
@@ -69,52 +80,75 @@ class AdminApplicationsViewModel(
 
                     if (
                         response.isSuccessful &&
-                        responseBody?.success == true &&
-                        responseBody.data != null
+                        responseBody?.success == true
                     ) {
-                        _uiState.value =
-                            AdminApplicationsUiState(
-                                isLoading = false,
+                        val applications =
+                            responseBody.data
+                                .orEmpty()
+                                .sortedByDescending {
+                                        application ->
 
+                                    application
+                                        .producerProfileId
+                                }
+
+                        _uiState.value =
+                            _uiState.value.copy(
+                                isLoading = false,
                                 applications =
-                                    responseBody.data
-                                        .sortedByDescending {
-                                            it.producerProfileId
-                                        }
+                                    applications,
+                                errorMessage = null
                             )
                     } else {
-                        _uiState.value =
-                            AdminApplicationsUiState(
-                                isLoading = false,
-
-                                errorMessage =
-                                    parseErrorMessage(
-                                        response.errorBody()
-                                            ?.string()
-                                    ) ?: "Üretici başvuruları alınamadı."
-                            )
+                        showLoadError(
+                            parseErrorMessage(
+                                response.errorBody()
+                                    ?.string()
+                            ) ?: "Üretici başvuruları alınamadı."
+                        )
                     }
                 } catch (_: IOException) {
-                    _uiState.value =
-                        AdminApplicationsUiState(
-                            isLoading = false,
-                            errorMessage =
-                                "Sunucuya bağlanılamadı."
-                        )
+                    showLoadError(
+                        "Sunucuya bağlanılamadı."
+                    )
                 } catch (_: Exception) {
-                    _uiState.value =
-                        AdminApplicationsUiState(
-                            isLoading = false,
-                            errorMessage =
-                                "Başvurular yüklenirken bir hata oluştu."
-                        )
+                    showLoadError(
+                        "Başvurular yüklenirken bir hata oluştu."
+                    )
                 }
             }
+    }
+
+    fun selectStatus(
+        status: ProducerApplicationStatus
+    ) {
+        if (
+            _uiState.value.isLoading ||
+            _uiState.value
+                .updatingApplicationId != null
+        ) {
+            return
+        }
+
+        if (
+            _uiState.value.selectedStatus ==
+            status
+        ) {
+            return
+        }
+
+        loadApplications(
+            status = status
+        )
     }
 
     fun approveApplication(
         producerProfileId: Int
     ) {
+        if (!canProcessPendingApplication()) {
+            return
+        }
+
         updateApplication(
             producerProfileId =
                 producerProfileId,
@@ -137,20 +171,19 @@ class AdminApplicationsViewModel(
         producerProfileId: Int,
         reason: String
     ) {
+        if (!canProcessPendingApplication()) {
+            return
+        }
+
         val trimmedReason =
             reason.trim()
 
         if (
-            trimmedReason.length < 10 ||
-            trimmedReason.length > 500
+            trimmedReason.length !in 10..500
         ) {
-            _uiState.value =
-                _uiState.value.copy(
-                    errorMessage =
-                        "Red nedeni 10 ile 500 karakter arasında olmalıdır.",
-
-                    successMessage = null
-                )
+            showActionError(
+                "Red nedeni 10 ile 500 karakter arasında olmalıdır."
+            )
 
             return
         }
@@ -176,6 +209,30 @@ class AdminApplicationsViewModel(
         }
     }
 
+    private fun canProcessPendingApplication():
+            Boolean {
+
+        if (
+            _uiState.value.selectedStatus !=
+            ProducerApplicationStatus.PENDING
+        ) {
+            showActionError(
+                "Yalnızca bekleyen başvurular işleme alınabilir."
+            )
+
+            return false
+        }
+
+        if (
+            _uiState.value
+                .updatingApplicationId != null
+        ) {
+            return false
+        }
+
+        return true
+    }
+
     private fun updateApplication(
         producerProfileId: Int,
         successMessage: String,
@@ -186,94 +243,93 @@ class AdminApplicationsViewModel(
         ) -> Response<ApiResponse<Any?>>
     ) {
         if (
-            _uiState.value.updatingApplicationId != null
+            producerProfileId <= 0 ||
+            _uiState.value
+                .updatingApplicationId != null
         ) {
             return
         }
 
-        viewModelScope.launch {
-            _uiState.value =
-                _uiState.value.copy(
-                    updatingApplicationId =
-                        producerProfileId,
+        updateApplicationJob?.cancel()
 
-                    successMessage = null,
-                    errorMessage = null
-                )
-
-            val token =
-                sessionManager.token.first()
-
-            if (token.isNullOrBlank()) {
+        updateApplicationJob =
+            viewModelScope.launch {
                 _uiState.value =
                     _uiState.value.copy(
-                        updatingApplicationId = null,
+                        updatingApplicationId =
+                            producerProfileId,
 
-                        errorMessage =
-                            "Oturum bilgisi bulunamadı."
+                        successMessage = null,
+                        errorMessage = null
                     )
 
-                return@launch
-            }
+                val token =
+                    sessionManager.token.first()
 
-            try {
-                val response =
-                    request(token)
+                if (token.isNullOrBlank()) {
+                    showUpdateError(
+                        "Oturum bilgisi bulunamadı."
+                    )
 
-                val responseBody =
-                    response.body()
-
-                if (
-                    response.isSuccessful &&
-                    responseBody?.success == true
-                ) {
-                    _uiState.value =
-                        _uiState.value.copy(
-                            applications =
-                                _uiState.value
-                                    .applications
-                                    .filterNot {
-                                        it.producerProfileId ==
-                                                producerProfileId
-                                    },
-
-                            updatingApplicationId = null,
-
-                            successMessage =
-                                successMessage,
-
-                            errorMessage = null
-                        )
-                } else {
-                    _uiState.value =
-                        _uiState.value.copy(
-                            updatingApplicationId = null,
-
-                            errorMessage =
-                                parseErrorMessage(
-                                    response.errorBody()
-                                        ?.string()
-                                ) ?: "Başvuru işlemi gerçekleştirilemedi."
-                        )
+                    return@launch
                 }
-            } catch (_: IOException) {
-                _uiState.value =
-                    _uiState.value.copy(
-                        updatingApplicationId = null,
 
-                        errorMessage =
-                            "Sunucuya bağlanılamadı."
-                    )
-            } catch (_: Exception) {
-                _uiState.value =
-                    _uiState.value.copy(
-                        updatingApplicationId = null,
+                try {
+                    val response =
+                        request(token)
 
-                        errorMessage =
-                            "Başvuru işlemi sırasında bir hata oluştu."
+                    val responseBody =
+                        response.body()
+
+                    if (
+                        response.isSuccessful &&
+                        responseBody?.success == true
+                    ) {
+                        val updatedApplications =
+                            _uiState.value
+                                .applications
+                                .filterNot {
+                                        application ->
+
+                                    application
+                                        .producerProfileId ==
+                                            producerProfileId
+                                }
+
+                        _uiState.value =
+                            _uiState.value.copy(
+                                applications =
+                                    updatedApplications,
+
+                                updatingApplicationId =
+                                    null,
+
+                                successMessage =
+                                    responseBody.message
+                                        .ifBlank {
+                                            successMessage
+                                        },
+
+                                errorMessage = null
+                            )
+                    } else {
+                        showUpdateError(
+                            parseErrorMessage(
+                                response.errorBody()
+                                    ?.string()
+                            ) ?: "Başvuru işlemi gerçekleştirilemedi."
+                        )
+                    }
+                } catch (_: IOException) {
+                    showUpdateError(
+                        "Sunucuya bağlanılamadı."
                     )
+                } catch (_: Exception) {
+                    showUpdateError(
+                        "Başvuru işlemi sırasında bir hata oluştu."
+                    )
+                }
             }
-        }
     }
 
     fun clearMessage() {
@@ -281,6 +337,39 @@ class AdminApplicationsViewModel(
             _uiState.value.copy(
                 successMessage = null,
                 errorMessage = null
+            )
+    }
+
+    private fun showLoadError(
+        message: String
+    ) {
+        _uiState.value =
+            _uiState.value.copy(
+                isLoading = false,
+                applications = emptyList(),
+                errorMessage = message,
+                successMessage = null
+            )
+    }
+
+    private fun showActionError(
+        message: String
+    ) {
+        _uiState.value =
+            _uiState.value.copy(
+                errorMessage = message,
+                successMessage = null
+            )
+    }
+
+    private fun showUpdateError(
+        message: String
+    ) {
+        _uiState.value =
+            _uiState.value.copy(
+                updatingApplicationId = null,
+                errorMessage = message,
+                successMessage = null
             )
     }
 
@@ -294,8 +383,8 @@ class AdminApplicationsViewModel(
         return runCatching {
             JSONObject(errorJson)
                 .optString("message")
-                .takeIf {
-                    it.isNotBlank()
+                .takeIf { message ->
+                    message.isNotBlank()
                 }
         }.getOrNull()
     }

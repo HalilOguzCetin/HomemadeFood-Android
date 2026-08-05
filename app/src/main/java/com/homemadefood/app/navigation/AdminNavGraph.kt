@@ -114,6 +114,10 @@ private fun NavGraphBuilder.adminApplicationsDestination(
                 adminApplicationsViewModel
                     .loadApplications()
             },
+            onStatusSelected = { status ->
+                adminApplicationsViewModel
+                    .selectStatus(status)
+            },
 
             onApproveClick = {
                     producerProfileId ->
