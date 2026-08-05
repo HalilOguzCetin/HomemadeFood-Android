@@ -9,6 +9,8 @@ import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
+import com.homemadefood.app.data.model.UpdateProducerProfileRequest
+import retrofit2.http.PUT
 
 interface ProducerApiService {
 
@@ -29,6 +31,28 @@ interface ProducerApiService {
     suspend fun getMyApplication(
         @Header("Authorization")
         authorization: String
+    ): Response<
+            ApiResponse<
+                    ProducerApplicationStatusResponse
+                    >
+            >
+    @GET("api/Producer/my-profile")
+    suspend fun getMyProfile(
+        @Header("Authorization")
+        authorization: String
+    ): Response<
+            ApiResponse<
+                    ProducerApplicationStatusResponse
+                    >
+            >
+
+    @PUT("api/Producer/my-profile")
+    suspend fun updateMyProfile(
+        @Header("Authorization")
+        authorization: String,
+
+        @Body
+        request: UpdateProducerProfileRequest
     ): Response<
             ApiResponse<
                     ProducerApplicationStatusResponse

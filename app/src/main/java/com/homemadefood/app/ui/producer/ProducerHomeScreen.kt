@@ -21,11 +21,11 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun ProducerHomeScreen(
     onApplicationStatusClick: () -> Unit,
+    onProfileClick: () -> Unit,
     onFoodsClick: () -> Unit,
     onOrdersClick: () -> Unit,
     onReviewsClick: () -> Unit,
     onLogoutClick: () -> Unit,
-
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -62,6 +62,13 @@ fun ProducerHomeScreen(
                 "Başvuru ve onay durumunuzu görüntüleyin.",
             buttonText = "Başvuru Durumunu Gör",
             onClick = onApplicationStatusClick
+        )
+        ProducerMenuCard(
+            title = "İşletme Profilim",
+            description =
+                "İşletme bilgilerinizi, günlük kapasitenizi ve sipariş alma durumunuzu yönetin.",
+            buttonText = "Profili Görüntüle",
+            onClick = onProfileClick
         )
 
         ProducerMenuCard(

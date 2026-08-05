@@ -32,7 +32,9 @@ import com.homemadefood.app.ui.producer.ProducerOrdersViewModelFactory
 import com.homemadefood.app.ui.producer.ProducerReviewsScreen
 import com.homemadefood.app.ui.producer.ProducerReviewsViewModel
 import com.homemadefood.app.ui.producer.ProducerReviewsViewModelFactory
-
+import com.homemadefood.app.ui.producer.ProducerProfileScreen
+import com.homemadefood.app.ui.producer.ProducerProfileViewModel
+import com.homemadefood.app.ui.producer.ProducerProfileViewModelFactory
 fun NavGraphBuilder.producerNavGraph(
     navController: NavHostController,
     context: Context,
@@ -49,6 +51,10 @@ fun NavGraphBuilder.producerNavGraph(
         )
 
         producerApplicationDestination(
+            navController = navController,
+            context = context
+        )
+        producerProfileDestination(
             navController = navController,
             context = context
         )
@@ -90,6 +96,13 @@ private fun NavGraphBuilder.producerHomeDestination(
                 navController.navigate(
                     AppDestination
                         .ProducerApplication
+                        .route
+                )
+            },
+            onProfileClick = {
+                navController.navigate(
+                    AppDestination
+                        .ProducerProfile
                         .route
                 )
             },
@@ -528,6 +541,108 @@ private fun NavGraphBuilder.producerReviewsDestination(
             onRetryClick = {
                 producerReviewsViewModel
                     .loadReviews()
+            },
+
+            modifier =
+                Modifier.fillMaxSize()
+        )
+    }
+}
+private fun NavGraphBuilder.producerProfileDestination(
+    navController: NavHostController,
+    context: Context
+) {
+    composable(
+        route =
+            AppDestination
+                .ProducerProfile
+                .route
+    ) {
+        val producerProfileViewModel:
+                ProducerProfileViewModel =
+            viewModel(
+                factory =
+                    ProducerProfileViewModelFactory(
+                        context = context
+                    )
+            )
+
+        val producerProfileUiState by
+        producerProfileViewModel
+            .uiState
+            .collectAsStateWithLifecycle()
+
+        LaunchedEffect(Unit) {
+            producerProfileViewModel
+                .loadProfile()
+        }
+
+        ProducerProfileScreen(
+            uiState =
+                producerProfileUiState,
+
+            onBackClick = {
+                navController.popBackStack()
+            },
+
+            onRetryClick = {
+                producerProfileViewModel
+                    .loadProfile()
+            },
+
+            onStartEditingClick = {
+                producerProfileViewModel
+                    .startEditing()
+            },
+
+            onCancelEditingClick = {
+                producerProfileViewModel
+                    .cancelEditing()
+            },
+
+            onBusinessNameChange = { value ->
+                producerProfileViewModel
+                    .updateBusinessName(value)
+            },
+
+            onDescriptionChange = { value ->
+                producerProfileViewModel
+                    .updateDescription(value)
+            },
+
+            onAddressChange = { value ->
+                producerProfileViewModel
+                    .updateAddress(value)
+            },
+
+            onLatitudeChange = { value ->
+                producerProfileViewModel
+                    .updateLatitudeText(value)
+            },
+
+            onLongitudeChange = { value ->
+                producerProfileViewModel
+                    .updateLongitudeText(value)
+            },
+
+            onDailyCapacityChange = { value ->
+                producerProfileViewModel
+                    .updateDailyCapacityText(value)
+            },
+
+            onAvailabilityChange = { value ->
+                producerProfileViewModel
+                    .updateAvailability(value)
+            },
+
+            onSaveClick = {
+                producerProfileViewModel
+                    .saveProfile()
+            },
+
+            onMessageShown = {
+                producerProfileViewModel
+                    .clearMessages()
             },
 
             modifier =
