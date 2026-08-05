@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun AdminHomeScreen(
     onProducerApplicationsClick: () -> Unit,
+    onUsersClick: () -> Unit,
     onRecommendationAnalyticsClick: () -> Unit,
     onLogoutClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -39,13 +40,17 @@ fun AdminHomeScreen(
         Text(
             text = "Admin Paneli",
             style =
-                MaterialTheme.typography.headlineMedium
+                MaterialTheme.typography
+                    .headlineMedium
         )
 
         Text(
-            text = "Üretici başvurularını ve sistem analizlerini buradan yönetebilirsiniz.",
+            text =
+                "Üretici başvurularını, kullanıcı hesaplarını ve sistem analizlerini buradan yönetebilirsiniz.",
+
             style =
-                MaterialTheme.typography.bodyLarge
+                MaterialTheme.typography
+                    .bodyLarge
         )
 
         Spacer(
@@ -55,7 +60,8 @@ fun AdminHomeScreen(
         AdminMenuCard(
             title = "Üretici Başvuruları",
 
-            description = "Bekleyen üretici başvurularını inceleyin, onaylayın veya gerekçesiyle reddedin.",
+            description =
+                "Bekleyen, onaylanan ve reddedilen üretici başvurularını inceleyin.",
 
             buttonText = "Başvuruları Gör",
 
@@ -64,9 +70,22 @@ fun AdminHomeScreen(
         )
 
         AdminMenuCard(
+            title = "Kullanıcı Yönetimi",
+
+            description =
+                "Customer, Producer ve Admin hesaplarını görüntüleyin, arayın ve filtreleyin.",
+
+            buttonText = "Kullanıcıları Gör",
+
+            onClick =
+                onUsersClick
+        )
+
+        AdminMenuCard(
             title = "Öneri Sistemi Analizi",
 
-            description = "Akıllı üretici seçimi ve sipariş yönlendirme sonuçlarını inceleyin.",
+            description =
+                "Akıllı üretici seçimi ve sipariş yönlendirme sonuçlarını inceleyin.",
 
             buttonText = "Analizleri Gör",
 
@@ -80,7 +99,8 @@ fun AdminHomeScreen(
 
         TextButton(
             onClick = onLogoutClick,
-            modifier = Modifier.fillMaxWidth()
+            modifier =
+                Modifier.fillMaxWidth()
         ) {
             Text("Çıkış Yap")
         }
@@ -95,34 +115,41 @@ private fun AdminMenuCard(
     onClick: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth()
+        modifier =
+            Modifier.fillMaxWidth()
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier =
+                Modifier.padding(16.dp)
         ) {
             Text(
                 text = title,
                 style =
-                    MaterialTheme.typography.titleLarge
+                    MaterialTheme.typography
+                        .titleLarge
             )
 
             Spacer(
-                modifier = Modifier.height(6.dp)
+                modifier =
+                    Modifier.height(6.dp)
             )
 
             Text(
                 text = description,
                 style =
-                    MaterialTheme.typography.bodyMedium
+                    MaterialTheme.typography
+                        .bodyMedium
             )
 
             Spacer(
-                modifier = Modifier.height(14.dp)
+                modifier =
+                    Modifier.height(14.dp)
             )
 
             Button(
                 onClick = onClick,
-                modifier = Modifier.fillMaxWidth()
+                modifier =
+                    Modifier.fillMaxWidth()
             ) {
                 Text(buttonText)
             }

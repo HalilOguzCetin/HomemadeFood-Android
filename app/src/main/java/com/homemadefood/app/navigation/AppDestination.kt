@@ -186,6 +186,25 @@ sealed class AppDestination(
         AppDestination(
             route = "admin/applications"
         )
+    data object AdminUsers :
+        AppDestination(
+            route = "admin/users"
+        )
+
+    data object AdminUserDetail :
+        AppDestination(
+            route = "admin/users/{userId}"
+        ) {
+
+        const val USER_ID_ARGUMENT =
+            "userId"
+
+        fun createRoute(
+            userId: Int
+        ): String {
+            return "admin/users/$userId"
+        }
+    }
 
     data object RecommendationAnalytics :
         AppDestination(
