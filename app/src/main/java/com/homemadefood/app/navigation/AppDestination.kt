@@ -120,6 +120,10 @@ sealed class AppDestination(
         AppDestination(
             route = "customer/producer-application"
         )
+    data object CustomerReviews :
+        AppDestination(
+            route = "customer/reviews"
+        )
 
     data object ProducerHome :
         AppDestination(

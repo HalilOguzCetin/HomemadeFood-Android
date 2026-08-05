@@ -49,7 +49,9 @@ import com.homemadefood.app.ui.recommendation.RecommendationViewModelFactory
 import com.homemadefood.app.ui.customer.CustomerProducerApplicationScreen
 import com.homemadefood.app.ui.customer.CustomerProducerApplicationViewModel
 import com.homemadefood.app.ui.customer.CustomerProducerApplicationViewModelFactory
-
+import com.homemadefood.app.ui.customer.CustomerReviewsScreen
+import com.homemadefood.app.ui.customer.CustomerReviewsViewModel
+import com.homemadefood.app.ui.customer.CustomerReviewsViewModelFactory
 fun NavGraphBuilder.customerNavGraph(
     navController: NavHostController,
     context: Context,
@@ -112,6 +114,10 @@ fun NavGraphBuilder.customerNavGraph(
             context = context
         )
         customerProducerApplicationDestination(
+            navController = navController,
+            context = context
+        )
+        customerReviewsDestination(
             navController = navController,
             context = context
         )
@@ -212,6 +218,11 @@ private fun NavGraphBuilder.customerHomeDestination(
                     AppDestination
                         .CustomerProducerApplication
                         .route
+                )
+            },
+            onReviewsClick = {
+                navController.navigate(
+                    AppDestination.CustomerReviews.route
                 )
             },
 
@@ -1040,6 +1051,73 @@ private fun NavGraphBuilder
             },
 
             modifier = Modifier.fillMaxSize()
+        )
+    }
+}
+private fun NavGraphBuilder.customerReviewsDestination(
+    navController: NavHostController,
+    context: Context
+) {
+    composable(
+        route =
+            AppDestination
+                .CustomerReviews
+                .route
+    ) {
+        val customerReviewsViewModel:
+                CustomerReviewsViewModel =
+            viewModel(
+                factory =
+                    CustomerReviewsViewModelFactory(
+                        context = context
+                    )
+            )
+
+        val customerReviewsUiState by
+        customerReviewsViewModel
+            .uiState
+            .collectAsStateWithLifecycle()
+
+        LaunchedEffect(Unit) {
+            customerReviewsViewModel
+                .loadReviews()
+        }
+
+        CustomerReviewsScreen(
+            uiState =
+                customerReviewsUiState,
+
+            onBackClick = {
+                navController.popBackStack()
+            },
+
+            onRetryClick = {
+                customerReviewsViewModel
+                    .loadReviews()
+            },
+
+            onDeleteReviewClick = { review ->
+                customerReviewsViewModel
+                    .requestDeleteReview(review)
+            },
+
+            onDismissDeleteDialog = {
+                customerReviewsViewModel
+                    .dismissDeleteDialog()
+            },
+
+            onConfirmDeleteReview = {
+                customerReviewsViewModel
+                    .confirmDeleteReview()
+            },
+
+            onMessageShown = {
+                customerReviewsViewModel
+                    .clearMessages()
+            },
+
+            modifier =
+                Modifier.fillMaxSize()
         )
     }
 }

@@ -47,6 +47,7 @@ fun CustomerHomeScreen(
     onOrdersClick: () -> Unit,
     onRecommendationClick: () -> Unit,
     onProducerApplicationClick: () -> Unit,
+    onReviewsClick: () -> Unit,
     onLogoutClick: () -> Unit,
     onAddressesClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -414,8 +415,19 @@ fun CustomerHomeScreen(
         ) {
             Text("Üretici Ol")
         }
+        Spacer(
+            modifier = Modifier.height(12.dp)
+        )
+
+        Button(
+            onClick = onReviewsClick,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Değerlendirmelerim")
+        }
     }
 }
+
 
 @Composable
 private fun FoodCard(
