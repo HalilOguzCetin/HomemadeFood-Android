@@ -200,16 +200,58 @@ class AuthViewModel(
                                 savedActiveMode
                         )
                 } else {
-                    val errorMessage =
-                        parseErrorMessage(
-                            response.errorBody()
-                                ?.string()
-                        )
+                    val errorJson =
+                        response.errorBody()
+                            ?.string()
 
-                    showError(
-                        errorMessage
-                            ?: "Giriş işlemi başarısız oldu."
-                    )
+                    val errorMessage =
+                        when (response.code()) {
+
+                            /*
+                             * Kullanıcı bulunamadı, şifre yanlış,
+                             * hesap pasif veya hesap kilitli olsa
+                             * bile aynı mesaj gösterilir.
+                             */
+                            401 ->
+                                "E-posta veya şifre hatalı."
+
+                            /*
+                             * Backend IP tabanlı giriş sınırını
+                             * aştığında 429 döndürür.
+                             */
+                            429 -> {
+                                val retryAfterSeconds =
+                                    response.headers()[
+                                        "Retry-After"
+                                    ]?.toIntOrNull()
+
+                                if (
+                                    retryAfterSeconds != null &&
+                                    retryAfterSeconds > 0
+                                ) {
+                                    "Çok fazla giriş denemesi yapıldı. " +
+                                            "Yaklaşık $retryAfterSeconds saniye sonra tekrar deneyin."
+                                } else {
+                                    "Çok fazla giriş denemesi yapıldı. " +
+                                            "Lütfen kısa bir süre sonra tekrar deneyin."
+                                }
+                            }
+
+                            /*
+                             * E-posta biçimi gibi doğrulama
+                             * hatalarında backend mesajı alınabilir.
+                             */
+                            400 ->
+                                parseErrorMessage(
+                                    errorJson
+                                ) ?: "Gönderilen bilgiler doğrulanamadı."
+
+                            else ->
+                                "Giriş işlemi şu anda tamamlanamadı. " +
+                                        "Lütfen daha sonra tekrar deneyin."
+                        }
+
+                    showError(errorMessage)
                 }
             } catch (_: IOException) {
                 showError(
