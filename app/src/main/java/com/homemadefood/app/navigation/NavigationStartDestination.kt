@@ -1,10 +1,13 @@
 package com.homemadefood.app.navigation
 
+import com.homemadefood.app.data.model.AppMode
 import com.homemadefood.app.data.model.UserRole
 
 fun resolveStartDestination(
     isLoggedIn: Boolean,
-    backendRole: String?
+    backendRole: String?,
+    canUseProducerMode: Boolean,
+    activeMode: AppMode?
 ): String {
 
     if (!isLoggedIn) {
@@ -16,11 +19,16 @@ fun resolveStartDestination(
             backendRole
         )
     ) {
-        UserRole.CUSTOMER ->
-            AppGraph.CUSTOMER
-
-        UserRole.PRODUCER ->
-            AppGraph.PRODUCER
+        UserRole.CUSTOMER -> {
+            if (
+                canUseProducerMode &&
+                activeMode == AppMode.PRODUCER
+            ) {
+                AppGraph.PRODUCER
+            } else {
+                AppGraph.CUSTOMER
+            }
+        }
 
         UserRole.ADMIN ->
             AppGraph.ADMIN

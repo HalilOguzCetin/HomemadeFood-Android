@@ -3,6 +3,8 @@ package com.homemadefood.app.ui.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.homemadefood.app.data.local.SessionManager
+import com.homemadefood.app.data.model.AppMode
+import com.homemadefood.app.data.model.UserProfileResponse
 import com.homemadefood.app.data.repository.AuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -62,25 +64,35 @@ class AuthViewModel(
                     responseBody?.success == true &&
                     profile != null
                 ) {
+                    applyAuthenticatedProfile(
+                        profile = profile,
+                        message = "Oturumunuz açık."
+                    )
+                } else if (
+                    response.code() == 401 ||
+                    response.code() == 403
+                ) {
+                    /*
+                     * Token geçersizse, süresi dolmuşsa
+                     * veya kullanıcı pasif hâle geldiyse
+                     * bütün oturum bilgilerini temizle.
+                     */
+                    clearInvalidSession()
+                } else {
                     _uiState.value =
                         AuthUiState(
                             isSessionChecking = false,
-                            isLoggedIn = true,
                             message =
-                                "Oturumunuz açık.",
-                            isError = false,
-                            userRole =
-                                profile.role.trim()
-                        )
-                } else {
-                    sessionManager.clearSession()
-
-                    _uiState.value =
-                        AuthUiState(
-                            isSessionChecking = false
+                                "Oturum şu anda doğrulanamadı. Daha sonra tekrar deneyin.",
+                            isError = true
                         )
                 }
             } catch (_: IOException) {
+                /*
+                 * Sunucuya ulaşılamaması tokenın
+                 * geçersiz olduğu anlamına gelmez.
+                 * Bu yüzden burada tokenı silmiyoruz.
+                 */
                 _uiState.value =
                     AuthUiState(
                         isSessionChecking = false,
@@ -104,8 +116,21 @@ class AuthViewModel(
         email: String,
         password: String
     ) {
+        /*
+         * Kullanıcı giriş butonuna art arda
+         * bassa bile ikinci istek gönderilmez.
+         */
+        if (_uiState.value.isLoading) {
+            return
+        }
+
+        val normalizedEmail =
+            email
+                .trim()
+                .lowercase()
+
         if (
-            email.isBlank() ||
+            normalizedEmail.isBlank() ||
             password.isBlank()
         ) {
             showError(
@@ -124,7 +149,7 @@ class AuthViewModel(
             try {
                 val response =
                     authRepository.login(
-                        email = email,
+                        email = normalizedEmail,
                         password = password
                     )
 
@@ -143,15 +168,36 @@ class AuthViewModel(
                         loginData
                     )
 
+                    val savedActiveMode =
+                        sessionManager.activeMode.first()
+
                     _uiState.value =
                         AuthUiState(
                             isLoading = false,
                             isLoggedIn = true,
+
                             message =
                                 responseBody.message,
+
                             isError = false,
+
                             userRole =
-                                loginData.role.trim()
+                                loginData.role.trim(),
+
+                            canUseProducerMode =
+                                loginData
+                                    .canUseProducerMode,
+
+                            producerProfileId =
+                                loginData
+                                    .producerProfileId,
+
+                            producerVerificationStatus =
+                                loginData
+                                    .producerVerificationStatus,
+
+                            activeMode =
+                                savedActiveMode
                         )
                 } else {
                     val errorMessage =
@@ -183,6 +229,10 @@ class AuthViewModel(
         password: String,
         phone: String
     ) {
+        if (_uiState.value.isLoading) {
+            return
+        }
+
         if (
             fullName.isBlank() ||
             email.isBlank() ||
@@ -206,7 +256,10 @@ class AuthViewModel(
                 val response =
                     authRepository.register(
                         fullName = fullName,
-                        email = email,
+                        email =
+                            email
+                                .trim()
+                                .lowercase(),
                         password = password,
                         phone = phone
                     )
@@ -221,9 +274,13 @@ class AuthViewModel(
                     _uiState.value =
                         AuthUiState(
                             isLoading = false,
-                            registrationSuccessful = true,
+
+                            registrationSuccessful =
+                                true,
+
                             message =
                                 responseBody.message,
+
                             isError = false
                         )
                 } else {
@@ -247,6 +304,189 @@ class AuthViewModel(
                     "Kayıt sırasında beklenmeyen bir hata oluştu."
                 )
             }
+        }
+    }
+
+    /**
+     * Kullanıcı üretici başvurusu onaylandıktan
+     * sonra backend profilini tekrar getirir.
+     *
+     * Böylece uygulamadan çıkış yapıp yeniden
+     * giriş yapılmasına gerek kalmaz.
+     */
+    fun refreshProfile() {
+        if (_uiState.value.isLoading) {
+            return
+        }
+
+        viewModelScope.launch {
+            val savedToken =
+                sessionManager.token.first()
+
+            if (savedToken.isNullOrBlank()) {
+                clearInvalidSession()
+                return@launch
+            }
+
+            val previousState =
+                _uiState.value
+
+            _uiState.value =
+                previousState.copy(
+                    isLoading = true,
+                    message = null,
+                    isError = false
+                )
+
+            try {
+                val response =
+                    authRepository.getProfile(
+                        token = savedToken
+                    )
+
+                val responseBody =
+                    response.body()
+
+                val profile =
+                    responseBody?.data
+
+                if (
+                    response.isSuccessful &&
+                    responseBody?.success == true &&
+                    profile != null
+                ) {
+                    applyAuthenticatedProfile(
+                        profile = profile,
+                        message =
+                            "Hesap bilgileriniz güncellendi."
+                    )
+                } else if (
+                    response.code() == 401 ||
+                    response.code() == 403
+                ) {
+                    clearInvalidSession()
+                } else {
+                    _uiState.value =
+                        previousState.copy(
+                            isLoading = false,
+
+                            message =
+                                "Hesap bilgileri güncellenemedi.",
+
+                            isError = true
+                        )
+                }
+            } catch (_: IOException) {
+                _uiState.value =
+                    previousState.copy(
+                        isLoading = false,
+
+                        message =
+                            "Sunucuya bağlanılamadı.",
+
+                        isError = true
+                    )
+            } catch (_: Exception) {
+                _uiState.value =
+                    previousState.copy(
+                        isLoading = false,
+
+                        message =
+                            "Hesap bilgileri güncellenirken bir hata oluştu.",
+
+                        isError = true
+                    )
+            }
+        }
+    }
+
+    fun switchToCustomerMode() {
+        val currentState =
+            _uiState.value
+
+        if (
+            !currentState.isLoggedIn ||
+            !currentState.userRole.equals(
+                "Customer",
+                ignoreCase = true
+            )
+        ) {
+            showStateError(
+                "Bu hesap müşteri modunu kullanamaz."
+            )
+
+            return
+        }
+
+        viewModelScope.launch {
+            sessionManager.setActiveMode(
+                AppMode.CUSTOMER
+            )
+
+            _uiState.value =
+                _uiState.value.copy(
+                    activeMode =
+                        AppMode.CUSTOMER,
+
+                    message =
+                        "Müşteri moduna geçildi.",
+
+                    isError = false
+                )
+        }
+    }
+
+    fun switchToProducerMode() {
+        val currentState =
+            _uiState.value
+
+        if (
+            !currentState.isLoggedIn ||
+            !currentState.userRole.equals(
+                "Customer",
+                ignoreCase = true
+            ) ||
+            !currentState.canUseProducerMode
+        ) {
+            showStateError(
+                "Üretici modunu kullanma yetkiniz bulunmuyor."
+            )
+
+            return
+        }
+
+        viewModelScope.launch {
+            sessionManager.setActiveMode(
+                AppMode.PRODUCER
+            )
+
+            /*
+             * SessionManager ayrıca güvenlik
+             * kontrolü yaptığı için gerçek kaydedilen
+             * modu tekrar okuyoruz.
+             */
+            val savedMode =
+                sessionManager.activeMode.first()
+
+            _uiState.value =
+                _uiState.value.copy(
+                    activeMode =
+                        savedMode,
+
+                    message =
+                        if (
+                            savedMode ==
+                            AppMode.PRODUCER
+                        ) {
+                            "Üretici moduna geçildi."
+                        } else {
+                            "Üretici moduna geçilemedi."
+                        },
+
+                    isError =
+                        savedMode !=
+                                AppMode.PRODUCER
+                )
         }
     }
 
@@ -277,11 +517,72 @@ class AuthViewModel(
             )
     }
 
+    private suspend fun applyAuthenticatedProfile(
+        profile: UserProfileResponse,
+        message: String
+    ) {
+        sessionManager.updateProfile(
+            profile
+        )
+
+        val savedActiveMode =
+            sessionManager.activeMode.first()
+
+        _uiState.value =
+            AuthUiState(
+                isSessionChecking = false,
+                isLoading = false,
+                isLoggedIn = true,
+                message = message,
+                isError = false,
+
+                userRole =
+                    profile.role.trim(),
+
+                canUseProducerMode =
+                    profile.canUseProducerMode,
+
+                producerProfileId =
+                    profile.producerProfileId,
+
+                producerVerificationStatus =
+                    profile
+                        .producerVerificationStatus,
+
+                activeMode =
+                    savedActiveMode
+            )
+    }
+
+    private suspend fun clearInvalidSession() {
+        sessionManager.clearSession()
+
+        _uiState.value =
+            AuthUiState(
+                isSessionChecking = false,
+                message =
+                    "Oturumunuz sona erdi. Lütfen tekrar giriş yapın.",
+                isError = true
+            )
+    }
+
     private fun showError(
         message: String
     ) {
         _uiState.value =
             AuthUiState(
+                isSessionChecking = false,
+                isLoading = false,
+                message = message,
+                isError = true
+            )
+    }
+
+    private fun showStateError(
+        message: String
+    ) {
+        _uiState.value =
+            _uiState.value.copy(
                 isLoading = false,
                 message = message,
                 isError = true

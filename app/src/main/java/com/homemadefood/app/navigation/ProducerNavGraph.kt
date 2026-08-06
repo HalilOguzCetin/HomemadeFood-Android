@@ -35,11 +35,13 @@ import com.homemadefood.app.ui.producer.ProducerReviewsViewModelFactory
 import com.homemadefood.app.ui.producer.ProducerProfileScreen
 import com.homemadefood.app.ui.producer.ProducerProfileViewModel
 import com.homemadefood.app.ui.producer.ProducerProfileViewModelFactory
+import com.homemadefood.app.ui.auth.AuthViewModel
 fun NavGraphBuilder.producerNavGraph(
     navController: NavHostController,
     context: Context,
+    authViewModel: AuthViewModel,
     onLogoutClick: () -> Unit
-) {
+){
     navigation(
         route = AppGraph.PRODUCER,
         startDestination =
@@ -47,6 +49,7 @@ fun NavGraphBuilder.producerNavGraph(
     ) {
         producerHomeDestination(
             navController = navController,
+            authViewModel = authViewModel,
             onLogoutClick = onLogoutClick
         )
 
@@ -85,8 +88,9 @@ fun NavGraphBuilder.producerNavGraph(
 
 private fun NavGraphBuilder.producerHomeDestination(
     navController: NavHostController,
+    authViewModel: AuthViewModel,
     onLogoutClick: () -> Unit
-) {
+){
     composable(
         route =
             AppDestination.ProducerHome.route
@@ -98,6 +102,11 @@ private fun NavGraphBuilder.producerHomeDestination(
                         .ProducerApplication
                         .route
                 )
+            },
+
+            onCustomerModeClick = {
+                authViewModel
+                    .switchToCustomerMode()
             },
             onProfileClick = {
                 navController.navigate(

@@ -47,6 +47,9 @@ fun CustomerHomeScreen(
     onOrdersClick: () -> Unit,
     onRecommendationClick: () -> Unit,
     onProducerApplicationClick: () -> Unit,
+    canUseProducerMode: Boolean,
+    producerVerificationStatus: String?,
+    onProducerModeClick: () -> Unit,
     onReviewsClick: () -> Unit,
     onLogoutClick: () -> Unit,
     onAddressesClick: () -> Unit,
@@ -409,11 +412,40 @@ fun CustomerHomeScreen(
             modifier = Modifier.height(12.dp)
         )
 
+        val producerButtonText =
+            when {
+                canUseProducerMode ->
+                    "Üretici Paneline Geç"
+
+                producerVerificationStatus.equals(
+                    "Pending",
+                    ignoreCase = true
+                ) ->
+                    "Üretici Başvurum İnceleniyor"
+
+                producerVerificationStatus.equals(
+                    "Rejected",
+                    ignoreCase = true
+                ) ->
+                    "Üretici Başvurumu Güncelle"
+
+                else ->
+                    "Üretici Ol"
+            }
+
         Button(
-            onClick = onProducerApplicationClick,
-            modifier = Modifier.fillMaxWidth()
+            onClick = {
+                if (canUseProducerMode) {
+                    onProducerModeClick()
+                } else {
+                    onProducerApplicationClick()
+                }
+            },
+
+            modifier =
+                Modifier.fillMaxWidth()
         ) {
-            Text("Üretici Ol")
+            Text(producerButtonText)
         }
         Spacer(
             modifier = Modifier.height(12.dp)

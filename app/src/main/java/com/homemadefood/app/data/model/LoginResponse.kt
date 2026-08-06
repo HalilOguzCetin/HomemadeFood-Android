@@ -5,5 +5,12 @@ data class LoginResponse(
     val fullName: String,
     val email: String,
     val role: String,
+
+    val canUseProducerMode: Boolean = false,
+
+    val producerProfileId: Int? = null,
+
+    val producerVerificationStatus: String? = null,
+
     val token: String
 )

@@ -2,7 +2,6 @@ package com.homemadefood.app.data.model
 
 enum class UserRole {
     CUSTOMER,
-    PRODUCER,
     ADMIN,
     UNKNOWN;
 
@@ -19,11 +18,6 @@ enum class UserRole {
                     "Customer",
                     ignoreCase = true
                 ) -> CUSTOMER
-
-                normalizedValue.equals(
-                    "Producer",
-                    ignoreCase = true
-                ) -> PRODUCER
 
                 normalizedValue.equals(
                     "Admin",

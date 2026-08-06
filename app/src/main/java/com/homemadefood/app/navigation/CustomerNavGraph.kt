@@ -52,9 +52,12 @@ import com.homemadefood.app.ui.customer.CustomerProducerApplicationViewModelFact
 import com.homemadefood.app.ui.customer.CustomerReviewsScreen
 import com.homemadefood.app.ui.customer.CustomerReviewsViewModel
 import com.homemadefood.app.ui.customer.CustomerReviewsViewModelFactory
+import com.homemadefood.app.ui.auth.AuthViewModel
+
 fun NavGraphBuilder.customerNavGraph(
     navController: NavHostController,
     context: Context,
+    authViewModel: AuthViewModel,
     onLogoutClick: () -> Unit
 ) {
     navigation(
@@ -65,6 +68,7 @@ fun NavGraphBuilder.customerNavGraph(
 
         customerHomeDestination(
             navController = navController,
+            authViewModel = authViewModel,
             onLogoutClick = onLogoutClick
         )
 
@@ -115,7 +119,8 @@ fun NavGraphBuilder.customerNavGraph(
         )
         customerProducerApplicationDestination(
             navController = navController,
-            context = context
+            context = context,
+            authViewModel = authViewModel
         )
         customerReviewsDestination(
             navController = navController,
@@ -126,8 +131,9 @@ fun NavGraphBuilder.customerNavGraph(
 
 private fun NavGraphBuilder.customerHomeDestination(
     navController: NavHostController,
+    authViewModel: AuthViewModel,
     onLogoutClick: () -> Unit
-) {
+){
     composable(
         route = AppDestination.CustomerHome.route
     ) {
@@ -140,6 +146,9 @@ private fun NavGraphBuilder.customerHomeDestination(
 
         val customerHomeUiState by
         customerHomeViewModel.uiState
+            .collectAsStateWithLifecycle()
+        val authUiState by
+        authViewModel.uiState
             .collectAsStateWithLifecycle()
 
         CustomerHomeScreen(
@@ -220,11 +229,23 @@ private fun NavGraphBuilder.customerHomeDestination(
                         .route
                 )
             },
+            canUseProducerMode =
+                authUiState.canUseProducerMode,
+
+            producerVerificationStatus =
+                authUiState
+                    .producerVerificationStatus,
+
+            onProducerModeClick = {
+                authViewModel
+                    .switchToProducerMode()
+            },
             onReviewsClick = {
                 navController.navigate(
                     AppDestination.CustomerReviews.route
                 )
             },
+
 
             modifier = Modifier.fillMaxSize()
         )
@@ -966,7 +987,8 @@ private fun NavGraphBuilder.recommendationDestination(
 private fun NavGraphBuilder
         .customerProducerApplicationDestination(
     navController: NavHostController,
-    context: Context
+    context: Context,
+    authViewModel: AuthViewModel
 ) {
 
     composable(
@@ -991,6 +1013,25 @@ private fun NavGraphBuilder
         LaunchedEffect(Unit) {
             applicationViewModel
                 .loadApplication()
+        }
+        LaunchedEffect(
+            applicationUiState
+                .application
+                ?.verificationStatus
+        ) {
+            val verificationStatus =
+                applicationUiState
+                    .application
+                    ?.verificationStatus
+
+            if (
+                verificationStatus.equals(
+                    "Approved",
+                    ignoreCase = true
+                )
+            ) {
+                authViewModel.refreshProfile()
+            }
         }
 
         CustomerProducerApplicationScreen(

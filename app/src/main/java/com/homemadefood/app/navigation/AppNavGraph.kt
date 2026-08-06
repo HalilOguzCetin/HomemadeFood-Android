@@ -36,13 +36,22 @@ fun AppNavGraph(
                 authUiState.isLoggedIn,
 
             backendRole =
-                authUiState.userRole
+                authUiState.userRole,
+
+            canUseProducerMode =
+                authUiState
+                    .canUseProducerMode,
+
+            activeMode =
+                authUiState.activeMode
         )
 
     LaunchedEffect(
         authUiState.isSessionChecking,
         authUiState.isLoggedIn,
         authUiState.userRole,
+        authUiState.canUseProducerMode,
+        authUiState.activeMode,
         currentDestination?.route
     ) {
         if (authUiState.isSessionChecking) {
@@ -89,6 +98,7 @@ fun AppNavGraph(
         customerNavGraph(
             navController = navController,
             context = context,
+            authViewModel = authViewModel,
 
             onLogoutClick = {
                 authViewModel.logout()
@@ -98,6 +108,7 @@ fun AppNavGraph(
         producerNavGraph(
             navController = navController,
             context = context,
+            authViewModel = authViewModel,
 
             onLogoutClick = {
                 authViewModel.logout()

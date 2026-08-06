@@ -17,10 +17,12 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.OutlinedButton
 
 @Composable
 fun ProducerHomeScreen(
     onApplicationStatusClick: () -> Unit,
+    onCustomerModeClick: () -> Unit,
     onProfileClick: () -> Unit,
     onFoodsClick: () -> Unit,
     onOrdersClick: () -> Unit,
@@ -51,6 +53,12 @@ fun ProducerHomeScreen(
             style =
                 MaterialTheme.typography.bodyLarge
         )
+        OutlinedButton(
+            onClick = onCustomerModeClick,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Müşteri Moduna Dön")
+        }
 
         Spacer(
             modifier = Modifier.height(8.dp)

@@ -44,8 +44,11 @@ fun NavigationHomemadeFoodApp() {
 
     if (authUiState.isSessionChecking) {
         Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
+            modifier =
+                Modifier.fillMaxSize(),
+
+            contentAlignment =
+                Alignment.Center
         ) {
             CircularProgressIndicator()
         }
@@ -56,14 +59,23 @@ fun NavigationHomemadeFoodApp() {
     val startDestination =
         remember(
             authUiState.isLoggedIn,
-            authUiState.userRole
+            authUiState.userRole,
+            authUiState.canUseProducerMode,
+            authUiState.activeMode
         ) {
             resolveStartDestination(
                 isLoggedIn =
                     authUiState.isLoggedIn,
 
                 backendRole =
-                    authUiState.userRole
+                    authUiState.userRole,
+
+                canUseProducerMode =
+                    authUiState
+                        .canUseProducerMode,
+
+                activeMode =
+                    authUiState.activeMode
             )
         }
 
@@ -72,10 +84,17 @@ fun NavigationHomemadeFoodApp() {
     ) { innerPadding ->
 
         AppNavGraph(
-            navController = navController,
-            context = context,
-            authViewModel = authViewModel,
-            startDestination = startDestination,
+            navController =
+                navController,
+
+            context =
+                context,
+
+            authViewModel =
+                authViewModel,
+
+            startDestination =
+                startDestination,
 
             modifier =
                 Modifier.padding(
