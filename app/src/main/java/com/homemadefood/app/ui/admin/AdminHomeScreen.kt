@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 fun AdminHomeScreen(
     onProducerApplicationsClick: () -> Unit,
     onUsersClick: () -> Unit,
+    onOrdersClick: () -> Unit,
     onRecommendationAnalyticsClick: () -> Unit,
     onLogoutClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -79,6 +80,17 @@ fun AdminHomeScreen(
 
             onClick =
                 onUsersClick
+        )
+        AdminMenuCard(
+            title = "Sipariş Takibi",
+
+            description =
+                "Sistemdeki bütün siparişleri görüntüleyin, filtreleyin ve sipariş detaylarını inceleyin.",
+
+            buttonText = "Siparişleri Gör",
+
+            onClick =
+                onOrdersClick
         )
 
         AdminMenuCard(

@@ -26,6 +26,13 @@ import androidx.navigation.navArgument
 import com.homemadefood.app.ui.admin.AdminUserDetailScreen
 import com.homemadefood.app.ui.admin.AdminUserDetailViewModel
 import com.homemadefood.app.ui.admin.AdminUserDetailViewModelFactory
+import androidx.navigation.navArgument
+import com.homemadefood.app.ui.admin.AdminOrderDetailScreen
+import com.homemadefood.app.ui.admin.AdminOrderDetailViewModel
+import com.homemadefood.app.ui.admin.AdminOrderDetailViewModelFactory
+import com.homemadefood.app.ui.admin.AdminOrdersScreen
+import com.homemadefood.app.ui.admin.AdminOrdersViewModel
+import com.homemadefood.app.ui.admin.AdminOrdersViewModelFactory
 fun NavGraphBuilder.adminNavGraph(
     navController: NavHostController,
     context: Context,
@@ -50,6 +57,15 @@ fun NavGraphBuilder.adminNavGraph(
             context = context
         )
         adminUserDetailDestination(
+            navController = navController,
+            context = context
+        )
+        adminOrdersDestination(
+            navController = navController,
+            context = context
+        )
+
+        adminOrderDetailDestination(
             navController = navController,
             context = context
         )
@@ -78,6 +94,13 @@ private fun NavGraphBuilder.adminHomeDestination(
             onUsersClick = {
                 navController.navigate(
                     AppDestination.AdminUsers.route
+                )
+            },
+            onOrdersClick = {
+                navController.navigate(
+                    AppDestination
+                        .AdminOrders
+                        .route
                 )
             },
 
@@ -317,6 +340,176 @@ private fun NavGraphBuilder
             onClearMessage = {
                 adminUserDetailViewModel
                     .clearMessage()
+            },
+
+            modifier =
+                Modifier.fillMaxSize()
+        )
+    }
+}
+private fun NavGraphBuilder
+        .adminOrdersDestination(
+    navController: NavHostController,
+    context: Context
+) {
+    composable(
+        route =
+            AppDestination
+                .AdminOrders
+                .route
+    ) {
+        val adminOrdersViewModel:
+                AdminOrdersViewModel =
+            viewModel(
+                factory =
+                    AdminOrdersViewModelFactory(
+                        context = context
+                    )
+            )
+
+        val adminOrdersUiState by
+        adminOrdersViewModel
+            .uiState
+            .collectAsStateWithLifecycle()
+
+        LaunchedEffect(Unit) {
+            adminOrdersViewModel
+                .loadOrders()
+        }
+
+        AdminOrdersScreen(
+            uiState =
+                adminOrdersUiState,
+
+            onBackClick = {
+                navController
+                    .popBackStack()
+            },
+
+            onRetryClick = {
+                adminOrdersViewModel
+                    .loadOrders()
+            },
+
+            onStatusSelected = { status ->
+                adminOrdersViewModel
+                    .selectStatus(status)
+            },
+
+            onSearchQueryChange = { value ->
+                adminOrdersViewModel
+                    .updateSearchQuery(value)
+            },
+
+            onCustomerIdChange = { value ->
+                adminOrdersViewModel
+                    .updateCustomerIdInput(value)
+            },
+
+            onProducerProfileIdChange = { value ->
+                adminOrdersViewModel
+                    .updateProducerProfileIdInput(
+                        value
+                    )
+            },
+
+            onDateFromChange = { value ->
+                adminOrdersViewModel
+                    .updateDateFromInput(value)
+            },
+
+            onDateToChange = { value ->
+                adminOrdersViewModel
+                    .updateDateToInput(value)
+            },
+
+            onApplyFiltersClick = {
+                adminOrdersViewModel
+                    .applyFilters()
+            },
+
+            onClearFiltersClick = {
+                adminOrdersViewModel
+                    .clearFilters()
+            },
+
+            onOrderDetailClick = { orderId ->
+                navController.navigate(
+                    AppDestination
+                        .AdminOrderDetail
+                        .createRoute(orderId)
+                )
+            },
+
+            modifier =
+                Modifier.fillMaxSize()
+        )
+    }
+}
+private fun NavGraphBuilder
+        .adminOrderDetailDestination(
+    navController: NavHostController,
+    context: Context
+) {
+    composable(
+        route =
+            AppDestination
+                .AdminOrderDetail
+                .route,
+
+        arguments =
+            listOf(
+                navArgument(
+                    AppDestination
+                        .AdminOrderDetail
+                        .ORDER_ID_ARGUMENT
+                ) {
+                    type =
+                        NavType.IntType
+                }
+            )
+    ) { backStackEntry ->
+
+        val orderId =
+            backStackEntry.arguments
+                ?.getInt(
+                    AppDestination
+                        .AdminOrderDetail
+                        .ORDER_ID_ARGUMENT
+                )
+                ?: 0
+
+        val adminOrderDetailViewModel:
+                AdminOrderDetailViewModel =
+            viewModel(
+                factory =
+                    AdminOrderDetailViewModelFactory(
+                        context = context
+                    )
+            )
+
+        val adminOrderDetailUiState by
+        adminOrderDetailViewModel
+            .uiState
+            .collectAsStateWithLifecycle()
+
+        LaunchedEffect(orderId) {
+            adminOrderDetailViewModel
+                .loadOrder(orderId)
+        }
+
+        AdminOrderDetailScreen(
+            uiState =
+                adminOrderDetailUiState,
+
+            onBackClick = {
+                navController
+                    .popBackStack()
+            },
+
+            onRetryClick = {
+                adminOrderDetailViewModel
+                    .loadOrder(orderId)
             },
 
             modifier =

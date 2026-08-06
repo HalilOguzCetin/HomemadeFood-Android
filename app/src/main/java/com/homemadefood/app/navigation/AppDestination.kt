@@ -205,6 +205,25 @@ sealed class AppDestination(
             return "admin/users/$userId"
         }
     }
+    data object AdminOrders :
+        AppDestination(
+            route = "admin/orders"
+        )
+
+    data object AdminOrderDetail :
+        AppDestination(
+            route = "admin/orders/{orderId}"
+        ) {
+
+        const val ORDER_ID_ARGUMENT =
+            "orderId"
+
+        fun createRoute(
+            orderId: Int
+        ): String {
+            return "admin/orders/$orderId"
+        }
+    }
 
     data object RecommendationAnalytics :
         AppDestination(

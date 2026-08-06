@@ -1,5 +1,7 @@
 package com.homemadefood.app.data.repository
 
+import com.homemadefood.app.data.model.AdminOrderDetailResponse
+import com.homemadefood.app.data.model.AdminOrderListItemResponse
 import com.homemadefood.app.data.model.AdminProducerApplicationResponse
 import com.homemadefood.app.data.model.AdminUserDetailResponse
 import com.homemadefood.app.data.model.AdminUserListItemResponse
@@ -39,6 +41,7 @@ class AdminRepository(
         return adminApiService
             .approveProducerApplication(
                 authorization = "Bearer $token",
+
                 producerProfileId =
                     producerProfileId
             )
@@ -52,6 +55,7 @@ class AdminRepository(
         return adminApiService
             .rejectProducerApplication(
                 authorization = "Bearer $token",
+
                 producerProfileId =
                     producerProfileId,
 
@@ -124,6 +128,74 @@ class AdminRepository(
                     UpdateUserStatusRequest(
                         isActive = isActive
                     )
+            )
+    }
+
+    suspend fun getOrders(
+        token: String,
+        status: String? = null,
+        customerId: Int? = null,
+        producerProfileId: Int? = null,
+        search: String? = null,
+        dateFrom: String? = null,
+        dateTo: String? = null
+    ): Response<
+            ApiResponse<
+                    List<AdminOrderListItemResponse>
+                    >
+            > {
+        return adminApiService
+            .getOrders(
+                authorization = "Bearer $token",
+
+                status =
+                    status
+                        ?.trim()
+                        ?.takeIf {
+                            it.isNotBlank()
+                        },
+
+                customerId =
+                    customerId,
+
+                producerProfileId =
+                    producerProfileId,
+
+                search =
+                    search
+                        ?.trim()
+                        ?.takeIf {
+                            it.isNotBlank()
+                        },
+
+                dateFrom =
+                    dateFrom
+                        ?.trim()
+                        ?.takeIf {
+                            it.isNotBlank()
+                        },
+
+                dateTo =
+                    dateTo
+                        ?.trim()
+                        ?.takeIf {
+                            it.isNotBlank()
+                        }
+            )
+    }
+
+    suspend fun getOrderById(
+        token: String,
+        orderId: Int
+    ): Response<
+            ApiResponse<
+                    AdminOrderDetailResponse
+                    >
+            > {
+        return adminApiService
+            .getOrderById(
+                authorization = "Bearer $token",
+                orderId = orderId
             )
     }
 

@@ -1,5 +1,7 @@
 package com.homemadefood.app.data.remote
 
+import com.homemadefood.app.data.model.AdminOrderDetailResponse
+import com.homemadefood.app.data.model.AdminOrderListItemResponse
 import com.homemadefood.app.data.model.AdminProducerApplicationResponse
 import com.homemadefood.app.data.model.AdminUserDetailResponse
 import com.homemadefood.app.data.model.AdminUserListItemResponse
@@ -80,8 +82,6 @@ interface AdminApiService {
         @Header("Authorization")
         authorization: String,
 
-
-
         @Path("id")
         userId: Int
     ): Response<
@@ -101,6 +101,47 @@ interface AdminApiService {
         @Body
         request: UpdateUserStatusRequest
     ): Response<ApiResponse<Any?>>
+
+    @GET("api/Admin/orders")
+    suspend fun getOrders(
+        @Header("Authorization")
+        authorization: String,
+
+        @Query("status")
+        status: String?,
+
+        @Query("customerId")
+        customerId: Int?,
+
+        @Query("producerProfileId")
+        producerProfileId: Int?,
+
+        @Query("search")
+        search: String?,
+
+        @Query("dateFrom")
+        dateFrom: String?,
+
+        @Query("dateTo")
+        dateTo: String?
+    ): Response<
+            ApiResponse<
+                    List<AdminOrderListItemResponse>
+                    >
+            >
+
+    @GET("api/Admin/orders/{id}")
+    suspend fun getOrderById(
+        @Header("Authorization")
+        authorization: String,
+
+        @Path("id")
+        orderId: Int
+    ): Response<
+            ApiResponse<
+                    AdminOrderDetailResponse
+                    >
+            >
 
     @GET("api/RecommendationAnalytics/summary")
     suspend fun getRecommendationAnalytics(
