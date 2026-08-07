@@ -12,100 +12,98 @@ class ProducerOrderRepository(
         RetrofitClient.producerOrderApiService
 ) {
 
-    suspend fun getMyOrders(
-        token: String
-    ): Response<
-            ApiResponse<
-                    List<ProducerOrderResponse>
-                    >
-            > {
-        return producerOrderApiService.getMyOrders(
-            authorization = "Bearer $token"
-        )
+    suspend fun getMyOrders():
+            Response<
+                    ApiResponse<
+                            List<ProducerOrderResponse>
+                            >
+                    > {
+
+        return producerOrderApiService
+            .getMyOrders()
     }
 
     suspend fun acceptOrder(
-        token: String,
         orderId: Int
     ): Response<
             ApiResponse<
                     ProducerOrderResponse
                     >
             > {
-        return producerOrderApiService.acceptOrder(
-            authorization = "Bearer $token",
-            orderId = orderId
-        )
+
+        return producerOrderApiService
+            .acceptOrder(
+                orderId = orderId
+            )
     }
 
     suspend fun rejectOrder(
-        token: String,
         orderId: Int
     ): Response<
             ApiResponse<
                     ProducerOrderResponse
                     >
             > {
-        return producerOrderApiService.rejectOrder(
-            authorization = "Bearer $token",
-            orderId = orderId
-        )
+
+        return producerOrderApiService
+            .rejectOrder(
+                orderId = orderId
+            )
     }
 
     suspend fun startPreparing(
-        token: String,
         orderId: Int
     ): Response<
             ApiResponse<
                     ProducerOrderResponse
                     >
             > {
-        return producerOrderApiService.startPreparing(
-            authorization = "Bearer $token",
-            orderId = orderId
-        )
+
+        return producerOrderApiService
+            .startPreparing(
+                orderId = orderId
+            )
     }
 
     suspend fun markReady(
-        token: String,
         orderId: Int
     ): Response<
             ApiResponse<
                     ProducerOrderResponse
                     >
             > {
-        return producerOrderApiService.markReady(
-            authorization = "Bearer $token",
-            orderId = orderId
-        )
+
+        return producerOrderApiService
+            .markReady(
+                orderId = orderId
+            )
     }
 
     suspend fun markOutForDelivery(
-        token: String,
         orderId: Int
     ): Response<
             ApiResponse<
                     ProducerOrderResponse
                     >
             > {
+
         return producerOrderApiService
             .markOutForDelivery(
-                authorization = "Bearer $token",
                 orderId = orderId
             )
     }
 
     suspend fun markDelivered(
-        token: String,
         orderId: Int
     ): Response<
             ApiResponse<
                     ProducerOrderResponse
                     >
             > {
-        return producerOrderApiService.markDelivered(
-            authorization = "Bearer $token",
-            orderId = orderId
-        )
+
+        return producerOrderApiService
+            .markDelivered(
+                orderId = orderId
+            )
     }
 }

@@ -150,10 +150,12 @@ class AddressFormViewModel(
         }
 
         viewModelScope.launch {
-            val token =
-                sessionManager.token.first()
+            val isLoggedIn =
+                sessionManager
+                    .isLoggedIn
+                    .first()
 
-            if (token.isNullOrBlank()) {
+            if (!isLoggedIn) {
                 showError(
                     "Oturum bilgisi bulunamadı. Yeniden giriş yapın."
                 )
@@ -181,7 +183,6 @@ class AddressFormViewModel(
 
                 val response =
                     addressRepository.createAddress(
-                        token = token,
                         request = request
                     )
 

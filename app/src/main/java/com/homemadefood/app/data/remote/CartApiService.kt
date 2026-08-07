@@ -9,33 +9,34 @@ import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
-import retrofit2.http.Header
+import retrofit2.http.Headers
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
 
 interface CartApiService {
 
+    @Headers(
+        "X-HomemadeFood-Requires-Auth: true"
+    )
     @GET("api/Cart")
-    suspend fun getCart(
-        @Header("Authorization")
-        authorization: String
-    ): Response<ApiResponse<CartResponse>>
+    suspend fun getCart():
+            Response<ApiResponse<CartResponse>>
 
+    @Headers(
+        "X-HomemadeFood-Requires-Auth: true"
+    )
     @POST("api/Cart/items")
     suspend fun addItem(
-        @Header("Authorization")
-        authorization: String,
-
         @Body
         request: AddCartItemRequest
     ): Response<ApiResponse<CartResponse>>
 
+    @Headers(
+        "X-HomemadeFood-Requires-Auth: true"
+    )
     @PUT("api/Cart/items/{cartItemId}")
     suspend fun updateItem(
-        @Header("Authorization")
-        authorization: String,
-
         @Path("cartItemId")
         cartItemId: Int,
 
@@ -43,18 +44,19 @@ interface CartApiService {
         request: UpdateCartItemRequest
     ): Response<ApiResponse<CartResponse>>
 
+    @Headers(
+        "X-HomemadeFood-Requires-Auth: true"
+    )
     @DELETE("api/Cart/items/{cartItemId}")
     suspend fun removeItem(
-        @Header("Authorization")
-        authorization: String,
-
         @Path("cartItemId")
         cartItemId: Int
     ): Response<ApiResponse<CartResponse>>
 
+    @Headers(
+        "X-HomemadeFood-Requires-Auth: true"
+    )
     @DELETE("api/Cart")
-    suspend fun clearCart(
-        @Header("Authorization")
-        authorization: String
-    ): Response<ApiResponse<ClearCartResponse>>
+    suspend fun clearCart():
+            Response<ApiResponse<ClearCartResponse>>
 }

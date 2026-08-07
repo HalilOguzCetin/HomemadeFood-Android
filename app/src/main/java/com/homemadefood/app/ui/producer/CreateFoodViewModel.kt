@@ -157,10 +157,12 @@ class CreateFoodViewModel(
                     errorMessage = null
                 )
 
-            val token =
-                sessionManager.token.first()
+            val isLoggedIn =
+                sessionManager
+                    .isLoggedIn
+                    .first()
 
-            if (token.isNullOrBlank()) {
+            if (!isLoggedIn) {
                 _uiState.value =
                     _uiState.value.copy(
                         isSaving = false,
@@ -188,7 +190,6 @@ class CreateFoodViewModel(
             try {
                 val response =
                     producerFoodRepository.createFood(
-                        token = token,
                         request = request
                     )
 

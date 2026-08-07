@@ -54,10 +54,12 @@ class AdminApplicationsViewModel(
                         errorMessage = null
                     )
 
-                val token =
-                    sessionManager.token.first()
+                val isLoggedIn =
+                    sessionManager
+                        .isLoggedIn
+                        .first()
 
-                if (token.isNullOrBlank()) {
+                if (!isLoggedIn) {
                     showLoadError(
                         "Oturum bilgisi bulunamadı."
                     )
@@ -69,8 +71,6 @@ class AdminApplicationsViewModel(
                     val response =
                         adminRepository
                             .getProducerApplications(
-                                token = token,
-
                                 status =
                                     status.backendValue
                             )
@@ -155,12 +155,10 @@ class AdminApplicationsViewModel(
 
             successMessage =
                 "Üretici başvurusu onaylandı."
-        ) { token ->
+        ) {
 
             adminRepository
                 .approveProducerApplication(
-                    token = token,
-
                     producerProfileId =
                         producerProfileId
                 )
@@ -194,12 +192,10 @@ class AdminApplicationsViewModel(
 
             successMessage =
                 "Üretici başvurusu reddedildi."
-        ) { token ->
+        ) {
 
             adminRepository
                 .rejectProducerApplication(
-                    token = token,
-
                     producerProfileId =
                         producerProfileId,
 
@@ -238,9 +234,8 @@ class AdminApplicationsViewModel(
         successMessage: String,
 
         request:
-        suspend (
-            token: String
-        ) -> Response<ApiResponse<Any?>>
+        suspend () ->
+        Response<ApiResponse<Any?>>
     ) {
         if (
             producerProfileId <= 0 ||
@@ -263,10 +258,12 @@ class AdminApplicationsViewModel(
                         errorMessage = null
                     )
 
-                val token =
-                    sessionManager.token.first()
+                val isLoggedIn =
+                    sessionManager
+                        .isLoggedIn
+                        .first()
 
-                if (token.isNullOrBlank()) {
+                if (!isLoggedIn) {
                     showUpdateError(
                         "Oturum bilgisi bulunamadı."
                     )
@@ -276,7 +273,7 @@ class AdminApplicationsViewModel(
 
                 try {
                     val response =
-                        request(token)
+                        request()
 
                     val responseBody =
                         response.body()

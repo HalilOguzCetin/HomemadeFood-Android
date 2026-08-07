@@ -4,10 +4,10 @@ import com.homemadefood.app.data.model.ApiResponse
 import com.homemadefood.app.data.model.ProducerApplicationRequest
 import com.homemadefood.app.data.model.ProducerApplicationStatusResponse
 import com.homemadefood.app.data.model.ProducerApplicationSubmitResponse
+import com.homemadefood.app.data.model.UpdateProducerProfileRequest
 import com.homemadefood.app.data.remote.ProducerApiService
 import com.homemadefood.app.data.remote.RetrofitClient
 import retrofit2.Response
-import com.homemadefood.app.data.model.UpdateProducerProfileRequest
 
 class ProducerRepository(
     private val producerApiService:
@@ -16,44 +16,41 @@ class ProducerRepository(
 ) {
 
     suspend fun apply(
-        token: String,
         request: ProducerApplicationRequest
     ): Response<
             ApiResponse<
                     ProducerApplicationSubmitResponse
                     >
             > {
+
         return producerApiService.apply(
-            authorization = "Bearer $token",
             request = request
         )
     }
 
-    suspend fun getMyApplication(
-        token: String
-    ): Response<
-            ApiResponse<
-                    ProducerApplicationStatusResponse
-                    >
-            > {
+    suspend fun getMyApplication():
+            Response<
+                    ApiResponse<
+                            ProducerApplicationStatusResponse
+                            >
+                    > {
+
         return producerApiService
-            .getMyApplication(
-                authorization = "Bearer $token"
-            )
+            .getMyApplication()
     }
-    suspend fun getMyProfile(
-        token: String
-    ): Response<
-            ApiResponse<
-                    ProducerApplicationStatusResponse
-                    >
-            > {
-        return producerApiService.getMyProfile(
-            authorization = "Bearer $token"
-        )
+
+    suspend fun getMyProfile():
+            Response<
+                    ApiResponse<
+                            ProducerApplicationStatusResponse
+                            >
+                    > {
+
+        return producerApiService
+            .getMyProfile()
     }
+
     suspend fun updateMyProfile(
-        token: String,
         businessName: String,
         description: String,
         address: String,
@@ -66,32 +63,32 @@ class ProducerRepository(
                     ProducerApplicationStatusResponse
                     >
             > {
-        return producerApiService.updateMyProfile(
-            authorization = "Bearer $token",
 
-            request =
-                UpdateProducerProfileRequest(
-                    businessName =
-                        businessName,
+        return producerApiService
+            .updateMyProfile(
+                request =
+                    UpdateProducerProfileRequest(
+                        businessName =
+                            businessName,
 
-                    description =
-                        description,
+                        description =
+                            description,
 
-                    address =
-                        address,
+                        address =
+                            address,
 
-                    latitude =
-                        latitude,
+                        latitude =
+                            latitude,
 
-                    longitude =
-                        longitude,
+                        longitude =
+                            longitude,
 
-                    dailyCapacity =
-                        dailyCapacity,
+                        dailyCapacity =
+                            dailyCapacity,
 
-                    isAvailable =
-                        isAvailable
-                )
-        )
+                        isAvailable =
+                            isAvailable
+                    )
+            )
     }
 }

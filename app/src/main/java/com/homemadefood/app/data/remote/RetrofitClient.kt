@@ -6,6 +6,7 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import com.homemadefood.app.BuildConfig
 
 object RetrofitClient {
 
@@ -40,8 +41,39 @@ object RetrofitClient {
 
     private val loggingInterceptor =
         HttpLoggingInterceptor().apply {
+
+            /*
+             * BODY kullanılmaz.
+             *
+             * Çünkü login request body içinde şifre,
+             * login response body içinde JWT bulunabilir.
+             *
+             * Debug ortamında yalnızca:
+             * - HTTP metodu
+             * - URL
+             * - durum kodu
+             * - süre
+             *
+             * gibi temel bilgiler loglanır.
+             */
             level =
-                HttpLoggingInterceptor.Level.BODY
+                HttpLoggingInterceptor.Level.BASIC
+
+            /*
+             * İleride log seviyesi değiştirilse bile
+             * hassas header değerleri gizli tutulur.
+             */
+            redactHeader(
+                "Authorization"
+            )
+
+            redactHeader(
+                "Cookie"
+            )
+
+            redactHeader(
+                "Set-Cookie"
+            )
         }
 
     private val okHttpClient:
@@ -51,16 +83,39 @@ object RetrofitClient {
             "RetrofitClient.initialize(context) çağrılmalıdır."
         }
 
-        OkHttpClient.Builder()
-            .addInterceptor(
-                UnauthorizedSessionInterceptor(
-                    sessionManager
+        val builder =
+            OkHttpClient.Builder()
+
+                /*
+                 * Önce gerekiyorsa JWT eklenir.
+                 */
+                .addInterceptor(
+                    AuthorizationInterceptor(
+                        sessionManager
+                    )
                 )
-            )
-            .addInterceptor(
+
+                /*
+                 * Sonrasında 401 cevabı alınırsa
+                 * güvenli session temizliği yapılır.
+                 */
+                .addInterceptor(
+                    UnauthorizedSessionInterceptor(
+                        sessionManager
+                    )
+                )
+
+        /*
+         * HTTP logları yalnızca debug
+         * sürümünde aktiftir.
+         */
+        if (BuildConfig.DEBUG) {
+            builder.addInterceptor(
                 loggingInterceptor
             )
-            .build()
+        }
+
+        builder.build()
     }
 
     private val retrofit:

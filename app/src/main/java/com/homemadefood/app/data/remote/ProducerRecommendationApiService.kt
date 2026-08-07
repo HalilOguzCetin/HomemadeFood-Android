@@ -7,18 +7,18 @@ import com.homemadefood.app.data.model.ProducerRecommendationSelectionRequest
 import com.homemadefood.app.data.model.ProducerRecommendationSelectionResponse
 import retrofit2.Response
 import retrofit2.http.Body
-import retrofit2.http.Header
+import retrofit2.http.Headers
 import retrofit2.http.POST
 
 interface ProducerRecommendationApiService {
 
+    @Headers(
+        "X-HomemadeFood-Requires-Auth: true"
+    )
     @POST(
         "api/ProducerRecommendation/recommend"
     )
     suspend fun getRecommendations(
-        @Header("Authorization")
-        authorization: String,
-
         @Body
         request: ProducerRecommendationRequest
     ): Response<
@@ -27,13 +27,13 @@ interface ProducerRecommendationApiService {
                     >
             >
 
+    @Headers(
+        "X-HomemadeFood-Requires-Auth: true"
+    )
     @POST(
         "api/ProducerRecommendation/select"
     )
     suspend fun selectRecommendation(
-        @Header("Authorization")
-        authorization: String,
-
         @Body
         request:
         ProducerRecommendationSelectionRequest

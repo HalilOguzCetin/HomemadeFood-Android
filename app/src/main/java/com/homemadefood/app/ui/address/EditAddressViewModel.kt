@@ -45,10 +45,12 @@ class EditAddressViewModel(
                         errorMessage = null
                     )
 
-                val token =
-                    sessionManager.token.first()
+                val isLoggedIn =
+                    sessionManager
+                        .isLoggedIn
+                        .first()
 
-                if (token.isNullOrBlank()) {
+                if (!isLoggedIn) {
                     _uiState.value =
                         _uiState.value.copy(
                             isLoading = false,
@@ -61,9 +63,7 @@ class EditAddressViewModel(
 
                 try {
                     val response =
-                        addressRepository.getAddresses(
-                            token = token
-                        )
+                        addressRepository.getAddresses()
 
                     val responseBody =
                         response.body()
@@ -265,10 +265,12 @@ class EditAddressViewModel(
         }
 
         viewModelScope.launch {
-            val token =
-                sessionManager.token.first()
+            val isLoggedIn =
+                sessionManager
+                    .isLoggedIn
+                    .first()
 
-            if (token.isNullOrBlank()) {
+            if (!isLoggedIn) {
                 showError(
                     "Oturum bilgisi bulunamadı. Yeniden giriş yapın."
                 )
@@ -296,7 +298,6 @@ class EditAddressViewModel(
 
                 val response =
                     addressRepository.updateAddress(
-                        token = token,
                         addressId = addressId,
                         request = request
                     )

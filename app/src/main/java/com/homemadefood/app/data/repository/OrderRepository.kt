@@ -14,7 +14,6 @@ class OrderRepository(
 ) {
 
     suspend fun createOrder(
-        token: String,
         addressId: Int,
         paymentMethod: String,
         customerNote: String
@@ -28,40 +27,36 @@ class OrderRepository(
                     customerNote.trim()
             )
 
-        return orderApiService.createOrder(
-            authorization = "Bearer $token",
-            request = request
-        )
+        return orderApiService
+            .createOrder(
+                request = request
+            )
     }
 
-    suspend fun getOrders(
-        token: String
-    ): Response<ApiResponse<List<OrderResponse>>> {
+    suspend fun getOrders():
+            Response<ApiResponse<List<OrderResponse>>> {
 
-        return orderApiService.getOrders(
-            authorization = "Bearer $token"
-        )
+        return orderApiService
+            .getOrders()
     }
 
     suspend fun getOrderById(
-        token: String,
         orderId: Int
     ): Response<ApiResponse<OrderResponse>> {
 
-        return orderApiService.getOrderById(
-            authorization = "Bearer $token",
-            orderId = orderId
-        )
+        return orderApiService
+            .getOrderById(
+                orderId = orderId
+            )
     }
 
     suspend fun cancelOrder(
-        token: String,
         orderId: Int
     ): Response<ApiResponse<OrderResponse>> {
 
-        return orderApiService.cancelOrder(
-            authorization = "Bearer $token",
-            orderId = orderId
-        )
+        return orderApiService
+            .cancelOrder(
+                orderId = orderId
+            )
     }
 }

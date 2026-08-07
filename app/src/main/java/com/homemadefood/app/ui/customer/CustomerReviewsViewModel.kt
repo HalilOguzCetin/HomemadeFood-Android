@@ -46,10 +46,12 @@ class CustomerReviewsViewModel(
                         successMessage = null
                     )
 
-                val token =
-                    sessionManager.token.first()
+                val isLoggedIn =
+                    sessionManager
+                        .isLoggedIn
+                        .first()
 
-                if (token.isNullOrBlank()) {
+                if (!isLoggedIn) {
                     showError(
                         "Oturum bilgisi bulunamadı."
                     )
@@ -59,9 +61,8 @@ class CustomerReviewsViewModel(
 
                 try {
                     val response =
-                        reviewRepository.getMyReviews(
-                            token = token
-                        )
+                        reviewRepository
+                            .getMyReviews()
 
                     val responseBody =
                         response.body()
@@ -157,10 +158,12 @@ class CustomerReviewsViewModel(
 
         deleteReviewJob =
             viewModelScope.launch {
-                val token =
-                    sessionManager.token.first()
+                val isLoggedIn =
+                    sessionManager
+                        .isLoggedIn
+                        .first()
 
-                if (token.isNullOrBlank()) {
+                if (!isLoggedIn) {
                     showError(
                         "Oturum bilgisi bulunamadı."
                     )
@@ -180,7 +183,6 @@ class CustomerReviewsViewModel(
                 try {
                     val response =
                         reviewRepository.deleteReview(
-                            token = token,
                             reviewId = review.reviewId
                         )
 

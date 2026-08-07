@@ -15,33 +15,31 @@ class ReviewRepository(
 ) {
 
     suspend fun createReview(
-        token: String,
         orderId: Int,
         rating: Int,
         comment: String
     ): Response<
             ApiResponse<ReviewResponse>
             > {
-        return reviewApiService.createReview(
-            authorization = "Bearer $token",
 
-            request =
-                CreateReviewRequest(
-                    orderId = orderId,
-                    rating = rating,
-                    comment = comment
-                )
-        )
+        return reviewApiService
+            .createReview(
+                request =
+                    CreateReviewRequest(
+                        orderId = orderId,
+                        rating = rating,
+                        comment = comment
+                    )
+            )
     }
 
-    suspend fun getMyReviews(
-        token: String
-    ): Response<
-            ApiResponse<List<ReviewResponse>>
-            > {
-        return reviewApiService.getMyReviews(
-            authorization = "Bearer $token"
-        )
+    suspend fun getMyReviews():
+            Response<
+                    ApiResponse<List<ReviewResponse>>
+                    > {
+
+        return reviewApiService
+            .getMyReviews()
     }
 
     suspend fun getProducerReviews(
@@ -49,6 +47,7 @@ class ReviewRepository(
     ): Response<
             ApiResponse<List<ReviewResponse>>
             > {
+
         return reviewApiService
             .getProducerReviews(
                 producerProfileId =
@@ -57,14 +56,14 @@ class ReviewRepository(
     }
 
     suspend fun deleteReview(
-        token: String,
         reviewId: Int
     ): Response<
             ApiResponse<DeleteReviewResponse>
             > {
-        return reviewApiService.deleteReview(
-            authorization = "Bearer $token",
-            reviewId = reviewId
-        )
+
+        return reviewApiService
+            .deleteReview(
+                reviewId = reviewId
+            )
     }
 }

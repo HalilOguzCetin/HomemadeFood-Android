@@ -42,10 +42,12 @@ class CartViewModel(
                         actionMessage = null
                     )
 
-                val token =
-                    sessionManager.token.first()
+                val isLoggedIn =
+                    sessionManager
+                        .isLoggedIn
+                        .first()
 
-                if (token.isNullOrBlank()) {
+                if (!isLoggedIn) {
                     _uiState.value =
                         CartUiState(
                             isLoading = false,
@@ -58,9 +60,7 @@ class CartViewModel(
 
                 try {
                     val response =
-                        cartRepository.getCart(
-                            token = token
-                        )
+                        cartRepository.getCart()
 
                     val responseBody =
                         response.body()
@@ -135,10 +135,12 @@ class CartViewModel(
         }
 
         viewModelScope.launch {
-            val token =
-                sessionManager.token.first()
+            val isLoggedIn =
+                sessionManager
+                    .isLoggedIn
+                    .first()
 
-            if (token.isNullOrBlank()) {
+            if (!isLoggedIn) {
                 showError(
                     "Oturum bilgisi bulunamadı."
                 )
@@ -156,7 +158,6 @@ class CartViewModel(
             try {
                 val response =
                     cartRepository.updateItem(
-                        token = token,
                         cartItemId = cartItemId,
                         quantity = newQuantity
                     )
@@ -207,10 +208,12 @@ class CartViewModel(
         }
 
         viewModelScope.launch {
-            val token =
-                sessionManager.token.first()
+            val isLoggedIn =
+                sessionManager
+                    .isLoggedIn
+                    .first()
 
-            if (token.isNullOrBlank()) {
+            if (!isLoggedIn) {
                 showError(
                     "Oturum bilgisi bulunamadı."
                 )
@@ -228,7 +231,6 @@ class CartViewModel(
             try {
                 val response =
                     cartRepository.removeItem(
-                        token = token,
                         cartItemId = cartItemId
                     )
 
@@ -276,10 +278,12 @@ class CartViewModel(
         }
 
         viewModelScope.launch {
-            val token =
-                sessionManager.token.first()
+            val isLoggedIn =
+                sessionManager
+                    .isLoggedIn
+                    .first()
 
-            if (token.isNullOrBlank()) {
+            if (!isLoggedIn) {
                 showError(
                     "Oturum bilgisi bulunamadı."
                 )
@@ -296,9 +300,7 @@ class CartViewModel(
 
             try {
                 val response =
-                    cartRepository.clearCart(
-                        token = token
-                    )
+                    cartRepository.clearCart()
 
                 val responseBody =
                     response.body()

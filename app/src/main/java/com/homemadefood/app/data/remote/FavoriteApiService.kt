@@ -6,33 +6,46 @@ import com.homemadefood.app.data.model.FoodActionResponse
 import retrofit2.Response
 import retrofit2.http.DELETE
 import retrofit2.http.GET
-import retrofit2.http.Header
+import retrofit2.http.Headers
 import retrofit2.http.POST
 import retrofit2.http.Path
 
 interface FavoriteApiService {
 
+    @Headers(
+        "X-HomemadeFood-Requires-Auth: true"
+    )
     @GET("api/Favorite")
-    suspend fun getFavorites(
-        @Header("Authorization")
-        authorization: String
-    ): Response<ApiResponse<List<FavoriteResponse>>>
+    suspend fun getFavorites():
+            Response<
+                    ApiResponse<
+                            List<FavoriteResponse>
+                            >
+                    >
 
+    @Headers(
+        "X-HomemadeFood-Requires-Auth: true"
+    )
     @POST("api/Favorite/{foodId}")
     suspend fun addFavorite(
-        @Header("Authorization")
-        authorization: String,
-
         @Path("foodId")
         foodId: Int
-    ): Response<ApiResponse<FoodActionResponse>>
+    ): Response<
+            ApiResponse<
+                    FoodActionResponse
+                    >
+            >
 
+    @Headers(
+        "X-HomemadeFood-Requires-Auth: true"
+    )
     @DELETE("api/Favorite/{foodId}")
     suspend fun removeFavorite(
-        @Header("Authorization")
-        authorization: String,
-
         @Path("foodId")
         foodId: Int
-    ): Response<ApiResponse<FoodActionResponse>>
+    ): Response<
+            ApiResponse<
+                    FoodActionResponse
+                    >
+            >
 }

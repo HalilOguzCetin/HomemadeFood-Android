@@ -40,10 +40,12 @@ class RecommendationAnalyticsViewModel(
                         isLoading = true
                     )
 
-                val token =
-                    sessionManager.token.first()
+                val isLoggedIn =
+                    sessionManager
+                        .isLoggedIn
+                        .first()
 
-                if (token.isNullOrBlank()) {
+                if (!isLoggedIn) {
                     _uiState.value =
                         RecommendationAnalyticsUiState(
                             isLoading = false,
@@ -58,9 +60,7 @@ class RecommendationAnalyticsViewModel(
                 try {
                     val response =
                         adminRepository
-                            .getRecommendationAnalytics(
-                                token = token
-                            )
+                            .getRecommendationAnalytics()
 
                     val responseBody =
                         response.body()

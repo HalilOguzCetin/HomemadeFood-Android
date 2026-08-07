@@ -13,61 +13,72 @@ import com.homemadefood.app.data.remote.AdminApiService
 import com.homemadefood.app.data.remote.RetrofitClient
 import retrofit2.Response
 
+@Suppress("UNUSED_PARAMETER")
 class AdminRepository(
     private val adminApiService:
     AdminApiService =
         RetrofitClient.adminApiService
 ) {
 
+    /*
+     * Üretici başvurularını getirir.
+     *
+     * JWT artık burada taşınmaz.
+     * AuthorizationInterceptor otomatik ekler.
+     */
     suspend fun getProducerApplications(
-        token: String,
         status: String = "Pending"
     ): Response<
             ApiResponse<
                     List<AdminProducerApplicationResponse>
                     >
             > {
+
         return adminApiService
             .getProducerApplications(
-                authorization = "Bearer $token",
                 status = status
             )
     }
 
+    /*
+     * Üretici başvurusunu onaylar.
+     */
     suspend fun approveProducerApplication(
-        token: String,
         producerProfileId: Int
     ): Response<ApiResponse<Any?>> {
+
         return adminApiService
             .approveProducerApplication(
-                authorization = "Bearer $token",
-
                 producerProfileId =
                     producerProfileId
             )
     }
 
+    /*
+     * Üretici başvurusunu reddeder.
+     */
     suspend fun rejectProducerApplication(
-        token: String,
         producerProfileId: Int,
         reason: String
     ): Response<ApiResponse<Any?>> {
+
         return adminApiService
             .rejectProducerApplication(
-                authorization = "Bearer $token",
-
                 producerProfileId =
                     producerProfileId,
 
                 request =
                     RejectProducerApplicationRequest(
-                        reason = reason.trim()
+                        reason =
+                            reason.trim()
                     )
             )
     }
 
+    /*
+     * Kullanıcı listesini getirir.
+     */
     suspend fun getUsers(
-        token: String,
         role: String? = null,
         isActive: Boolean? = null,
         search: String? = null
@@ -76,10 +87,9 @@ class AdminRepository(
                     List<AdminUserListItemResponse>
                     >
             > {
+
         return adminApiService
             .getUsers(
-                authorization = "Bearer $token",
-
                 role =
                     role
                         ?.trim()
@@ -99,8 +109,14 @@ class AdminRepository(
             )
     }
 
+    /*
+     * Kullanıcı detayını getirir.
+     *
+     * token parametresi şimdilik korunuyor.
+     * İlgili ViewModel temizlendiğinde
+     * bu parametre de kaldırılacak.
+     */
     suspend fun getUserById(
-        token: String,
         userId: Int
     ): Response<
             ApiResponse<
@@ -109,19 +125,22 @@ class AdminRepository(
             > {
         return adminApiService
             .getUserById(
-                authorization = "Bearer $token",
                 userId = userId
             )
     }
 
+    /*
+     * Kullanıcının aktif/pasif durumunu değiştirir.
+     *
+     * token parametresi geçici olarak korunuyor.
+     */
     suspend fun updateUserStatus(
-        token: String,
         userId: Int,
         isActive: Boolean
     ): Response<ApiResponse<Any?>> {
+
         return adminApiService
             .updateUserStatus(
-                authorization = "Bearer $token",
                 userId = userId,
 
                 request =
@@ -131,8 +150,10 @@ class AdminRepository(
             )
     }
 
+    /*
+     * Admin sipariş listesini getirir.
+     */
     suspend fun getOrders(
-        token: String,
         status: String? = null,
         customerId: Int? = null,
         producerProfileId: Int? = null,
@@ -144,10 +165,9 @@ class AdminRepository(
                     List<AdminOrderListItemResponse>
                     >
             > {
+
         return adminApiService
             .getOrders(
-                authorization = "Bearer $token",
-
                 status =
                     status
                         ?.trim()
@@ -184,8 +204,13 @@ class AdminRepository(
             )
     }
 
+    /*
+     * Sipariş detayını getirir.
+     *
+     * İlgili ViewModel temizlenene kadar
+     * token parametresi geçici olarak duruyor.
+     */
     suspend fun getOrderById(
-        token: String,
         orderId: Int
     ): Response<
             ApiResponse<
@@ -194,21 +219,24 @@ class AdminRepository(
             > {
         return adminApiService
             .getOrderById(
-                authorization = "Bearer $token",
                 orderId = orderId
             )
     }
 
-    suspend fun getRecommendationAnalytics(
-        token: String
-    ): Response<
-            ApiResponse<
-                    RecommendationPerformanceResponse
-                    >
-            > {
+    /*
+     * Öneri algoritmasının admin analiz
+     * verilerini getirir.
+     *
+     * token parametresi geçici olarak korunuyor.
+     */
+    suspend fun getRecommendationAnalytics():
+            Response<
+                    ApiResponse<
+                            RecommendationPerformanceResponse
+                            >
+                    > {
+
         return adminApiService
-            .getRecommendationAnalytics(
-                authorization = "Bearer $token"
-            )
+            .getRecommendationAnalytics()
     }
 }

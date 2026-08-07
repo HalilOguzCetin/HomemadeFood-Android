@@ -56,10 +56,12 @@ class AdminUserDetailViewModel(
                         errorMessage = null
                     )
 
-                val token =
-                    sessionManager.token.first()
+                val isLoggedIn =
+                    sessionManager
+                        .isLoggedIn
+                        .first()
 
-                if (token.isNullOrBlank()) {
+                if (!isLoggedIn) {
                     showLoadError(
                         "Oturum bilgisi bulunamadı."
                     )
@@ -70,7 +72,6 @@ class AdminUserDetailViewModel(
                 try {
                     val response =
                         adminRepository.getUserById(
-                            token = token,
                             userId = userId
                         )
 
@@ -137,10 +138,12 @@ class AdminUserDetailViewModel(
                         errorMessage = null
                     )
 
-                val token =
-                    sessionManager.token.first()
+                val isLoggedIn =
+                    sessionManager
+                        .isLoggedIn
+                        .first()
 
-                if (token.isNullOrBlank()) {
+                if (!isLoggedIn) {
                     showUpdateError(
                         "Oturum bilgisi bulunamadı."
                     )
@@ -151,7 +154,6 @@ class AdminUserDetailViewModel(
                 try {
                     val response =
                         adminRepository.updateUserStatus(
-                            token = token,
                             userId = currentUser.userId,
                             isActive = isActive
                         )

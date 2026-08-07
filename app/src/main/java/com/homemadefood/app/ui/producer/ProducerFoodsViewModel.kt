@@ -43,10 +43,12 @@ class ProducerFoodsViewModel(
                         errorMessage = null
                     )
 
-                val token =
-                    sessionManager.token.first()
+                val isLoggedIn =
+                    sessionManager
+                        .isLoggedIn
+                        .first()
 
-                if (token.isNullOrBlank()) {
+                if (!isLoggedIn) {
                     _uiState.value =
                         ProducerFoodsUiState(
                             isLoading = false,
@@ -60,9 +62,7 @@ class ProducerFoodsViewModel(
                 try {
                     val response =
                         producerFoodRepository
-                            .getMyFoods(
-                                token = token
-                            )
+                            .getMyFoods()
 
                     val responseBody =
                         response.body()

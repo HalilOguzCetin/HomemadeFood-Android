@@ -14,58 +14,50 @@ class ProducerFoodRepository(
         RetrofitClient.producerFoodApiService
 ) {
 
-    suspend fun getMyFoods(
-        token: String
-    ): Response<
-            ApiResponse<
-                    List<FoodResponse>
-                    >
-            > {
-        return producerFoodApiService.getMyFoods(
-            authorization = "Bearer $token"
-        )
+    suspend fun getMyFoods():
+            Response<
+                    ApiResponse<List<FoodResponse>>
+                    > {
+
+        return producerFoodApiService
+            .getMyFoods()
     }
+
     suspend fun getFoodById(
-        token: String,
         foodId: Int
     ): Response<
-            ApiResponse<
-                    FoodResponse
-                    >
+            ApiResponse<FoodResponse>
             > {
-        return producerFoodApiService.getFoodById(
-            authorization = "Bearer $token",
-            foodId = foodId
-        )
+
+        return producerFoodApiService
+            .getFoodById(
+                foodId = foodId
+            )
     }
 
     suspend fun createFood(
-        token: String,
         request: CreateFoodRequest
     ): Response<
-            ApiResponse<
-                    FoodResponse
-                    >
+            ApiResponse<FoodResponse>
             > {
-        return producerFoodApiService.createFood(
-            authorization = "Bearer $token",
-            request = request
-        )
+
+        return producerFoodApiService
+            .createFood(
+                request = request
+            )
     }
 
     suspend fun updateFood(
-        token: String,
         foodId: Int,
         request: UpdateFoodRequest
     ): Response<
-            ApiResponse<
-                    FoodResponse
-                    >
+            ApiResponse<FoodResponse>
             > {
-        return producerFoodApiService.updateFood(
-            authorization = "Bearer $token",
-            foodId = foodId,
-            request = request
-        )
+
+        return producerFoodApiService
+            .updateFood(
+                foodId = foodId,
+                request = request
+            )
     }
 }

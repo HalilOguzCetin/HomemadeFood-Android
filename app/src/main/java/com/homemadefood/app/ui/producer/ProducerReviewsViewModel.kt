@@ -47,10 +47,12 @@ class ProducerReviewsViewModel(
                         errorMessage = null
                     )
 
-                val token =
-                    sessionManager.token.first()
+                val isLoggedIn =
+                    sessionManager
+                        .isLoggedIn
+                        .first()
 
-                if (token.isNullOrBlank()) {
+                if (!isLoggedIn) {
                     showError(
                         "Oturum bilgisi bulunamadı."
                     )
@@ -61,9 +63,7 @@ class ProducerReviewsViewModel(
                 try {
                     val applicationResponse =
                         producerRepository
-                            .getMyApplication(
-                                token = token
-                            )
+                            .getMyApplication()
 
                     val applicationBody =
                         applicationResponse.body()

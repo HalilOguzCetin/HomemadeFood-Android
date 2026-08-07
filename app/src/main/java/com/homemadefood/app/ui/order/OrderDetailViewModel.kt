@@ -38,6 +38,7 @@ class OrderDetailViewModel(
 
         loadOrderJob =
             viewModelScope.launch {
+
                 _uiState.value =
                     _uiState.value.copy(
                         isLoading = true,
@@ -51,10 +52,12 @@ class OrderDetailViewModel(
                         actionMessage = null
                     )
 
-                val token =
-                    sessionManager.token.first()
+                val isLoggedIn =
+                    sessionManager
+                        .isLoggedIn
+                        .first()
 
-                if (token.isNullOrBlank()) {
+                if (!isLoggedIn) {
                     showError(
                         "Oturum bilgisi bulunamadı."
                     )
@@ -64,10 +67,10 @@ class OrderDetailViewModel(
 
                 try {
                     val response =
-                        orderRepository.getOrderById(
-                            token = token,
-                            orderId = orderId
-                        )
+                        orderRepository
+                            .getOrderById(
+                                orderId = orderId
+                            )
 
                     val responseBody =
                         response.body()
@@ -87,12 +90,16 @@ class OrderDetailViewModel(
                                 errorMessage = null
                             )
 
+                        /*
+                         * Yalnızca teslim edilmiş
+                         * siparişlerde mevcut
+                         * değerlendirme kontrol edilir.
+                         */
                         if (
                             loadedOrder.orderStatus ==
                             OrderStatus.DELIVERED
                         ) {
                             loadExistingReview(
-                                token = token,
                                 targetOrderId =
                                     loadedOrder.orderId
                             )
@@ -102,13 +109,16 @@ class OrderDetailViewModel(
                             parseErrorMessage(
                                 response.errorBody()
                                     ?.string()
-                            ) ?: "Sipariş detayı alınamadı."
+                            )
+                                ?: "Sipariş detayı alınamadı."
                         )
                     }
+
                 } catch (_: IOException) {
                     showError(
                         "Sunucuya bağlanılamadı."
                     )
+
                 } catch (_: Exception) {
                     showError(
                         "Sipariş detayı yüklenirken bir hata oluştu."
@@ -118,9 +128,25 @@ class OrderDetailViewModel(
     }
 
     private suspend fun loadExistingReview(
-        token: String,
         targetOrderId: Int
     ) {
+        val isLoggedIn =
+            sessionManager
+                .isLoggedIn
+                .first()
+
+        if (!isLoggedIn) {
+            _uiState.value =
+                _uiState.value.copy(
+                    isReviewStatusLoading = false,
+                    hasCheckedReview = false,
+                    errorMessage =
+                        "Oturum bilgisi bulunamadı."
+                )
+
+            return
+        }
+
         _uiState.value =
             _uiState.value.copy(
                 isReviewStatusLoading = true,
@@ -128,10 +154,16 @@ class OrderDetailViewModel(
             )
 
         try {
+            /*
+             * JWT artık ViewModel veya Repository
+             * üzerinden taşınmaz.
+             *
+             * AuthorizationInterceptor tokenı
+             * Keystore üzerinden otomatik ekler.
+             */
             val response =
-                reviewRepository.getMyReviews(
-                    token = token
-                )
+                reviewRepository
+                    .getMyReviews()
 
             val responseBody =
                 response.body()
@@ -166,22 +198,27 @@ class OrderDetailViewModel(
                             parseErrorMessage(
                                 response.errorBody()
                                     ?.string()
-                            ) ?: "Değerlendirme durumu alınamadı."
+                            )
+                                ?: "Değerlendirme durumu alınamadı."
                     )
             }
+
         } catch (_: IOException) {
             _uiState.value =
                 _uiState.value.copy(
                     isReviewStatusLoading = false,
                     hasCheckedReview = false,
+
                     errorMessage =
                         "Değerlendirme bilgisi için sunucuya bağlanılamadı."
                 )
+
         } catch (_: Exception) {
             _uiState.value =
                 _uiState.value.copy(
                     isReviewStatusLoading = false,
                     hasCheckedReview = false,
+
                     errorMessage =
                         "Değerlendirme bilgisi yüklenirken bir hata oluştu."
                 )
@@ -216,10 +253,12 @@ class OrderDetailViewModel(
         }
 
         viewModelScope.launch {
-            val token =
-                sessionManager.token.first()
+            val isLoggedIn =
+                sessionManager
+                    .isLoggedIn
+                    .first()
 
-            if (token.isNullOrBlank()) {
+            if (!isLoggedIn) {
                 showError(
                     "Oturum bilgisi bulunamadı."
                 )
@@ -236,10 +275,10 @@ class OrderDetailViewModel(
 
             try {
                 val response =
-                    orderRepository.cancelOrder(
-                        token = token,
-                        orderId = orderId
-                    )
+                    orderRepository
+                        .cancelOrder(
+                            orderId = orderId
+                        )
 
                 val responseBody =
                     response.body()
@@ -251,8 +290,11 @@ class OrderDetailViewModel(
                 ) {
                     _uiState.value =
                         _uiState.value.copy(
-                            order = responseBody.data,
-                            isCancelling = false,
+                            order =
+                                responseBody.data,
+
+                            isCancelling =
+                                false,
 
                             actionMessage =
                                 responseBody.message
@@ -260,20 +302,24 @@ class OrderDetailViewModel(
                                         "Sipariş iptal edildi."
                                     },
 
-                            errorMessage = null
+                            errorMessage =
+                                null
                         )
                 } else {
                     showError(
                         parseErrorMessage(
                             response.errorBody()
                                 ?.string()
-                        ) ?: "Sipariş iptal edilemedi."
+                        )
+                            ?: "Sipariş iptal edilemedi."
                     )
                 }
+
             } catch (_: IOException) {
                 showError(
                     "Sunucuya bağlanılamadı."
                 )
+
             } catch (_: Exception) {
                 showError(
                     "Sipariş iptal edilirken bir hata oluştu."
@@ -301,13 +347,17 @@ class OrderDetailViewModel(
                 )
             }
 
-            !_uiState.value.hasCheckedReview -> {
+            !_uiState.value
+                .hasCheckedReview -> {
+
                 showError(
                     "Değerlendirme durumu henüz doğrulanmadı."
                 )
             }
 
-            _uiState.value.existingReview != null -> {
+            _uiState.value
+                .existingReview != null -> {
+
                 showError(
                     "Bu sipariş daha önce değerlendirilmiş."
                 )
@@ -316,23 +366,34 @@ class OrderDetailViewModel(
             else -> {
                 _uiState.value =
                     _uiState.value.copy(
-                        isReviewFormVisible = true,
-                        errorMessage = null,
-                        actionMessage = null
+                        isReviewFormVisible =
+                            true,
+
+                        errorMessage =
+                            null,
+
+                        actionMessage =
+                            null
                     )
             }
         }
     }
 
     fun hideReviewForm() {
-        if (_uiState.value.isSubmittingReview) {
+        if (
+            _uiState.value
+                .isSubmittingReview
+        ) {
             return
         }
 
         _uiState.value =
             _uiState.value.copy(
-                isReviewFormVisible = false,
-                errorMessage = null
+                isReviewFormVisible =
+                    false,
+
+                errorMessage =
+                    null
             )
     }
 
@@ -341,7 +402,8 @@ class OrderDetailViewModel(
     ) {
         if (
             rating !in 1..5 ||
-            _uiState.value.isSubmittingReview
+            _uiState.value
+                .isSubmittingReview
         ) {
             return
         }
@@ -358,7 +420,8 @@ class OrderDetailViewModel(
     ) {
         if (
             value.length > 1000 ||
-            _uiState.value.isSubmittingReview
+            _uiState.value
+                .isSubmittingReview
         ) {
             return
         }
@@ -382,10 +445,13 @@ class OrderDetailViewModel(
             _uiState.value.order
 
         val rating =
-            _uiState.value.selectedRating
+            _uiState.value
+                .selectedRating
 
         val comment =
-            _uiState.value.reviewComment.trim()
+            _uiState.value
+                .reviewComment
+                .trim()
 
         when {
             currentOrder == null -> {
@@ -406,7 +472,9 @@ class OrderDetailViewModel(
                 return
             }
 
-            _uiState.value.existingReview != null -> {
+            _uiState.value
+                .existingReview != null -> {
+
                 showError(
                     "Bu sipariş daha önce değerlendirilmiş."
                 )
@@ -435,10 +503,13 @@ class OrderDetailViewModel(
 
         submitReviewJob =
             viewModelScope.launch {
-                val token =
-                    sessionManager.token.first()
 
-                if (token.isNullOrBlank()) {
+                val isLoggedIn =
+                    sessionManager
+                        .isLoggedIn
+                        .first()
+
+                if (!isLoggedIn) {
                     showError(
                         "Oturum bilgisi bulunamadı."
                     )
@@ -448,19 +519,35 @@ class OrderDetailViewModel(
 
                 _uiState.value =
                     _uiState.value.copy(
-                        isSubmittingReview = true,
-                        errorMessage = null,
-                        actionMessage = null
+                        isSubmittingReview =
+                            true,
+
+                        errorMessage =
+                            null,
+
+                        actionMessage =
+                            null
                     )
 
                 try {
+                    /*
+                     * Token parametresi artık yok.
+                     * JWT AuthorizationInterceptor
+                     * tarafından eklenir.
+                     */
                     val response =
-                        reviewRepository.createReview(
-                            token = token,
-                            orderId = currentOrder.orderId,
-                            rating = rating,
-                            comment = comment
-                        )
+                        reviewRepository
+                            .createReview(
+                                orderId =
+                                    currentOrder
+                                        .orderId,
+
+                                rating =
+                                    rating,
+
+                                comment =
+                                    comment
+                            )
 
                     val responseBody =
                         response.body()
@@ -472,9 +559,14 @@ class OrderDetailViewModel(
                     ) {
                         _uiState.value =
                             _uiState.value.copy(
-                                isSubmittingReview = false,
-                                isReviewFormVisible = false,
-                                hasCheckedReview = true,
+                                isSubmittingReview =
+                                    false,
+
+                                isReviewFormVisible =
+                                    false,
+
+                                hasCheckedReview =
+                                    true,
 
                                 existingReview =
                                     responseBody.data,
@@ -485,20 +577,24 @@ class OrderDetailViewModel(
                                             "Değerlendirmeniz kaydedildi."
                                         },
 
-                                errorMessage = null
+                                errorMessage =
+                                    null
                             )
                     } else {
                         showError(
                             parseErrorMessage(
                                 response.errorBody()
                                     ?.string()
-                            ) ?: "Değerlendirme gönderilemedi."
+                            )
+                                ?: "Değerlendirme gönderilemedi."
                         )
                     }
+
                 } catch (_: IOException) {
                     showError(
                         "Sunucuya bağlanılamadı."
                     )
+
                 } catch (_: Exception) {
                     showError(
                         "Değerlendirme gönderilirken bir hata oluştu."
@@ -530,6 +626,7 @@ class OrderDetailViewModel(
     private fun parseErrorMessage(
         errorJson: String?
     ): String? {
+
         if (errorJson.isNullOrBlank()) {
             return null
         }

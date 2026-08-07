@@ -31,6 +31,7 @@ class FavoritesViewModel(
 
     fun loadFavorites() {
         viewModelScope.launch {
+
             _uiState.value =
                 _uiState.value.copy(
                     isLoading = true,
@@ -38,10 +39,12 @@ class FavoritesViewModel(
                     actionMessage = null
                 )
 
-            val token =
-                sessionManager.token.first()
+            val isLoggedIn =
+                sessionManager
+                    .isLoggedIn
+                    .first()
 
-            if (token.isNullOrBlank()) {
+            if (!isLoggedIn) {
                 _uiState.value =
                     FavoritesUiState(
                         isLoading = false,
@@ -54,9 +57,8 @@ class FavoritesViewModel(
 
             try {
                 val response =
-                    favoriteRepository.getFavorites(
-                        token = token
-                    )
+                    favoriteRepository
+                        .getFavorites()
 
                 val responseBody =
                     response.body()
@@ -79,13 +81,21 @@ class FavoritesViewModel(
                     _uiState.value =
                         FavoritesUiState(
                             isLoading = false,
+
                             errorMessage =
-                                parseErrorMessage(
-                                    response.errorBody()
-                                        ?.string()
-                                ) ?: "Favoriler alınamadı."
+                                if (response.code() == 401) {
+                                    "Oturumunuz sona erdi. Lütfen tekrar giriş yapın."
+                                } else {
+                                    parseErrorMessage(
+                                        response
+                                            .errorBody()
+                                            ?.string()
+                                    )
+                                        ?: "Favoriler alınamadı."
+                                }
                         )
                 }
+
             } catch (_: IOException) {
                 _uiState.value =
                     FavoritesUiState(
@@ -93,6 +103,7 @@ class FavoritesViewModel(
                         errorMessage =
                             "Sunucuya bağlanılamadı."
                     )
+
             } catch (_: Exception) {
                 _uiState.value =
                     FavoritesUiState(
@@ -108,10 +119,13 @@ class FavoritesViewModel(
         foodId: Int
     ) {
         viewModelScope.launch {
-            val token =
-                sessionManager.token.first()
 
-            if (token.isNullOrBlank()) {
+            val isLoggedIn =
+                sessionManager
+                    .isLoggedIn
+                    .first()
+
+            if (!isLoggedIn) {
                 _uiState.value =
                     _uiState.value.copy(
                         errorMessage =
@@ -130,10 +144,10 @@ class FavoritesViewModel(
 
             try {
                 val response =
-                    favoriteRepository.removeFavorite(
-                        token = token,
-                        foodId = foodId
-                    )
+                    favoriteRepository
+                        .removeFavorite(
+                            foodId = foodId
+                        )
 
                 val responseBody =
                     response.body()
@@ -148,10 +162,12 @@ class FavoritesViewModel(
                                 _uiState.value
                                     .favorites
                                     .filterNot {
-                                        it.foodId == foodId
+                                        it.foodId ==
+                                                foodId
                                     },
 
-                            removingFoodId = null,
+                            removingFoodId =
+                                null,
 
                             actionMessage =
                                 responseBody.message
@@ -159,15 +175,26 @@ class FavoritesViewModel(
                 } else {
                     _uiState.value =
                         _uiState.value.copy(
-                            removingFoodId = null,
+                            removingFoodId =
+                                null,
 
                             errorMessage =
-                                parseErrorMessage(
-                                    response.errorBody()
-                                        ?.string()
-                                ) ?: "Favori silinemedi."
+                                if (
+                                    response.code() ==
+                                    401
+                                ) {
+                                    "Oturumunuz sona erdi. Lütfen tekrar giriş yapın."
+                                } else {
+                                    parseErrorMessage(
+                                        response
+                                            .errorBody()
+                                            ?.string()
+                                    )
+                                        ?: "Favori silinemedi."
+                                }
                         )
                 }
+
             } catch (_: IOException) {
                 _uiState.value =
                     _uiState.value.copy(
@@ -175,6 +202,7 @@ class FavoritesViewModel(
                         errorMessage =
                             "Sunucuya bağlanılamadı."
                     )
+
             } catch (_: Exception) {
                 _uiState.value =
                     _uiState.value.copy(

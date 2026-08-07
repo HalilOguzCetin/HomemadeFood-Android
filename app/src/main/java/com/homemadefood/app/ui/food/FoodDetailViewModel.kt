@@ -109,10 +109,12 @@ class FoodDetailViewModel(
     }
 
     private suspend fun checkFavoriteStatus() {
-        val token =
-            sessionManager.token.first()
+        val isLoggedIn =
+            sessionManager
+                .isLoggedIn
+                .first()
 
-        if (token.isNullOrBlank()) {
+        if (!isLoggedIn) {
             _uiState.value =
                 _uiState.value.copy(
                     isFavoriteChecking = false,
@@ -126,9 +128,7 @@ class FoodDetailViewModel(
 
         try {
             val response =
-                favoriteRepository.getFavorites(
-                    token = token
-                )
+                favoriteRepository.getFavorites()
 
             val responseBody =
                 response.body()
@@ -213,10 +213,12 @@ class FoodDetailViewModel(
         }
 
         viewModelScope.launch {
-            val token =
-                sessionManager.token.first()
+            val isLoggedIn =
+                sessionManager
+                    .isLoggedIn
+                    .first()
 
-            if (token.isNullOrBlank()) {
+            if (!isLoggedIn) {
                 showFavoriteError(
                     "Oturum bilgisi bulunamadı. Yeniden giriş yapın."
                 )
@@ -238,12 +240,10 @@ class FoodDetailViewModel(
                 val response =
                     if (wasFavorite) {
                         favoriteRepository.removeFavorite(
-                            token = token,
                             foodId = foodId
                         )
                     } else {
                         favoriteRepository.addFavorite(
-                            token = token,
                             foodId = foodId
                         )
                     }
@@ -301,10 +301,12 @@ class FoodDetailViewModel(
         }
 
         viewModelScope.launch {
-            val token =
-                sessionManager.token.first()
+            val isLoggedIn =
+                sessionManager
+                    .isLoggedIn
+                    .first()
 
-            if (token.isNullOrBlank()) {
+            if (!isLoggedIn) {
                 showCartError(
                     "Oturum bilgisi bulunamadı. Yeniden giriş yapın."
                 )
@@ -333,7 +335,6 @@ class FoodDetailViewModel(
             try {
                 val response =
                     cartRepository.addItem(
-                        token = token,
                         foodId = foodId,
                         quantity = 1,
                         recommendationSearchId = null

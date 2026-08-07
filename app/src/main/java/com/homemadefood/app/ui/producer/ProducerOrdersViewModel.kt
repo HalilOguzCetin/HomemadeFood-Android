@@ -48,10 +48,12 @@ class ProducerOrdersViewModel(
                         successMessage = null
                     )
 
-                val token =
-                    sessionManager.token.first()
+                val isLoggedIn =
+                    sessionManager
+                        .isLoggedIn
+                        .first()
 
-                if (token.isNullOrBlank()) {
+                if (!isLoggedIn) {
                     _uiState.value =
                         _uiState.value.copy(
                             isLoading = false,
@@ -65,9 +67,7 @@ class ProducerOrdersViewModel(
                 try {
                     val response =
                         producerOrderRepository
-                            .getMyOrders(
-                                token = token
-                            )
+                            .getMyOrders()
 
                     val responseBody =
                         response.body()
@@ -123,13 +123,9 @@ class ProducerOrdersViewModel(
         updateOrderStatus(
             orderId = orderId,
 
-            request = {
-                    token,
-                    id ->
-
+            request = { id ->
                 producerOrderRepository
                     .acceptOrder(
-                        token = token,
                         orderId = id
                     )
             },
@@ -145,13 +141,9 @@ class ProducerOrdersViewModel(
         updateOrderStatus(
             orderId = orderId,
 
-            request = {
-                    token,
-                    id ->
-
+            request = { id ->
                 producerOrderRepository
                     .rejectOrder(
-                        token = token,
                         orderId = id
                     )
             },
@@ -167,13 +159,9 @@ class ProducerOrdersViewModel(
         updateOrderStatus(
             orderId = orderId,
 
-            request = {
-                    token,
-                    id ->
-
+            request = { id ->
                 producerOrderRepository
                     .startPreparing(
-                        token = token,
                         orderId = id
                     )
             },
@@ -189,13 +177,9 @@ class ProducerOrdersViewModel(
         updateOrderStatus(
             orderId = orderId,
 
-            request = {
-                    token,
-                    id ->
-
+            request = { id ->
                 producerOrderRepository
                     .markReady(
-                        token = token,
                         orderId = id
                     )
             },
@@ -211,13 +195,9 @@ class ProducerOrdersViewModel(
         updateOrderStatus(
             orderId = orderId,
 
-            request = {
-                    token,
-                    id ->
-
+            request = { id ->
                 producerOrderRepository
                     .markOutForDelivery(
-                        token = token,
                         orderId = id
                     )
             },
@@ -233,13 +213,9 @@ class ProducerOrdersViewModel(
         updateOrderStatus(
             orderId = orderId,
 
-            request = {
-                    token,
-                    id ->
-
+            request = { id ->
                 producerOrderRepository
                     .markDelivered(
-                        token = token,
                         orderId = id
                     )
             },
@@ -254,7 +230,6 @@ class ProducerOrdersViewModel(
 
         request:
         suspend (
-            token: String,
             orderId: Int
         ) -> Response<
                 ApiResponse<
@@ -282,10 +257,12 @@ class ProducerOrdersViewModel(
                         errorMessage = null
                     )
 
-                val token =
-                    sessionManager.token.first()
+                val isLoggedIn =
+                    sessionManager
+                        .isLoggedIn
+                        .first()
 
-                if (token.isNullOrBlank()) {
+                if (!isLoggedIn) {
                     _uiState.value =
                         _uiState.value.copy(
                             updatingOrderId = null,
@@ -300,7 +277,6 @@ class ProducerOrdersViewModel(
                 try {
                     val response =
                         request(
-                            token,
                             orderId
                         )
 

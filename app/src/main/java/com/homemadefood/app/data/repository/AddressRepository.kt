@@ -15,47 +15,46 @@ class AddressRepository(
         RetrofitClient.addressApiService
 ) {
 
-    suspend fun getAddresses(
-        token: String
-    ): Response<ApiResponse<List<AddressResponse>>> {
+    suspend fun getAddresses():
+            Response<
+                    ApiResponse<
+                            List<AddressResponse>
+                            >
+                    > {
 
-        return addressApiService.getAddresses(
-            authorization = "Bearer $token"
-        )
+        return addressApiService
+            .getAddresses()
     }
 
     suspend fun createAddress(
-        token: String,
         request: CreateAddressRequest
     ): Response<ApiResponse<AddressResponse>> {
 
-        return addressApiService.createAddress(
-            authorization = "Bearer $token",
-            request = request
-        )
+        return addressApiService
+            .createAddress(
+                request = request
+            )
     }
 
     suspend fun updateAddress(
-        token: String,
         addressId: Int,
         request: UpdateAddressRequest
     ): Response<ApiResponse<AddressResponse>> {
 
-        return addressApiService.updateAddress(
-            authorization = "Bearer $token",
-            addressId = addressId,
-            request = request
-        )
+        return addressApiService
+            .updateAddress(
+                addressId = addressId,
+                request = request
+            )
     }
 
     suspend fun deleteAddress(
-        token: String,
         addressId: Int
     ): Response<ApiResponse<AddressDeleteResponse>> {
 
-        return addressApiService.deleteAddress(
-            authorization = "Bearer $token",
-            addressId = addressId
-        )
+        return addressApiService
+            .deleteAddress(
+                addressId = addressId
+            )
     }
 }

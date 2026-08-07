@@ -46,10 +46,12 @@ class CreateOrderViewModel(
                         createdOrder = null
                     )
 
-                val token =
-                    sessionManager.token.first()
+                val isLoggedIn =
+                    sessionManager
+                        .isLoggedIn
+                        .first()
 
-                if (token.isNullOrBlank()) {
+                if (!isLoggedIn) {
                     _uiState.value =
                         _uiState.value.copy(
                             isLoading = false,
@@ -63,16 +65,13 @@ class CreateOrderViewModel(
                 try {
                     val cartRequest =
                         async {
-                            cartRepository.getCart(
-                                token = token
-                            )
+                            cartRepository.getCart()
                         }
 
                     val addressesRequest =
                         async {
-                            addressRepository.getAddresses(
-                                token = token
-                            )
+                            addressRepository
+                                .getAddresses()
                         }
 
                     val cartResponse =
@@ -264,10 +263,12 @@ class CreateOrderViewModel(
         }
 
         viewModelScope.launch {
-            val token =
-                sessionManager.token.first()
+            val isLoggedIn =
+                sessionManager
+                    .isLoggedIn
+                    .first()
 
-            if (token.isNullOrBlank()) {
+            if (!isLoggedIn) {
                 showError(
                     "Oturum bilgisi bulunamadı. Yeniden giriş yapın."
                 )
@@ -285,7 +286,6 @@ class CreateOrderViewModel(
             try {
                 val response =
                     orderRepository.createOrder(
-                        token = token,
                         addressId = selectedAddressId,
                         paymentMethod =
                             _uiState.value.paymentMethod,

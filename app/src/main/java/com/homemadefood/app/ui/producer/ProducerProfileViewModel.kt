@@ -46,10 +46,12 @@ class ProducerProfileViewModel(
                         successMessage = null
                     )
 
-                val token =
-                    sessionManager.token.first()
+                val isLoggedIn =
+                    sessionManager
+                        .isLoggedIn
+                        .first()
 
-                if (token.isNullOrBlank()) {
+                if (!isLoggedIn) {
                     showLoadError(
                         "Oturum bilgisi bulunamadı."
                     )
@@ -60,9 +62,7 @@ class ProducerProfileViewModel(
                 try {
                     val response =
                         producerRepository
-                            .getMyProfile(
-                                token = token
-                            )
+                            .getMyProfile()
 
                     val responseBody =
                         response.body()
@@ -409,10 +409,12 @@ class ProducerProfileViewModel(
 
         saveProfileJob =
             viewModelScope.launch {
-                val token =
-                    sessionManager.token.first()
+                val isLoggedIn =
+                    sessionManager
+                        .isLoggedIn
+                        .first()
 
-                if (token.isNullOrBlank()) {
+                if (!isLoggedIn) {
                     showSaveError(
                         "Oturum bilgisi bulunamadı."
                     )
@@ -431,7 +433,6 @@ class ProducerProfileViewModel(
                     val response =
                         producerRepository
                             .updateMyProfile(
-                                token = token,
                                 businessName =
                                     businessName,
                                 description =
@@ -448,6 +449,7 @@ class ProducerProfileViewModel(
                                     _uiState.value
                                         .isAvailable
                             )
+
 
                     val responseBody =
                         response.body()

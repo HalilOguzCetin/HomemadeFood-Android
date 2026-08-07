@@ -40,10 +40,12 @@ class ProducerApplicationViewModel(
                         errorMessage = null
                     )
 
-                val token =
-                    sessionManager.token.first()
+                val isLoggedIn =
+                    sessionManager
+                        .isLoggedIn
+                        .first()
 
-                if (token.isNullOrBlank()) {
+                if (!isLoggedIn) {
                     _uiState.value =
                         ProducerApplicationUiState(
                             isLoading = false,
@@ -57,9 +59,7 @@ class ProducerApplicationViewModel(
                 try {
                     val response =
                         producerRepository
-                            .getMyApplication(
-                                token = token
-                            )
+                            .getMyApplication()
 
                     val responseBody =
                         response.body()

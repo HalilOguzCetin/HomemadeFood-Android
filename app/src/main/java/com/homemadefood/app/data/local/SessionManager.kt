@@ -1,6 +1,7 @@
 package com.homemadefood.app.data.local
 
 import android.content.Context
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
@@ -12,7 +13,8 @@ import com.homemadefood.app.data.model.UserProfileResponse
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-private val Context.sessionDataStore by preferencesDataStore(
+private val Context.sessionDataStore by
+preferencesDataStore(
     name = "user_session"
 )
 
@@ -20,22 +22,40 @@ class SessionManager(
     private val context: Context
 ) {
 
+    private val secureTokenCipher =
+        SecureTokenCipher()
+
     private companion object {
 
-        val TOKEN_KEY =
-            stringPreferencesKey("jwt_token")
+        val ENCRYPTED_TOKEN_KEY =
+            stringPreferencesKey(
+                "jwt_token_encrypted_v1"
+            )
+
+        val LEGACY_TOKEN_KEY =
+            stringPreferencesKey(
+                "jwt_token"
+            )
 
         val USER_ID_KEY =
-            intPreferencesKey("user_id")
+            intPreferencesKey(
+                "user_id"
+            )
 
         val FULL_NAME_KEY =
-            stringPreferencesKey("full_name")
+            stringPreferencesKey(
+                "full_name"
+            )
 
         val EMAIL_KEY =
-            stringPreferencesKey("email")
+            stringPreferencesKey(
+                "email"
+            )
 
         val ROLE_KEY =
-            stringPreferencesKey("role")
+            stringPreferencesKey(
+                "role"
+            )
 
         val CAN_USE_PRODUCER_MODE_KEY =
             booleanPreferencesKey(
@@ -61,7 +81,12 @@ class SessionManager(
     val token: Flow<String?> =
         context.sessionDataStore.data.map {
                 preferences ->
-            preferences[TOKEN_KEY]
+
+            secureTokenCipher.decryptOrNull(
+                preferences[
+                    ENCRYPTED_TOKEN_KEY
+                ]
+            )
         }
 
     val userId: Flow<Int?> =
@@ -88,7 +113,8 @@ class SessionManager(
             preferences[ROLE_KEY]
         }
 
-    val canUseProducerMode: Flow<Boolean> =
+    val canUseProducerMode:
+            Flow<Boolean> =
         context.sessionDataStore.data.map {
                 preferences ->
             preferences[
@@ -96,7 +122,8 @@ class SessionManager(
             ] ?: false
         }
 
-    val producerProfileId: Flow<Int?> =
+    val producerProfileId:
+            Flow<Int?> =
         context.sessionDataStore.data.map {
                 preferences ->
             preferences[
@@ -113,43 +140,79 @@ class SessionManager(
             ]
         }
 
-    val activeMode: Flow<AppMode?> =
+    val activeMode:
+            Flow<AppMode?> =
         context.sessionDataStore.data.map {
                 preferences ->
-
             AppMode.fromStoredValue(
-                preferences[ACTIVE_MODE_KEY]
+                preferences[
+                    ACTIVE_MODE_KEY
+                ]
             )
         }
 
     val isLoggedIn: Flow<Boolean> =
         context.sessionDataStore.data.map {
                 preferences ->
-
-            !preferences[TOKEN_KEY]
+            !secureTokenCipher
+                .decryptOrNull(
+                    preferences[
+                        ENCRYPTED_TOKEN_KEY
+                    ]
+                )
                 .isNullOrBlank()
         }
+
+    suspend fun purgeLegacyPlaintextToken() {
+        context.sessionDataStore.edit {
+                preferences ->
+            preferences.remove(
+                LEGACY_TOKEN_KEY
+            )
+        }
+    }
 
     suspend fun saveSession(
         loginResponse: LoginResponse
     ) {
+        val encryptedToken =
+            secureTokenCipher.encrypt(
+                loginResponse.token
+            )
+
         context.sessionDataStore.edit {
                 preferences ->
 
-            preferences[TOKEN_KEY] =
-                loginResponse.token
+            preferences.remove(
+                LEGACY_TOKEN_KEY
+            )
 
-            preferences[USER_ID_KEY] =
+            preferences[
+                ENCRYPTED_TOKEN_KEY
+            ] =
+                encryptedToken
+
+            preferences[
+                USER_ID_KEY
+            ] =
                 loginResponse.userId
 
-            preferences[FULL_NAME_KEY] =
+            preferences[
+                FULL_NAME_KEY
+            ] =
                 loginResponse.fullName
 
-            preferences[EMAIL_KEY] =
+            preferences[
+                EMAIL_KEY
+            ] =
                 loginResponse.email
 
-            preferences[ROLE_KEY] =
-                loginResponse.role.trim()
+            preferences[
+                ROLE_KEY
+            ] =
+                loginResponse
+                    .role
+                    .trim()
 
             preferences[
                 CAN_USE_PRODUCER_MODE_KEY
@@ -170,20 +233,15 @@ class SessionManager(
                         .producerVerificationStatus
             )
 
-            /*
-             * Normal girişte güvenli varsayılan
-             * olarak müşteri modu açılır.
-             *
-             * Admin hesabı için aktif müşteri veya
-             * üretici modu saklanmaz.
-             */
             if (
                 loginResponse.role.equals(
                     "Customer",
                     ignoreCase = true
                 )
             ) {
-                preferences[ACTIVE_MODE_KEY] =
+                preferences[
+                    ACTIVE_MODE_KEY
+                ] =
                     AppMode.CUSTOMER.name
             } else {
                 preferences.remove(
@@ -199,22 +257,31 @@ class SessionManager(
         context.sessionDataStore.edit {
                 preferences ->
 
-            preferences[USER_ID_KEY] =
+            preferences[
+                USER_ID_KEY
+            ] =
                 profile.userId
 
-            preferences[FULL_NAME_KEY] =
+            preferences[
+                FULL_NAME_KEY
+            ] =
                 profile.fullName
 
-            preferences[EMAIL_KEY] =
+            preferences[
+                EMAIL_KEY
+            ] =
                 profile.email
 
-            preferences[ROLE_KEY] =
+            preferences[
+                ROLE_KEY
+            ] =
                 profile.role.trim()
 
             preferences[
                 CAN_USE_PRODUCER_MODE_KEY
             ] =
-                profile.canUseProducerMode
+                profile
+                    .canUseProducerMode
 
             saveProducerInformation(
                 preferences =
@@ -249,14 +316,16 @@ class SessionManager(
                 AppMode.PRODUCER &&
                 !profile.canUseProducerMode
             ) {
-                /*
-                 * Üretici yetkisi kaldırılmışsa
-                 * eski Producer modunda kalınamaz.
-                 */
-                preferences[ACTIVE_MODE_KEY] =
+                preferences[
+                    ACTIVE_MODE_KEY
+                ] =
                     AppMode.CUSTOMER.name
-            } else if (currentMode == null) {
-                preferences[ACTIVE_MODE_KEY] =
+            } else if (
+                currentMode == null
+            ) {
+                preferences[
+                    ACTIVE_MODE_KEY
+                ] =
                     AppMode.CUSTOMER.name
             }
         }
@@ -269,7 +338,9 @@ class SessionManager(
                 preferences ->
 
             val storedRole =
-                preferences[ROLE_KEY]
+                preferences[
+                    ROLE_KEY
+                ]
 
             if (
                 storedRole.equals(
@@ -277,10 +348,6 @@ class SessionManager(
                     ignoreCase = true
                 )
             ) {
-                /*
-                 * Admin hesabında müşteri veya
-                 * üretici modu kullanılamaz.
-                 */
                 preferences.remove(
                     ACTIVE_MODE_KEY
                 )
@@ -304,7 +371,9 @@ class SessionManager(
                     requestedMode
                 }
 
-            preferences[ACTIVE_MODE_KEY] =
+            preferences[
+                ACTIVE_MODE_KEY
+            ] =
                 safeMode.name
         }
     }
@@ -318,13 +387,14 @@ class SessionManager(
 
     private fun saveProducerInformation(
         preferences:
-        androidx.datastore.preferences.core
-        .MutablePreferences,
+        MutablePreferences,
 
         producerProfileId: Int?,
         verificationStatus: String?
     ) {
-        if (producerProfileId != null) {
+        if (
+            producerProfileId != null
+        ) {
             preferences[
                 PRODUCER_PROFILE_ID_KEY
             ] =

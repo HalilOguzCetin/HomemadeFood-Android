@@ -40,10 +40,12 @@ class OrdersViewModel(
                         actionMessage = null
                     )
 
-                val token =
-                    sessionManager.token.first()
+                val isLoggedIn =
+                    sessionManager
+                        .isLoggedIn
+                        .first()
 
-                if (token.isNullOrBlank()) {
+                if (!isLoggedIn) {
                     _uiState.value =
                         _uiState.value.copy(
                             isLoading = false,
@@ -56,9 +58,7 @@ class OrdersViewModel(
 
                 try {
                     val response =
-                        orderRepository.getOrders(
-                            token = token
-                        )
+                        orderRepository.getOrders()
 
                     val responseBody =
                         response.body()
@@ -141,10 +141,12 @@ class OrdersViewModel(
         }
 
         viewModelScope.launch {
-            val token =
-                sessionManager.token.first()
+            val isLoggedIn =
+                sessionManager
+                    .isLoggedIn
+                    .first()
 
-            if (token.isNullOrBlank()) {
+            if (!isLoggedIn) {
                 showError(
                     "Oturum bilgisi bulunamadı."
                 )
@@ -162,7 +164,6 @@ class OrdersViewModel(
             try {
                 val response =
                     orderRepository.cancelOrder(
-                        token = token,
                         orderId = orderId
                     )
 

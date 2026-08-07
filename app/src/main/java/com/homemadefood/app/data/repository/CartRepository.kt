@@ -15,17 +15,14 @@ class CartRepository(
         RetrofitClient.cartApiService
 ) {
 
-    suspend fun getCart(
-        token: String
-    ): Response<ApiResponse<CartResponse>> {
+    suspend fun getCart():
+            Response<ApiResponse<CartResponse>> {
 
-        return cartApiService.getCart(
-            authorization = "Bearer $token"
-        )
+        return cartApiService
+            .getCart()
     }
 
     suspend fun addItem(
-        token: String,
         foodId: Int,
         quantity: Int,
         recommendationSearchId: Int? = null
@@ -39,14 +36,13 @@ class CartRepository(
                     recommendationSearchId
             )
 
-        return cartApiService.addItem(
-            authorization = "Bearer $token",
-            request = request
-        )
+        return cartApiService
+            .addItem(
+                request = request
+            )
     }
 
     suspend fun updateItem(
-        token: String,
         cartItemId: Int,
         quantity: Int
     ): Response<ApiResponse<CartResponse>> {
@@ -56,30 +52,27 @@ class CartRepository(
                 quantity = quantity
             )
 
-        return cartApiService.updateItem(
-            authorization = "Bearer $token",
-            cartItemId = cartItemId,
-            request = request
-        )
+        return cartApiService
+            .updateItem(
+                cartItemId = cartItemId,
+                request = request
+            )
     }
 
     suspend fun removeItem(
-        token: String,
         cartItemId: Int
     ): Response<ApiResponse<CartResponse>> {
 
-        return cartApiService.removeItem(
-            authorization = "Bearer $token",
-            cartItemId = cartItemId
-        )
+        return cartApiService
+            .removeItem(
+                cartItemId = cartItemId
+            )
     }
 
-    suspend fun clearCart(
-        token: String
-    ): Response<ApiResponse<ClearCartResponse>> {
+    suspend fun clearCart():
+            Response<ApiResponse<ClearCartResponse>> {
 
-        return cartApiService.clearCart(
-            authorization = "Bearer $token"
-        )
+        return cartApiService
+            .clearCart()
     }
 }

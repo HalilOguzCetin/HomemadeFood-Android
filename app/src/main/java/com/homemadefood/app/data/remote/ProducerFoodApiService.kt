@@ -7,61 +7,55 @@ import com.homemadefood.app.data.model.UpdateFoodRequest
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
-import retrofit2.http.Header
+import retrofit2.http.Headers
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
 
 interface ProducerFoodApiService {
 
+    @Headers(
+        "X-HomemadeFood-Requires-Auth: true"
+    )
     @GET("api/Food/my-foods")
-    suspend fun getMyFoods(
-        @Header("Authorization")
-        authorization: String
-    ): Response<
-            ApiResponse<
-                    List<FoodResponse>
+    suspend fun getMyFoods():
+            Response<
+                    ApiResponse<List<FoodResponse>>
                     >
-            >
+
+    @Headers(
+        "X-HomemadeFood-Requires-Auth: true"
+    )
     @GET("api/Food/my-foods/{id}")
     suspend fun getFoodById(
-        @Header("Authorization")
-        authorization: String,
-
         @Path("id")
         foodId: Int
     ): Response<
-            ApiResponse<
-                    FoodResponse
-                    >
+            ApiResponse<FoodResponse>
             >
 
+    @Headers(
+        "X-HomemadeFood-Requires-Auth: true"
+    )
     @POST("api/Food")
     suspend fun createFood(
-        @Header("Authorization")
-        authorization: String,
-
         @Body
         request: CreateFoodRequest
     ): Response<
-            ApiResponse<
-                    FoodResponse
-                    >
+            ApiResponse<FoodResponse>
             >
 
+    @Headers(
+        "X-HomemadeFood-Requires-Auth: true"
+    )
     @PUT("api/Food/{id}")
     suspend fun updateFood(
-        @Header("Authorization")
-        authorization: String,
-
         @Path("id")
         foodId: Int,
 
         @Body
         request: UpdateFoodRequest
     ): Response<
-            ApiResponse<
-                    FoodResponse
-                    >
+            ApiResponse<FoodResponse>
             >
 }

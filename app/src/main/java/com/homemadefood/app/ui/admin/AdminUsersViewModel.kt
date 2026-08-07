@@ -43,10 +43,12 @@ class AdminUsersViewModel(
                         errorMessage = null
                     )
 
-                val token =
-                    sessionManager.token.first()
+                val isLoggedIn =
+                    sessionManager
+                        .isLoggedIn
+                        .first()
 
-                if (token.isNullOrBlank()) {
+                if (!isLoggedIn) {
                     showError(
                         "Oturum bilgisi bulunamadı."
                     )
@@ -60,7 +62,7 @@ class AdminUsersViewModel(
                 try {
                     val response =
                         adminRepository.getUsers(
-                            token = token,
+
 
                             role =
                                 currentState

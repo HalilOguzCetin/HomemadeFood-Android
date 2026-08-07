@@ -9,33 +9,38 @@ import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
-import retrofit2.http.Header
+import retrofit2.http.Headers
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
 
 interface AddressApiService {
 
+    @Headers(
+        "X-HomemadeFood-Requires-Auth: true"
+    )
     @GET("api/Address")
-    suspend fun getAddresses(
-        @Header("Authorization")
-        authorization: String
-    ): Response<ApiResponse<List<AddressResponse>>>
+    suspend fun getAddresses():
+            Response<
+                    ApiResponse<
+                            List<AddressResponse>
+                            >
+                    >
 
+    @Headers(
+        "X-HomemadeFood-Requires-Auth: true"
+    )
     @POST("api/Address")
     suspend fun createAddress(
-        @Header("Authorization")
-        authorization: String,
-
         @Body
         request: CreateAddressRequest
     ): Response<ApiResponse<AddressResponse>>
 
+    @Headers(
+        "X-HomemadeFood-Requires-Auth: true"
+    )
     @PUT("api/Address/{id}")
     suspend fun updateAddress(
-        @Header("Authorization")
-        authorization: String,
-
         @Path("id")
         addressId: Int,
 
@@ -43,11 +48,11 @@ interface AddressApiService {
         request: UpdateAddressRequest
     ): Response<ApiResponse<AddressResponse>>
 
+    @Headers(
+        "X-HomemadeFood-Requires-Auth: true"
+    )
     @DELETE("api/Address/{id}")
     suspend fun deleteAddress(
-        @Header("Authorization")
-        authorization: String,
-
         @Path("id")
         addressId: Int
     ): Response<ApiResponse<AddressDeleteResponse>>

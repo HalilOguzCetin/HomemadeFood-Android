@@ -42,10 +42,12 @@ class EditFoodViewModel(
                     isLoading = true
                 )
 
-            val token =
-                sessionManager.token.first()
+            val isLoggedIn =
+                sessionManager
+                    .isLoggedIn
+                    .first()
 
-            if (token.isNullOrBlank()) {
+            if (!isLoggedIn) {
                 _uiState.value =
                     _uiState.value.copy(
                         isLoading = false,
@@ -60,7 +62,6 @@ class EditFoodViewModel(
                 val response =
                     producerFoodRepository
                         .getFoodById(
-                            token = token,
                             foodId = foodId
                         )
 
@@ -270,10 +271,12 @@ class EditFoodViewModel(
                     errorMessage = null
                 )
 
-            val token =
-                sessionManager.token.first()
+            val isLoggedIn =
+                sessionManager
+                    .isLoggedIn
+                    .first()
 
-            if (token.isNullOrBlank()) {
+            if (!isLoggedIn) {
                 _uiState.value =
                     _uiState.value.copy(
                         isSaving = false,
@@ -304,7 +307,6 @@ class EditFoodViewModel(
                 val response =
                     producerFoodRepository
                         .updateFood(
-                            token = token,
                             foodId = foodId,
                             request = request
                         )

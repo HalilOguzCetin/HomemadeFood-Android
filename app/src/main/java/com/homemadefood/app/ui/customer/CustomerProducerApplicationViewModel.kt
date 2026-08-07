@@ -51,10 +51,12 @@ class CustomerProducerApplicationViewModel(
                         errorMessage = null
                     )
 
-                val token =
-                    sessionManager.token.first()
+                val isLoggedIn =
+                    sessionManager
+                        .isLoggedIn
+                        .first()
 
-                if (token.isNullOrBlank()) {
+                if (!isLoggedIn) {
                     showError(
                         "Oturum bilgisi bulunamadı."
                     )
@@ -65,9 +67,7 @@ class CustomerProducerApplicationViewModel(
                 try {
                     val response =
                         producerRepository
-                            .getMyApplication(
-                                token = token
-                            )
+                            .getMyApplication()
 
                     val responseBody =
                         response.body()
@@ -364,10 +364,12 @@ class CustomerProducerApplicationViewModel(
         submitApplicationJob =
             viewModelScope.launch {
 
-                val token =
-                    sessionManager.token.first()
+                val isLoggedIn =
+                    sessionManager
+                        .isLoggedIn
+                        .first()
 
-                if (token.isNullOrBlank()) {
+                if (!isLoggedIn) {
                     showError(
                         "Oturum bilgisi bulunamadı."
                     )
@@ -385,8 +387,6 @@ class CustomerProducerApplicationViewModel(
                 try {
                     val response =
                         producerRepository.apply(
-                            token = token,
-
                             request =
                                 ProducerApplicationRequest(
                                     businessName =

@@ -12,7 +12,7 @@ import com.homemadefood.app.data.model.UpdateUserStatusRequest
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
-import retrofit2.http.Header
+import retrofit2.http.Headers
 import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Path
@@ -20,11 +20,11 @@ import retrofit2.http.Query
 
 interface AdminApiService {
 
+    @Headers(
+        "X-HomemadeFood-Requires-Auth: true"
+    )
     @GET("api/Admin/producer-applications")
     suspend fun getProducerApplications(
-        @Header("Authorization")
-        authorization: String,
-
         @Query("status")
         status: String
     ): Response<
@@ -33,24 +33,24 @@ interface AdminApiService {
                     >
             >
 
+    @Headers(
+        "X-HomemadeFood-Requires-Auth: true"
+    )
     @POST(
         "api/Admin/producer-applications/{id}/approve"
     )
     suspend fun approveProducerApplication(
-        @Header("Authorization")
-        authorization: String,
-
         @Path("id")
         producerProfileId: Int
     ): Response<ApiResponse<Any?>>
 
+    @Headers(
+        "X-HomemadeFood-Requires-Auth: true"
+    )
     @POST(
         "api/Admin/producer-applications/{id}/reject"
     )
     suspend fun rejectProducerApplication(
-        @Header("Authorization")
-        authorization: String,
-
         @Path("id")
         producerProfileId: Int,
 
@@ -58,11 +58,11 @@ interface AdminApiService {
         request: RejectProducerApplicationRequest
     ): Response<ApiResponse<Any?>>
 
+    @Headers(
+        "X-HomemadeFood-Requires-Auth: true"
+    )
     @GET("api/Admin/users")
     suspend fun getUsers(
-        @Header("Authorization")
-        authorization: String,
-
         @Query("role")
         role: String?,
 
@@ -77,11 +77,11 @@ interface AdminApiService {
                     >
             >
 
+    @Headers(
+        "X-HomemadeFood-Requires-Auth: true"
+    )
     @GET("api/Admin/users/{id}")
     suspend fun getUserById(
-        @Header("Authorization")
-        authorization: String,
-
         @Path("id")
         userId: Int
     ): Response<
@@ -90,11 +90,11 @@ interface AdminApiService {
                     >
             >
 
+    @Headers(
+        "X-HomemadeFood-Requires-Auth: true"
+    )
     @PATCH("api/Admin/users/{id}/status")
     suspend fun updateUserStatus(
-        @Header("Authorization")
-        authorization: String,
-
         @Path("id")
         userId: Int,
 
@@ -102,11 +102,11 @@ interface AdminApiService {
         request: UpdateUserStatusRequest
     ): Response<ApiResponse<Any?>>
 
+    @Headers(
+        "X-HomemadeFood-Requires-Auth: true"
+    )
     @GET("api/Admin/orders")
     suspend fun getOrders(
-        @Header("Authorization")
-        authorization: String,
-
         @Query("status")
         status: String?,
 
@@ -130,11 +130,11 @@ interface AdminApiService {
                     >
             >
 
+    @Headers(
+        "X-HomemadeFood-Requires-Auth: true"
+    )
     @GET("api/Admin/orders/{id}")
     suspend fun getOrderById(
-        @Header("Authorization")
-        authorization: String,
-
         @Path("id")
         orderId: Int
     ): Response<
@@ -143,13 +143,14 @@ interface AdminApiService {
                     >
             >
 
+    @Headers(
+        "X-HomemadeFood-Requires-Auth: true"
+    )
     @GET("api/RecommendationAnalytics/summary")
-    suspend fun getRecommendationAnalytics(
-        @Header("Authorization")
-        authorization: String
-    ): Response<
-            ApiResponse<
-                    RecommendationPerformanceResponse
+    suspend fun getRecommendationAnalytics():
+            Response<
+                    ApiResponse<
+                            RecommendationPerformanceResponse
+                            >
                     >
-            >
 }

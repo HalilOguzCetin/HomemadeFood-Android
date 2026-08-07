@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.homemadefood.app.data.local.SessionManager
 import com.homemadefood.app.data.repository.AddressRepository
+import com.homemadefood.app.data.repository.CartRepository
 import com.homemadefood.app.data.repository.ProducerRecommendationRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,7 +14,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.io.IOException
-import com.homemadefood.app.data.repository.CartRepository
 
 class RecommendationViewModel(
     private val addressRepository: AddressRepository,
@@ -24,7 +24,6 @@ class RecommendationViewModel(
 ) : ViewModel() {
 
     private var loadAddressesJob: Job? = null
-
     private var searchJob: Job? = null
 
     private val _uiState =
@@ -40,6 +39,7 @@ class RecommendationViewModel(
 
         loadAddressesJob =
             viewModelScope.launch {
+
                 _uiState.value =
                     _uiState.value.copy(
                         isLoadingAddresses = true,
@@ -47,10 +47,12 @@ class RecommendationViewModel(
                         actionMessage = null
                     )
 
-                val token =
-                    sessionManager.token.first()
+                val isLoggedIn =
+                    sessionManager
+                        .isLoggedIn
+                        .first()
 
-                if (token.isNullOrBlank()) {
+                if (!isLoggedIn) {
                     _uiState.value =
                         _uiState.value.copy(
                             isLoadingAddresses = false,
@@ -63,9 +65,8 @@ class RecommendationViewModel(
 
                 try {
                     val response =
-                        addressRepository.getAddresses(
-                            token = token
-                        )
+                        addressRepository
+                            .getAddresses()
 
                     val responseBody =
                         response.body()
@@ -104,11 +105,14 @@ class RecommendationViewModel(
 
                                 errorMessage =
                                     parseErrorMessage(
-                                        response.errorBody()
+                                        response
+                                            .errorBody()
                                             ?.string()
-                                    ) ?: "Adresler alınamadı."
+                                    )
+                                        ?: "Adresler alınamadı."
                             )
                     }
+
                 } catch (_: IOException) {
                     _uiState.value =
                         _uiState.value.copy(
@@ -116,6 +120,7 @@ class RecommendationViewModel(
                             errorMessage =
                                 "Sunucuya bağlanılamadı."
                         )
+
                 } catch (_: Exception) {
                     _uiState.value =
                         _uiState.value.copy(
@@ -170,9 +175,11 @@ class RecommendationViewModel(
         addressId: Int
     ) {
         val addressExists =
-            _uiState.value.addresses.any {
-                it.id == addressId
-            }
+            _uiState.value
+                .addresses
+                .any {
+                    it.id == addressId
+                }
 
         if (!addressExists) {
             return
@@ -195,13 +202,17 @@ class RecommendationViewModel(
         }
 
         val searchText =
-            _uiState.value.searchText.trim()
+            _uiState.value
+                .searchText
+                .trim()
 
         val selectedAddressId =
-            _uiState.value.selectedAddressId
+            _uiState.value
+                .selectedAddressId
 
         val quantity =
-            _uiState.value.quantityText
+            _uiState.value
+                .quantityText
                 .toIntOrNull()
 
         when {
@@ -242,10 +253,13 @@ class RecommendationViewModel(
 
         searchJob =
             viewModelScope.launch {
-                val token =
-                    sessionManager.token.first()
 
-                if (token.isNullOrBlank()) {
+                val isLoggedIn =
+                    sessionManager
+                        .isLoggedIn
+                        .first()
+
+                if (!isLoggedIn) {
                     showError(
                         "Oturum bilgisi bulunamadı."
                     )
@@ -270,11 +284,14 @@ class RecommendationViewModel(
                     val response =
                         recommendationRepository
                             .getRecommendations(
-                                token = token,
-                                searchText = searchText,
+                                searchText =
+                                    searchText,
+
                                 addressId =
                                     selectedAddressId,
-                                quantity = quantity
+
+                                quantity =
+                                    quantity
                             )
 
                     val responseBody =
@@ -297,13 +314,15 @@ class RecommendationViewModel(
                                         .recommendationSearchId,
 
                                 recommendations =
-                                    result.recommendations,
+                                    result
+                                        .recommendations,
 
                                 errorMessage = null,
 
                                 actionMessage =
                                     if (
-                                        result.recommendations
+                                        result
+                                            .recommendations
                                             .isEmpty()
                                     ) {
                                         "Arama ölçütlerine uygun üretici bulunamadı."
@@ -314,15 +333,19 @@ class RecommendationViewModel(
                     } else {
                         showError(
                             parseErrorMessage(
-                                response.errorBody()
+                                response
+                                    .errorBody()
                                     ?.string()
-                            ) ?: "Üretici önerileri alınamadı."
+                            )
+                                ?: "Üretici önerileri alınamadı."
                         )
                     }
+
                 } catch (_: IOException) {
                     showError(
                         "Sunucuya bağlanılamadı."
                     )
+
                 } catch (_: Exception) {
                     showError(
                         "Öneriler alınırken bir hata oluştu."
@@ -342,7 +365,8 @@ class RecommendationViewModel(
         }
 
         val recommendationSearchId =
-            _uiState.value.recommendationSearchId
+            _uiState.value
+                .recommendationSearchId
 
         if (recommendationSearchId == null) {
             showError(
@@ -353,9 +377,11 @@ class RecommendationViewModel(
         }
 
         val recommendationExists =
-            _uiState.value.recommendations.any {
-                it.foodId == foodId
-            }
+            _uiState.value
+                .recommendations
+                .any {
+                    it.foodId == foodId
+                }
 
         if (!recommendationExists) {
             showError(
@@ -366,10 +392,13 @@ class RecommendationViewModel(
         }
 
         viewModelScope.launch {
-            val token =
-                sessionManager.token.first()
 
-            if (token.isNullOrBlank()) {
+            val isLoggedIn =
+                sessionManager
+                    .isLoggedIn
+                    .first()
+
+            if (!isLoggedIn) {
                 showError(
                     "Oturum bilgisi bulunamadı."
                 )
@@ -392,12 +421,11 @@ class RecommendationViewModel(
                 val response =
                     recommendationRepository
                         .selectRecommendation(
-                            token = token,
-
                             recommendationSearchId =
                                 recommendationSearchId,
 
-                            foodId = foodId
+                            foodId =
+                                foodId
                         )
 
                 val responseBody =
@@ -410,9 +438,11 @@ class RecommendationViewModel(
                 ) {
                     _uiState.value =
                         _uiState.value.copy(
-                            selectingFoodId = null,
+                            selectingFoodId =
+                                null,
 
-                            selectedFoodId = foodId,
+                            selectedFoodId =
+                                foodId,
 
                             selectedRecommendation =
                                 responseBody.data,
@@ -423,20 +453,25 @@ class RecommendationViewModel(
                                         "Öneri seçildi."
                                     },
 
-                            errorMessage = null
+                            errorMessage =
+                                null
                         )
                 } else {
                     showError(
                         parseErrorMessage(
-                            response.errorBody()
+                            response
+                                .errorBody()
                                 ?.string()
-                        ) ?: "Öneri seçilemedi."
+                        )
+                            ?: "Öneri seçilemedi."
                     )
                 }
+
             } catch (_: IOException) {
                 showError(
                     "Sunucuya bağlanılamadı."
                 )
+
             } catch (_: Exception) {
                 showError(
                     "Öneri seçilirken bir hata oluştu."
@@ -444,6 +479,7 @@ class RecommendationViewModel(
             }
         }
     }
+
     fun addSelectedRecommendationToCart() {
         if (
             _uiState.value.isAddingToCart ||
@@ -454,7 +490,8 @@ class RecommendationViewModel(
         }
 
         val selectedFoodId =
-            _uiState.value.selectedFoodId
+            _uiState.value
+                .selectedFoodId
 
         if (
             selectedFoodId != null &&
@@ -469,10 +506,12 @@ class RecommendationViewModel(
         }
 
         val recommendationSearchId =
-            _uiState.value.recommendationSearchId
+            _uiState.value
+                .recommendationSearchId
 
         val quantity =
-            _uiState.value.quantityText
+            _uiState.value
+                .quantityText
                 .toIntOrNull()
 
         when {
@@ -504,10 +543,13 @@ class RecommendationViewModel(
         }
 
         viewModelScope.launch {
-            val token =
-                sessionManager.token.first()
 
-            if (token.isNullOrBlank()) {
+            val isLoggedIn =
+                sessionManager
+                    .isLoggedIn
+                    .first()
+
+            if (!isLoggedIn) {
                 showError(
                     "Oturum bilgisi bulunamadı."
                 )
@@ -524,17 +566,17 @@ class RecommendationViewModel(
 
             try {
                 val response =
-                    cartRepository.addItem(
-                        token = token,
+                    cartRepository
+                        .addItem(
+                            foodId =
+                                selectedFoodId,
 
-                        foodId =
-                            selectedFoodId,
+                            quantity =
+                                quantity,
 
-                        quantity = quantity,
-
-                        recommendationSearchId =
-                            recommendationSearchId
-                    )
+                            recommendationSearchId =
+                                recommendationSearchId
+                        )
 
                 val responseBody =
                     response.body()
@@ -546,7 +588,8 @@ class RecommendationViewModel(
                 ) {
                     _uiState.value =
                         _uiState.value.copy(
-                            isAddingToCart = false,
+                            isAddingToCart =
+                                false,
 
                             addedToCartFoodId =
                                 selectedFoodId,
@@ -557,20 +600,25 @@ class RecommendationViewModel(
                                         "Seçilen öneri sepete eklendi."
                                     },
 
-                            errorMessage = null
+                            errorMessage =
+                                null
                         )
                 } else {
                     showError(
                         parseErrorMessage(
-                            response.errorBody()
+                            response
+                                .errorBody()
                                 ?.string()
-                        ) ?: "Öneri sepete eklenemedi."
+                        )
+                            ?: "Öneri sepete eklenemedi."
                     )
                 }
+
             } catch (_: IOException) {
                 showError(
                     "Sunucuya bağlanılamadı."
                 )
+
             } catch (_: Exception) {
                 showError(
                     "Öneri sepete eklenirken bir hata oluştu."
@@ -604,6 +652,7 @@ class RecommendationViewModel(
     private fun parseErrorMessage(
         errorJson: String?
     ): String? {
+
         if (errorJson.isNullOrBlank()) {
             return null
         }

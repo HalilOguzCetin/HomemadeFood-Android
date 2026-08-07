@@ -35,10 +35,20 @@ class AuthViewModel(
 
     private fun checkExistingSession() {
         viewModelScope.launch {
-            val savedToken =
-                sessionManager.token.first()
 
-            if (savedToken.isNullOrBlank()) {
+            /*
+             * Eski sürümden kalmış düz metin JWT varsa
+             * güvenlik amacıyla tamamen kaldırılır.
+             */
+            sessionManager
+                .purgeLegacyPlaintextToken()
+
+            val hasSession =
+                sessionManager
+                    .isLoggedIn
+                    .first()
+
+            if (!hasSession) {
                 _uiState.value =
                     AuthUiState(
                         isSessionChecking = false
@@ -49,9 +59,8 @@ class AuthViewModel(
 
             try {
                 val response =
-                    authRepository.getProfile(
-                        token = savedToken
-                    )
+                    authRepository
+                        .getProfile()
 
                 val responseBody =
                     response.body()
@@ -362,10 +371,12 @@ class AuthViewModel(
         }
 
         viewModelScope.launch {
-            val savedToken =
-                sessionManager.token.first()
+            val hasSession =
+                sessionManager
+                    .isLoggedIn
+                    .first()
 
-            if (savedToken.isNullOrBlank()) {
+            if (!hasSession) {
                 clearInvalidSession()
                 return@launch
             }
@@ -382,9 +393,8 @@ class AuthViewModel(
 
             try {
                 val response =
-                    authRepository.getProfile(
-                        token = savedToken
-                    )
+                    authRepository
+                        .getProfile()
 
                 val responseBody =
                     response.body()

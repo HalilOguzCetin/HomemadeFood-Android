@@ -11,7 +11,8 @@ import com.homemadefood.app.data.remote.RetrofitClient
 import retrofit2.Response
 
 class AuthRepository(
-    private val authApiService: AuthApiService =
+    private val authApiService:
+    AuthApiService =
         RetrofitClient.authApiService
 ) {
 
@@ -20,37 +21,59 @@ class AuthRepository(
         email: String,
         password: String,
         phone: String
-    ): Response<ApiResponse<RegisterResponse>> {
+    ): Response<
+            ApiResponse<RegisterResponse>
+            > {
 
-        val request = RegisterRequest(
-            fullName = fullName.trim(),
-            email = email.trim(),
-            password = password,
-            phone = phone.trim()
-        )
+        val request =
+            RegisterRequest(
+                fullName =
+                    fullName.trim(),
 
-        return authApiService.register(request)
+                email =
+                    email.trim(),
+
+                password =
+                    password,
+
+                phone =
+                    phone.trim()
+            )
+
+        return authApiService
+            .register(
+                request = request
+            )
     }
 
     suspend fun login(
         email: String,
         password: String
-    ): Response<ApiResponse<LoginResponse>> {
+    ): Response<
+            ApiResponse<LoginResponse>
+            > {
 
-        val request = LoginRequest(
-            email = email.trim(),
-            password = password
-        )
+        val request =
+            LoginRequest(
+                email =
+                    email.trim(),
 
-        return authApiService.login(request)
+                password =
+                    password
+            )
+
+        return authApiService
+            .login(
+                request = request
+            )
     }
 
-    suspend fun getProfile(
-        token: String
-    ): Response<ApiResponse<UserProfileResponse>> {
+    suspend fun getProfile():
+            Response<
+                    ApiResponse<UserProfileResponse>
+                    > {
 
-        return authApiService.getProfile(
-            authorization = "Bearer $token"
-        )
+        return authApiService
+            .getProfile()
     }
 }

@@ -44,10 +44,12 @@ class AddressesViewModel(
                         actionMessage = null
                     )
 
-                val token =
-                    sessionManager.token.first()
+                val isLoggedIn =
+                    sessionManager
+                        .isLoggedIn
+                        .first()
 
-                if (token.isNullOrBlank()) {
+                if (!isLoggedIn) {
                     _uiState.value =
                         AddressesUiState(
                             isLoading = false,
@@ -60,9 +62,8 @@ class AddressesViewModel(
 
                 try {
                     val response =
-                        addressRepository.getAddresses(
-                            token = token
-                        )
+                        addressRepository
+                            .getAddresses()
 
                     val responseBody =
                         response.body()
@@ -119,10 +120,12 @@ class AddressesViewModel(
         }
 
         viewModelScope.launch {
-            val token =
-                sessionManager.token.first()
+            val isLoggedIn =
+                sessionManager
+                    .isLoggedIn
+                    .first()
 
-            if (token.isNullOrBlank()) {
+            if (!isLoggedIn) {
                 _uiState.value =
                     _uiState.value.copy(
                         errorMessage =
@@ -142,7 +145,6 @@ class AddressesViewModel(
             try {
                 val response =
                     addressRepository.deleteAddress(
-                        token = token,
                         addressId = addressId
                     )
 

@@ -17,7 +17,6 @@ class ProducerRecommendationRepository(
 ) {
 
     suspend fun getRecommendations(
-        token: String,
         searchText: String,
         addressId: Int,
         quantity: Int?
@@ -26,21 +25,26 @@ class ProducerRecommendationRepository(
                     ProducerRecommendationResultResponse
                     >
             > {
+
         val request =
             ProducerRecommendationRequest(
-                searchText = searchText.trim(),
-                addressId = addressId,
-                quantity = quantity
+                searchText =
+                    searchText.trim(),
+
+                addressId =
+                    addressId,
+
+                quantity =
+                    quantity
             )
 
-        return apiService.getRecommendations(
-            authorization = "Bearer $token",
-            request = request
-        )
+        return apiService
+            .getRecommendations(
+                request = request
+            )
     }
 
     suspend fun selectRecommendation(
-        token: String,
         recommendationSearchId: Int,
         foodId: Int
     ): Response<
@@ -48,17 +52,19 @@ class ProducerRecommendationRepository(
                     ProducerRecommendationSelectionResponse
                     >
             > {
+
         val request =
             ProducerRecommendationSelectionRequest(
                 recommendationSearchId =
                     recommendationSearchId,
 
-                foodId = foodId
+                foodId =
+                    foodId
             )
 
-        return apiService.selectRecommendation(
-            authorization = "Bearer $token",
-            request = request
-        )
+        return apiService
+            .selectRecommendation(
+                request = request
+            )
     }
 }

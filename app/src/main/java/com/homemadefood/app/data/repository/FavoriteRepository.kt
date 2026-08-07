@@ -10,37 +10,41 @@ import retrofit2.Response
 class FavoriteRepository(
     private val favoriteApiService:
     FavoriteApiService =
-        RetrofitClient.favoriteApiService
+        RetrofitClient
+            .favoriteApiService
 ) {
 
-    suspend fun getFavorites(
-        token: String
-    ): Response<ApiResponse<List<FavoriteResponse>>> {
+    /*
+     * token parametresi geçiş aşamasında
+     * eski ViewModel çağrılarını bozmamak
+     * amacıyla geçici olarak tutuluyor.
+     *
+     * JWT artık repository tarafından
+     * API'ye gönderilmiyor.
+     */
+    suspend fun getFavorites():
+            Response<ApiResponse<List<FavoriteResponse>>> {
 
-        return favoriteApiService.getFavorites(
-            authorization = "Bearer $token"
-        )
+        return favoriteApiService
+            .getFavorites()
     }
 
     suspend fun addFavorite(
-        token: String,
         foodId: Int
     ): Response<ApiResponse<FoodActionResponse>> {
 
         return favoriteApiService.addFavorite(
-            authorization = "Bearer $token",
             foodId = foodId
         )
     }
 
     suspend fun removeFavorite(
-        token: String,
         foodId: Int
     ): Response<ApiResponse<FoodActionResponse>> {
 
-        return favoriteApiService.removeFavorite(
-            authorization = "Bearer $token",
-            foodId = foodId
-        )
+        return favoriteApiService
+            .removeFavorite(
+                foodId = foodId
+            )
     }
 }

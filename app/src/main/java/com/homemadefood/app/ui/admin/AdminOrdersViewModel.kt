@@ -90,10 +90,12 @@ class AdminOrdersViewModel(
                         errorMessage = null
                     )
 
-                val token =
-                    sessionManager.token.first()
+                val isLoggedIn =
+                    sessionManager
+                        .isLoggedIn
+                        .first()
 
-                if (token.isNullOrBlank()) {
+                if (!isLoggedIn) {
                     showError(
                         "Oturum bilgisi bulunamadı."
                     )
@@ -107,7 +109,7 @@ class AdminOrdersViewModel(
                 try {
                     val response =
                         adminRepository.getOrders(
-                            token = token,
+
 
                             status =
                                 state.selectedStatus
