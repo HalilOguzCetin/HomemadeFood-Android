@@ -213,6 +213,46 @@ class AuthViewModel(
                         response.errorBody()
                             ?.string()
 
+                    val errorCode =
+                        parseErrorCode(
+                            errorJson
+                        )
+
+                    /*
+                     * Backend, yalnızca şifre doğru olduğu
+                     * hâlde hesap doğrulanmamışsa bu kodu
+                     * döndürür. JWT üretilmez.
+                     *
+                     * Kullanıcı mevcut doğrulama ekranına
+                     * yönlendirilir.
+                     */
+                    if (
+                        response.code() == 403 &&
+                        errorCode ==
+                        "EMAIL_NOT_VERIFIED"
+                    ) {
+                        _uiState.value =
+                            AuthUiState(
+                                isSessionChecking = false,
+                                isLoading = false,
+
+                                emailVerificationRequired =
+                                    true,
+
+                                pendingVerificationEmail =
+                                    normalizedEmail,
+
+                                message =
+                                    parseErrorMessage(
+                                        errorJson
+                                    ) ?: "E-posta adresinizi doğrulamanız gerekiyor.",
+
+                                isError = false
+                            )
+
+                        return@launch
+                    }
+
                     val errorMessage =
                         when (response.code()) {
 
@@ -223,6 +263,15 @@ class AuthViewModel(
                              */
                             401 ->
                                 "E-posta veya şifre hatalı."
+
+                            /*
+                             * Beklenmeyen başka bir 403 cevabı
+                             * doğrulama yönlendirmesi yapmaz.
+                             */
+                            403 ->
+                                parseErrorMessage(
+                                    errorJson
+                                ) ?: "Bu işlem için yetkiniz bulunmuyor."
 
                             /*
                              * Backend IP tabanlı giriş sınırını
@@ -277,18 +326,24 @@ class AuthViewModel(
     fun register(
         fullName: String,
         email: String,
-        password: String,
-        phone: String
+        password: String
     ) {
         if (_uiState.value.isLoading) {
             return
         }
 
+        val normalizedFullName =
+            fullName.trim()
+
+        val normalizedEmail =
+            email
+                .trim()
+                .lowercase()
+
         if (
-            fullName.isBlank() ||
-            email.isBlank() ||
-            password.isBlank() ||
-            phone.isBlank()
+            normalizedFullName.isBlank() ||
+            normalizedEmail.isBlank() ||
+            password.isBlank()
         ) {
             showError(
                 "Kayıt alanlarının tamamını doldurun."
@@ -306,13 +361,14 @@ class AuthViewModel(
             try {
                 val response =
                     authRepository.register(
-                        fullName = fullName,
+                        fullName =
+                            normalizedFullName,
+
                         email =
-                            email
-                                .trim()
-                                .lowercase(),
-                        password = password,
-                        phone = phone
+                            normalizedEmail,
+
+                        password =
+                            password
                     )
 
                 val responseBody =
@@ -329,6 +385,9 @@ class AuthViewModel(
                             registrationSuccessful =
                                 true,
 
+                            pendingVerificationEmail =
+                                normalizedEmail,
+
                             message =
                                 responseBody.message,
 
@@ -337,7 +396,8 @@ class AuthViewModel(
                 } else {
                     val errorMessage =
                         parseErrorMessage(
-                            response.errorBody()
+                            response
+                                .errorBody()
                                 ?.string()
                         )
 
@@ -354,6 +414,252 @@ class AuthViewModel(
                 showError(
                     "Kayıt sırasında beklenmeyen bir hata oluştu."
                 )
+            }
+        }
+    }
+
+    fun verifyEmail(
+        email: String,
+        code: String
+    ) {
+        if (_uiState.value.isLoading) {
+            return
+        }
+
+        val normalizedEmail =
+            email
+                .trim()
+                .lowercase()
+
+        val normalizedCode =
+            code.trim()
+
+        if (
+            normalizedEmail.isBlank() ||
+            normalizedCode.length != 6 ||
+            normalizedCode.any {
+                !it.isDigit()
+            }
+        ) {
+            showVerificationError(
+                "6 haneli doğrulama kodunu girin."
+            )
+
+            return
+        }
+
+        viewModelScope.launch {
+            val previousState =
+                _uiState.value
+
+            _uiState.value =
+                previousState.copy(
+                    isLoading = true,
+                    message = null,
+                    isError = false
+                )
+
+            try {
+                val response =
+                    authRepository.verifyEmail(
+                        email =
+                            normalizedEmail,
+
+                        code =
+                            normalizedCode
+                    )
+
+                val responseBody =
+                    response.body()
+
+                if (
+                    response.isSuccessful &&
+                    responseBody?.success == true
+                ) {
+                    _uiState.value =
+                        previousState.copy(
+                            isLoading = false,
+
+                            emailVerificationSuccessful =
+                                true,
+
+                            message =
+                                responseBody.message,
+
+                            isError = false
+                        )
+                } else {
+                    val errorMessage =
+                        parseErrorMessage(
+                            response
+                                .errorBody()
+                                ?.string()
+                        )
+
+                    _uiState.value =
+                        previousState.copy(
+                            isLoading = false,
+
+                            message =
+                                errorMessage
+                                    ?: "Doğrulama kodu geçersiz veya kullanılamıyor.",
+
+                            isError = true
+                        )
+                }
+            } catch (_: IOException) {
+                _uiState.value =
+                    previousState.copy(
+                        isLoading = false,
+
+                        message =
+                            "Sunucuya bağlanılamadı. Backend'in açık olduğunu kontrol edin.",
+
+                        isError = true
+                    )
+            } catch (_: Exception) {
+                _uiState.value =
+                    previousState.copy(
+                        isLoading = false,
+
+                        message =
+                            "E-posta doğrulanırken beklenmeyen bir hata oluştu.",
+
+                        isError = true
+                    )
+            }
+        }
+    }
+
+    fun resendEmailVerification(
+        email: String
+    ) {
+        if (_uiState.value.isLoading) {
+            return
+        }
+
+        val normalizedEmail =
+            email
+                .trim()
+                .lowercase()
+
+        if (normalizedEmail.isBlank()) {
+            showVerificationError(
+                "E-posta adresi bulunamadı."
+            )
+
+            return
+        }
+
+        viewModelScope.launch {
+            val previousState =
+                _uiState.value
+
+            _uiState.value =
+                previousState.copy(
+                    isLoading = true,
+                    message = null,
+                    isError = false
+                )
+
+            try {
+                val response =
+                    authRepository
+                        .resendEmailVerification(
+                            email =
+                                normalizedEmail
+                        )
+
+                val responseBody =
+                    response.body()
+
+                if (
+                    response.isSuccessful &&
+                    responseBody?.success == true
+                ) {
+                    _uiState.value =
+                        previousState.copy(
+                            isLoading = false,
+
+                            /*
+                             * Her başarılı HTTP resend cevabında
+                             * değer artırılır. VerificationScreen
+                             * bu değişimi görüp 60 sn sayacı
+                             * yeniden başlatır.
+                             */
+                            resendRequestVersion =
+                                previousState
+                                    .resendRequestVersion + 1,
+
+                            message =
+                                responseBody.message,
+
+                            isError = false
+                        )
+                } else {
+                    val errorJson =
+                        response
+                            .errorBody()
+                            ?.string()
+
+                    val errorMessage =
+                        when (response.code()) {
+                            429 -> {
+                                val retryAfterSeconds =
+                                    response.headers()[
+                                        "Retry-After"
+                                    ]?.toIntOrNull()
+
+                                if (
+                                    retryAfterSeconds != null &&
+                                    retryAfterSeconds > 0
+                                ) {
+                                    "Çok fazla doğrulama kodu isteği yapıldı. " +
+                                            "Yaklaşık $retryAfterSeconds saniye sonra tekrar deneyin."
+                                } else {
+                                    "Çok fazla doğrulama kodu isteği yapıldı. " +
+                                            "Lütfen daha sonra tekrar deneyin."
+                                }
+                            }
+
+                            400 ->
+                                parseErrorMessage(
+                                    errorJson
+                                ) ?: "Gönderilen bilgiler doğrulanamadı."
+
+                            else ->
+                                parseErrorMessage(
+                                    errorJson
+                                ) ?: "Doğrulama kodu yeniden gönderilemedi."
+                        }
+
+                    _uiState.value =
+                        previousState.copy(
+                            isLoading = false,
+                            message = errorMessage,
+                            isError = true
+                        )
+                }
+            } catch (_: IOException) {
+                _uiState.value =
+                    previousState.copy(
+                        isLoading = false,
+
+                        message =
+                            "Sunucuya bağlanılamadı. Backend'in açık olduğunu kontrol edin.",
+
+                        isError = true
+                    )
+            } catch (_: Exception) {
+                _uiState.value =
+                    previousState.copy(
+                        isLoading = false,
+
+                        message =
+                            "Doğrulama kodu yeniden gönderilirken bir hata oluştu.",
+
+                        isError = true
+                    )
             }
         }
     }
@@ -569,6 +875,29 @@ class AuthViewModel(
             )
     }
 
+    /*
+     * Login ekranındaki navigation olayı bir kez
+     * tüketilir; pendingVerificationEmail korunur.
+     */
+    fun consumeEmailVerificationRequired() {
+        _uiState.value =
+            _uiState.value.copy(
+                emailVerificationRequired = false
+            )
+    }
+
+    fun resetEmailVerificationState() {
+        _uiState.value =
+            _uiState.value.copy(
+                emailVerificationRequired = false,
+                emailVerificationSuccessful = false,
+                pendingVerificationEmail = null,
+                resendRequestVersion = 0,
+                message = null,
+                isError = false
+            )
+    }
+
     private suspend fun applyAuthenticatedProfile(
         profile: UserProfileResponse,
         message: String
@@ -630,6 +959,17 @@ class AuthViewModel(
             )
     }
 
+    private fun showVerificationError(
+        message: String
+    ) {
+        _uiState.value =
+            _uiState.value.copy(
+                isLoading = false,
+                message = message,
+                isError = true
+            )
+    }
+
     private fun showStateError(
         message: String
     ) {
@@ -641,7 +981,7 @@ class AuthViewModel(
             )
     }
 
-    private fun parseErrorMessage(
+    private fun parseErrorCode(
         errorJson: String?
     ): String? {
         if (errorJson.isNullOrBlank()) {
@@ -650,7 +990,119 @@ class AuthViewModel(
 
         return runCatching {
             JSONObject(errorJson)
-                .optString("message")
+                .optString("code")
+                .takeIf {
+                    it.isNotBlank()
+                }
+        }.getOrNull()
+    }
+
+    private fun parseErrorMessage(
+        errorJson: String?
+    ): String? {
+        if (errorJson.isNullOrBlank()) {
+            return null
+        }
+
+        return runCatching {
+            val root =
+                JSONObject(errorJson)
+
+            /*
+             * Bizim ApiResponse yapımızdan gelen
+             * normal hata mesajı.
+             */
+            val message =
+                root
+                    .optString("message")
+                    .takeIf {
+                        it.isNotBlank()
+                    }
+
+            if (message != null) {
+                return@runCatching message
+            }
+
+            /*
+             * ASP.NET Core [ApiController]
+             * model validation hataları:
+             *
+             * {
+             *   "errors": {
+             *      "Email": [...]
+             *   }
+             * }
+             */
+            val errors =
+                root.optJSONObject(
+                    "errors"
+                )
+
+            if (errors != null) {
+
+                /*
+                 * Kullanıcı formundaki alan sırasına
+                 * göre anlamlı ilk hata gösterilir.
+                 */
+                val preferredFields =
+                    listOf(
+                        "FullName",
+                        "fullName",
+                        "Email",
+                        "email",
+                        "Password",
+                        "password"
+                    )
+
+                for (field in preferredFields) {
+                    val messages =
+                        errors.optJSONArray(
+                            field
+                        )
+
+                    val firstMessage =
+                        messages
+                            ?.optString(0)
+                            ?.takeIf {
+                                it.isNotBlank()
+                            }
+
+                    if (firstMessage != null) {
+                        return@runCatching firstMessage
+                    }
+                }
+
+                /*
+                 * Beklenmeyen başka bir alan hatası
+                 * geldiyse ilk mevcut mesajı al.
+                 */
+                val keys =
+                    errors.keys()
+
+                while (keys.hasNext()) {
+                    val key =
+                        keys.next()
+
+                    val messages =
+                        errors.optJSONArray(
+                            key
+                        )
+
+                    val firstMessage =
+                        messages
+                            ?.optString(0)
+                            ?.takeIf {
+                                it.isNotBlank()
+                            }
+
+                    if (firstMessage != null) {
+                        return@runCatching firstMessage
+                    }
+                }
+            }
+
+            root
+                .optString("title")
                 .takeIf {
                     it.isNotBlank()
                 }

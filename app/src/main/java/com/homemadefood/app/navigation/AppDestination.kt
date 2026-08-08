@@ -26,6 +26,10 @@ sealed class AppDestination(
         AppDestination(
             route = "auth/register"
         )
+    data object EmailVerification :
+        AppDestination(
+            route = "auth/verify-email"
+        )
 
     // -------------------------
     // Customer ekranları
