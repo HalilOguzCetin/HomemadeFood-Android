@@ -664,6 +664,486 @@ class AuthViewModel(
         }
     }
 
+    fun requestPasswordReset(
+        email: String
+    ) {
+        if (_uiState.value.isLoading) {
+            return
+        }
+
+        val normalizedEmail =
+            email
+                .trim()
+                .lowercase()
+
+        if (normalizedEmail.isBlank()) {
+            _uiState.value =
+                _uiState.value.copy(
+                    isLoading = false,
+                    message =
+                        "E-posta adresini girin.",
+                    isError = true
+                )
+
+            return
+        }
+
+        viewModelScope.launch {
+            val previousState =
+                _uiState.value
+
+            _uiState.value =
+                previousState.copy(
+                    isLoading = true,
+                    passwordResetRequestSuccessful =
+                        false,
+                    message = null,
+                    isError = false
+                )
+
+            try {
+                val response =
+                    authRepository
+                        .forgotPassword(
+                            email =
+                                normalizedEmail
+                        )
+
+                val responseBody =
+                    response.body()
+
+                if (
+                    response.isSuccessful &&
+                    responseBody?.success == true
+                ) {
+                    _uiState.value =
+                        previousState.copy(
+                            isLoading = false,
+
+                            passwordResetRequestSuccessful =
+                                true,
+
+                            pendingPasswordResetEmail =
+                                normalizedEmail,
+
+                            message =
+                                responseBody.message,
+
+                            isError = false
+                        )
+                } else {
+                    val errorJson =
+                        response
+                            .errorBody()
+                            ?.string()
+
+                    val errorMessage =
+                        when (response.code()) {
+                            429 -> {
+                                val retryAfterSeconds =
+                                    response.headers()[
+                                        "Retry-After"
+                                    ]?.toIntOrNull()
+
+                                if (
+                                    retryAfterSeconds != null &&
+                                    retryAfterSeconds > 0
+                                ) {
+                                    "Çok fazla şifre sıfırlama isteği yapıldı. " +
+                                            "Yaklaşık $retryAfterSeconds saniye sonra tekrar deneyin."
+                                } else {
+                                    "Çok fazla şifre sıfırlama isteği yapıldı. " +
+                                            "Lütfen daha sonra tekrar deneyin."
+                                }
+                            }
+
+                            400 ->
+                                parseErrorMessage(
+                                    errorJson
+                                ) ?: "Gönderilen bilgiler doğrulanamadı."
+
+                            else ->
+                                parseErrorMessage(
+                                    errorJson
+                                ) ?: "Şifre sıfırlama isteği şu anda tamamlanamadı."
+                        }
+
+                    _uiState.value =
+                        previousState.copy(
+                            isLoading = false,
+                            message = errorMessage,
+                            isError = true
+                        )
+                }
+            } catch (_: IOException) {
+                _uiState.value =
+                    previousState.copy(
+                        isLoading = false,
+
+                        message =
+                            "Sunucuya bağlanılamadı. Backend'in açık olduğunu kontrol edin.",
+
+                        isError = true
+                    )
+            } catch (_: Exception) {
+                _uiState.value =
+                    previousState.copy(
+                        isLoading = false,
+
+                        message =
+                            "Şifre sıfırlama isteği sırasında beklenmeyen bir hata oluştu.",
+
+                        isError = true
+                    )
+            }
+        }
+    }
+
+    fun resendPasswordResetCode(
+        email: String
+    ) {
+        if (_uiState.value.isLoading) {
+            return
+        }
+
+        val normalizedEmail =
+            email
+                .trim()
+                .lowercase()
+
+        if (normalizedEmail.isBlank()) {
+            _uiState.value =
+                _uiState.value.copy(
+                    isLoading = false,
+                    message =
+                        "E-posta adresi bulunamadı.",
+                    isError = true
+                )
+
+            return
+        }
+
+        viewModelScope.launch {
+            val previousState =
+                _uiState.value
+
+            _uiState.value =
+                previousState.copy(
+                    isLoading = true,
+                    message = null,
+                    isError = false
+                )
+
+            try {
+                val response =
+                    authRepository
+                        .forgotPassword(
+                            email =
+                                normalizedEmail
+                        )
+
+                val responseBody =
+                    response.body()
+
+                if (
+                    response.isSuccessful &&
+                    responseBody?.success == true
+                ) {
+                    _uiState.value =
+                        previousState.copy(
+                            isLoading = false,
+
+                            pendingPasswordResetEmail =
+                                normalizedEmail,
+
+                            passwordResetResendRequestVersion =
+                                previousState
+                                    .passwordResetResendRequestVersion + 1,
+
+                            message =
+                                responseBody.message,
+
+                            isError = false
+                        )
+                } else {
+                    val errorJson =
+                        response
+                            .errorBody()
+                            ?.string()
+
+                    val errorMessage =
+                        when (response.code()) {
+                            429 -> {
+                                val retryAfterSeconds =
+                                    response.headers()[
+                                        "Retry-After"
+                                    ]?.toIntOrNull()
+
+                                if (
+                                    retryAfterSeconds != null &&
+                                    retryAfterSeconds > 0
+                                ) {
+                                    "Çok fazla şifre sıfırlama isteği yapıldı. " +
+                                            "Yaklaşık $retryAfterSeconds saniye sonra tekrar deneyin."
+                                } else {
+                                    "Çok fazla şifre sıfırlama isteği yapıldı. " +
+                                            "Lütfen daha sonra tekrar deneyin."
+                                }
+                            }
+
+                            400 ->
+                                parseErrorMessage(
+                                    errorJson
+                                ) ?: "Gönderilen bilgiler doğrulanamadı."
+
+                            else ->
+                                parseErrorMessage(
+                                    errorJson
+                                ) ?: "Yeni şifre sıfırlama kodu istenemedi."
+                        }
+
+                    _uiState.value =
+                        previousState.copy(
+                            isLoading = false,
+                            message = errorMessage,
+                            isError = true
+                        )
+                }
+            } catch (_: IOException) {
+                _uiState.value =
+                    previousState.copy(
+                        isLoading = false,
+
+                        message =
+                            "Sunucuya bağlanılamadı. Backend'in açık olduğunu kontrol edin.",
+
+                        isError = true
+                    )
+            } catch (_: Exception) {
+                _uiState.value =
+                    previousState.copy(
+                        isLoading = false,
+
+                        message =
+                            "Yeni şifre sıfırlama kodu istenirken bir hata oluştu.",
+
+                        isError = true
+                    )
+            }
+        }
+    }
+
+    fun resetPassword(
+        email: String,
+        code: String,
+        newPassword: String
+    ) {
+        if (_uiState.value.isLoading) {
+            return
+        }
+
+        val normalizedEmail =
+            email
+                .trim()
+                .lowercase()
+
+        val normalizedCode =
+            code.trim()
+
+        if (
+            normalizedEmail.isBlank() ||
+            normalizedCode.length != 6 ||
+            normalizedCode.any {
+                !it.isDigit()
+            } ||
+            newPassword.isBlank()
+        ) {
+            _uiState.value =
+                _uiState.value.copy(
+                    isLoading = false,
+                    message =
+                        "Şifre sıfırlama bilgilerini kontrol edin.",
+                    isError = true
+                )
+
+            return
+        }
+
+        viewModelScope.launch {
+            val previousState =
+                _uiState.value
+
+            _uiState.value =
+                previousState.copy(
+                    isLoading = true,
+                    passwordResetSuccessful =
+                        false,
+                    message = null,
+                    isError = false
+                )
+
+            try {
+                val response =
+                    authRepository
+                        .resetPassword(
+                            email =
+                                normalizedEmail,
+
+                            code =
+                                normalizedCode,
+
+                            newPassword =
+                                newPassword
+                        )
+
+                val responseBody =
+                    response.body()
+
+                if (
+                    response.isSuccessful &&
+                    responseBody?.success == true
+                ) {
+                    _uiState.value =
+                        previousState.copy(
+                            isLoading = false,
+
+                            passwordResetSuccessful =
+                                true,
+
+                            pendingPasswordResetEmail =
+                                normalizedEmail,
+
+                            message =
+                                responseBody.message,
+
+                            isError = false
+                        )
+                } else {
+                    val errorJson =
+                        response
+                            .errorBody()
+                            ?.string()
+
+                    val errorMessage =
+                        when (response.code()) {
+                            429 -> {
+                                val retryAfterSeconds =
+                                    response.headers()[
+                                        "Retry-After"
+                                    ]?.toIntOrNull()
+
+                                if (
+                                    retryAfterSeconds != null &&
+                                    retryAfterSeconds > 0
+                                ) {
+                                    "Çok fazla şifre sıfırlama denemesi yapıldı. " +
+                                            "Yaklaşık $retryAfterSeconds saniye sonra tekrar deneyin."
+                                } else {
+                                    "Çok fazla şifre sıfırlama denemesi yapıldı. " +
+                                            "Lütfen daha sonra tekrar deneyin."
+                                }
+                            }
+
+                            400 ->
+                                parseErrorMessage(
+                                    errorJson
+                                ) ?: "Kod geçersiz, süresi dolmuş veya kullanılamıyor."
+
+                            else ->
+                                parseErrorMessage(
+                                    errorJson
+                                ) ?: "Şifre sıfırlama işlemi tamamlanamadı."
+                        }
+
+                    _uiState.value =
+                        previousState.copy(
+                            isLoading = false,
+                            message = errorMessage,
+                            isError = true
+                        )
+                }
+            } catch (_: IOException) {
+                _uiState.value =
+                    previousState.copy(
+                        isLoading = false,
+
+                        message =
+                            "Sunucuya bağlanılamadı. Backend'in açık olduğunu kontrol edin.",
+
+                        isError = true
+                    )
+            } catch (_: Exception) {
+                _uiState.value =
+                    previousState.copy(
+                        isLoading = false,
+
+                        message =
+                            "Şifre sıfırlanırken beklenmeyen bir hata oluştu.",
+
+                        isError = true
+                    )
+            }
+        }
+    }
+
+    /*
+     * ForgotPasswordScreen -> ResetPasswordScreen
+     * navigation olayı bir kez tüketilir.
+     * E-posta state'te korunur.
+     */
+    fun consumePasswordResetRequestSuccessful() {
+        _uiState.value =
+            _uiState.value.copy(
+                passwordResetRequestSuccessful =
+                    false
+            )
+    }
+
+    /*
+     * Başarılı reset sonrası Login'e geçerken
+     * başarı mesajı korunur; yalnızca reset
+     * navigation state'i temizlenir.
+     */
+    fun consumePasswordResetSuccessful() {
+        _uiState.value =
+            _uiState.value.copy(
+                passwordResetRequestSuccessful =
+                    false,
+
+                passwordResetSuccessful =
+                    false,
+
+                pendingPasswordResetEmail =
+                    null,
+
+                passwordResetResendRequestVersion =
+                    0,
+
+                isLoading = false,
+                isError = false
+            )
+    }
+
+    fun resetPasswordResetState() {
+        _uiState.value =
+            _uiState.value.copy(
+                passwordResetRequestSuccessful =
+                    false,
+
+                passwordResetSuccessful =
+                    false,
+
+                pendingPasswordResetEmail =
+                    null,
+
+                passwordResetResendRequestVersion =
+                    0,
+
+                message = null,
+                isError = false
+            )
+    }
+
     /**
      * Kullanıcı üretici başvurusu onaylandıktan
      * sonra backend profilini tekrar getirir.
@@ -1051,7 +1531,11 @@ class AuthViewModel(
                         "Email",
                         "email",
                         "Password",
-                        "password"
+                        "password",
+                        "Code",
+                        "code",
+                        "NewPassword",
+                        "newPassword"
                     )
 
                 for (field in preferredFields) {

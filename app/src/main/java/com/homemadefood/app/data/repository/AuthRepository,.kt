@@ -2,11 +2,14 @@ package com.homemadefood.app.data.repository
 
 import com.homemadefood.app.data.model.ApiResponse
 import com.homemadefood.app.data.model.EmailVerificationResponse
+import com.homemadefood.app.data.model.ForgotPasswordRequest
 import com.homemadefood.app.data.model.LoginRequest
 import com.homemadefood.app.data.model.LoginResponse
+import com.homemadefood.app.data.model.PasswordResetResponse
 import com.homemadefood.app.data.model.RegisterRequest
 import com.homemadefood.app.data.model.RegisterResponse
 import com.homemadefood.app.data.model.ResendEmailVerificationRequest
+import com.homemadefood.app.data.model.ResetPasswordRequest
 import com.homemadefood.app.data.model.UserProfileResponse
 import com.homemadefood.app.data.model.VerifyEmailRequest
 import com.homemadefood.app.data.remote.AuthApiService
@@ -85,6 +88,54 @@ class AuthRepository(
 
         return authApiService
             .resendEmailVerification(
+                request = request
+            )
+    }
+
+    suspend fun forgotPassword(
+        email: String
+    ): Response<
+            ApiResponse<PasswordResetResponse>
+            > {
+
+        val request =
+            ForgotPasswordRequest(
+                email =
+                    email
+                        .trim()
+                        .lowercase()
+            )
+
+        return authApiService
+            .forgotPassword(
+                request = request
+            )
+    }
+
+    suspend fun resetPassword(
+        email: String,
+        code: String,
+        newPassword: String
+    ): Response<
+            ApiResponse<PasswordResetResponse>
+            > {
+
+        val request =
+            ResetPasswordRequest(
+                email =
+                    email
+                        .trim()
+                        .lowercase(),
+
+                code =
+                    code.trim(),
+
+                newPassword =
+                    newPassword
+            )
+
+        return authApiService
+            .resetPassword(
                 request = request
             )
     }

@@ -13,8 +13,6 @@ sealed class AppDestination(
 
     // -------------------------
     // Auth ekranları
-    //---------
-    // Auth ekranları
     // -------------------------
 
     data object Login :
@@ -26,9 +24,20 @@ sealed class AppDestination(
         AppDestination(
             route = "auth/register"
         )
+
     data object EmailVerification :
         AppDestination(
             route = "auth/verify-email"
+        )
+
+    data object ForgotPassword :
+        AppDestination(
+            route = "auth/forgot-password"
+        )
+
+    data object ResetPassword :
+        AppDestination(
+            route = "auth/reset-password"
         )
 
     // -------------------------
@@ -124,10 +133,15 @@ sealed class AppDestination(
         AppDestination(
             route = "customer/producer-application"
         )
+
     data object CustomerReviews :
         AppDestination(
             route = "customer/reviews"
         )
+
+    // -------------------------
+    // Producer ekranları
+    // -------------------------
 
     data object ProducerHome :
         AppDestination(
@@ -168,10 +182,12 @@ sealed class AppDestination(
         AppDestination(
             route = "producer/orders"
         )
+
     data object ProducerReviews :
         AppDestination(
             route = "producer/reviews"
         )
+
     data object ProducerProfile :
         AppDestination(
             route = "producer/profile"
@@ -190,6 +206,7 @@ sealed class AppDestination(
         AppDestination(
             route = "admin/applications"
         )
+
     data object AdminUsers :
         AppDestination(
             route = "admin/users"
@@ -209,6 +226,7 @@ sealed class AppDestination(
             return "admin/users/$userId"
         }
     }
+
     data object AdminOrders :
         AppDestination(
             route = "admin/orders"

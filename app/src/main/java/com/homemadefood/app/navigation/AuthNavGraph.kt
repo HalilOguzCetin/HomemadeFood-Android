@@ -11,8 +11,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navigation
 import com.homemadefood.app.ui.auth.AuthViewModel
 import com.homemadefood.app.ui.auth.EmailVerificationScreen
+import com.homemadefood.app.ui.auth.ForgotPasswordScreen
 import com.homemadefood.app.ui.auth.LoginScreen
 import com.homemadefood.app.ui.auth.RegisterScreen
+import com.homemadefood.app.ui.auth.ResetPasswordScreen
 
 fun NavGraphBuilder.authNavGraph(
     navController: NavHostController,
@@ -42,11 +44,6 @@ fun NavGraphBuilder.authNavGraph(
                         .pendingVerificationEmail
                         .isNullOrBlank()
                 ) {
-                    /*
-                     * Navigation olayı tüketilir fakat
-                     * doğrulama ekranının ihtiyaç duyduğu
-                     * e-posta state'te tutulur.
-                     */
                     authViewModel
                         .consumeEmailVerificationRequired()
 
@@ -89,6 +86,24 @@ fun NavGraphBuilder.authNavGraph(
                     ) {
                         launchSingleTop = true
                     }
+                },
+
+                onForgotPasswordClick = {
+                    authViewModel
+                        .resetPasswordResetState()
+
+                    navController.navigate(
+                        AppDestination
+                            .ForgotPassword
+                            .route
+                    ) {
+                        launchSingleTop = true
+                    }
+                },
+
+                onClearMessage = {
+                    authViewModel
+                        .clearMessage()
                 },
 
                 modifier =
@@ -185,11 +200,6 @@ fun NavGraphBuilder.authNavGraph(
                     .pendingVerificationEmail
                     .orEmpty()
 
-            /*
-             * Doğrulama ekranına gerekli e-posta
-             * state'te yoksa güvenli biçimde
-             * login ekranına geri dön.
-             */
             LaunchedEffect(email) {
                 if (email.isBlank()) {
                     navController.navigate(
@@ -267,6 +277,200 @@ fun NavGraphBuilder.authNavGraph(
                             popUpTo(
                                 AppDestination
                                     .EmailVerification
+                                    .route
+                            ) {
+                                inclusive = true
+                            }
+
+                            launchSingleTop = true
+                        }
+                    },
+
+                    onClearMessage = {
+                        authViewModel
+                            .clearMessage()
+                    },
+
+                    modifier =
+                        Modifier.fillMaxSize()
+                )
+            }
+        }
+
+        composable(
+            route =
+                AppDestination
+                    .ForgotPassword
+                    .route
+        ) {
+            val authUiState by
+            authViewModel.uiState
+                .collectAsStateWithLifecycle()
+
+            LaunchedEffect(
+                authUiState
+                    .passwordResetRequestSuccessful,
+                authUiState
+                    .pendingPasswordResetEmail
+            ) {
+                if (
+                    authUiState
+                        .passwordResetRequestSuccessful &&
+                    !authUiState
+                        .pendingPasswordResetEmail
+                        .isNullOrBlank()
+                ) {
+                    authViewModel
+                        .consumePasswordResetRequestSuccessful()
+
+                    navController.navigate(
+                        AppDestination
+                            .ResetPassword
+                            .route
+                    ) {
+                        popUpTo(
+                            AppDestination
+                                .ForgotPassword
+                                .route
+                        ) {
+                            inclusive = true
+                        }
+
+                        launchSingleTop = true
+                    }
+                }
+            }
+
+            ForgotPasswordScreen(
+                uiState =
+                    authUiState,
+
+                onRequestResetClick = {
+                        email ->
+
+                    authViewModel
+                        .requestPasswordReset(
+                            email = email
+                        )
+                },
+
+                onNavigateToLogin = {
+                    authViewModel
+                        .resetPasswordResetState()
+
+                    navController.popBackStack()
+                },
+
+                onClearMessage = {
+                    authViewModel
+                        .clearMessage()
+                },
+
+                modifier =
+                    Modifier.fillMaxSize()
+            )
+        }
+
+        composable(
+            route =
+                AppDestination
+                    .ResetPassword
+                    .route
+        ) {
+            val authUiState by
+            authViewModel.uiState
+                .collectAsStateWithLifecycle()
+
+            val email =
+                authUiState
+                    .pendingPasswordResetEmail
+                    .orEmpty()
+
+            LaunchedEffect(email) {
+                if (email.isBlank()) {
+                    authViewModel
+                        .resetPasswordResetState()
+
+                    navController.navigate(
+                        AppDestination.Login.route
+                    ) {
+                        popUpTo(
+                            AppDestination
+                                .ResetPassword
+                                .route
+                        ) {
+                            inclusive = true
+                        }
+
+                        launchSingleTop = true
+                    }
+                }
+            }
+
+            LaunchedEffect(
+                authUiState
+                    .passwordResetSuccessful
+            ) {
+                if (
+                    authUiState
+                        .passwordResetSuccessful
+                ) {
+                    authViewModel
+                        .consumePasswordResetSuccessful()
+
+                    navController.navigate(
+                        AppDestination.Login.route
+                    ) {
+                        popUpTo(
+                            AppDestination
+                                .ResetPassword
+                                .route
+                        ) {
+                            inclusive = true
+                        }
+
+                        launchSingleTop = true
+                    }
+                }
+            }
+
+            if (email.isNotBlank()) {
+                ResetPasswordScreen(
+                    email = email,
+
+                    uiState =
+                        authUiState,
+
+                    onResetPasswordClick = {
+                            code,
+                            newPassword ->
+
+                        authViewModel
+                            .resetPassword(
+                                email = email,
+                                code = code,
+                                newPassword =
+                                    newPassword
+                            )
+                    },
+
+                    onResendCodeClick = {
+                        authViewModel
+                            .resendPasswordResetCode(
+                                email = email
+                            )
+                    },
+
+                    onNavigateToLogin = {
+                        authViewModel
+                            .resetPasswordResetState()
+
+                        navController.navigate(
+                            AppDestination.Login.route
+                        ) {
+                            popUpTo(
+                                AppDestination
+                                    .ResetPassword
                                     .route
                             ) {
                                 inclusive = true

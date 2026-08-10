@@ -2,11 +2,14 @@ package com.homemadefood.app.data.remote
 
 import com.homemadefood.app.data.model.ApiResponse
 import com.homemadefood.app.data.model.EmailVerificationResponse
+import com.homemadefood.app.data.model.ForgotPasswordRequest
 import com.homemadefood.app.data.model.LoginRequest
 import com.homemadefood.app.data.model.LoginResponse
+import com.homemadefood.app.data.model.PasswordResetResponse
 import com.homemadefood.app.data.model.RegisterRequest
 import com.homemadefood.app.data.model.RegisterResponse
 import com.homemadefood.app.data.model.ResendEmailVerificationRequest
+import com.homemadefood.app.data.model.ResetPasswordRequest
 import com.homemadefood.app.data.model.UserProfileResponse
 import com.homemadefood.app.data.model.VerifyEmailRequest
 import retrofit2.Response
@@ -52,6 +55,31 @@ interface AuthApiService {
         request: ResendEmailVerificationRequest
     ): Response<
             ApiResponse<EmailVerificationResponse>
+            >
+
+    /*
+     * Public endpoint.
+     * Hesabın varlığını açıklamadan
+     * şifre sıfırlama kodu talep eder.
+     */
+    @POST("api/Auth/forgot-password")
+    suspend fun forgotPassword(
+        @Body
+        request: ForgotPasswordRequest
+    ): Response<
+            ApiResponse<PasswordResetResponse>
+            >
+
+    /*
+     * Public endpoint.
+     * Kod + yeni şifre ile parolayı yeniler.
+     */
+    @POST("api/Auth/reset-password")
+    suspend fun resetPassword(
+        @Body
+        request: ResetPasswordRequest
+    ): Response<
+            ApiResponse<PasswordResetResponse>
             >
 
     /*

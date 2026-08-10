@@ -36,6 +36,30 @@ data class AuthUiState(
      */
     val resendRequestVersion: Int = 0,
 
+    /*
+     * Forgot-password başarılı HTTP cevabından
+     * sonra ResetPasswordScreen'e geçiş olayı.
+     */
+    val passwordResetRequestSuccessful: Boolean = false,
+
+    /*
+     * Reset ekranının kullanacağı normalize
+     * edilmiş e-posta adresi.
+     */
+    val pendingPasswordResetEmail: String? = null,
+
+    /*
+     * Reset-password başarılı olduğunda
+     * Login ekranına dönme olayı.
+     */
+    val passwordResetSuccessful: Boolean = false,
+
+    /*
+     * Reset ekranında yeni kod istendiğinde
+     * 60 saniyelik UI sayacını yeniler.
+     */
+    val passwordResetResendRequestVersion: Int = 0,
+
     val message: String? = null,
     val isError: Boolean = false,
 
