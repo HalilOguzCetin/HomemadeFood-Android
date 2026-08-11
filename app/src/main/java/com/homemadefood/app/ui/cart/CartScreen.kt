@@ -1,6 +1,8 @@
 package com.homemadefood.app.ui.cart
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,21 +10,30 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.homemadefood.app.data.model.CartItemResponse
+import com.homemadefood.app.ui.components.FoodImage
 import java.util.Locale
 
 @Composable
@@ -256,32 +267,82 @@ private fun CartItemCard(
     onRemoveClick: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(
+            containerColor =
+                MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 1.dp
+        )
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(14.dp)
         ) {
-            Text(
-                text = item.foodName,
-                style = MaterialTheme.typography.titleLarge
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment =
+                    Alignment.CenterVertically
+            ) {
+                FoodImage(
+                    imageUrl = item.imageUrl,
+                    contentDescription =
+                        item.foodName,
+                    modifier = Modifier
+                        .weight(0.32f)
+                        .aspectRatio(1f)
+                        .clip(
+                            RoundedCornerShape(14.dp)
+                        ),
+                    contentScale = ContentScale.Fit
+                )
+
+                Spacer(
+                    modifier = Modifier.width(14.dp)
+                )
+
+                Column(
+                    modifier = Modifier.weight(0.68f)
+                ) {
+                    Text(
+                        text = item.foodName,
+                        style =
+                            MaterialTheme.typography.titleMedium,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    Spacer(
+                        modifier = Modifier.height(8.dp)
+                    )
+
+                    Text(
+                        text =
+                            "Birim fiyat ${formatPrice(item.unitPrice)}",
+                        style =
+                            MaterialTheme.typography.bodySmall,
+                        color =
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Spacer(
+                        modifier = Modifier.height(4.dp)
+                    )
+
+                    Text(
+                        text =
+                            formatPrice(item.lineTotal),
+                        style =
+                            MaterialTheme.typography.titleMedium,
+                        color =
+                            MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
 
             Spacer(
-                modifier = Modifier.height(8.dp)
-            )
-
-            CartSummaryRow(
-                title = "Birim fiyat",
-                value = formatPrice(item.unitPrice)
-            )
-
-            CartSummaryRow(
-                title = "Ara toplam",
-                value = formatPrice(item.lineTotal)
-            )
-
-            Spacer(
-                modifier = Modifier.height(12.dp)
+                modifier = Modifier.height(14.dp)
             )
 
             Row(
@@ -291,45 +352,60 @@ private fun CartItemCard(
                 verticalAlignment =
                     Alignment.CenterVertically
             ) {
-                Button(
+                OutlinedButton(
                     onClick = onDecreaseClick,
-                    enabled = !isUpdating
+                    enabled = !isUpdating,
+                    contentPadding = PaddingValues(
+                        horizontal = 16.dp,
+                        vertical = 8.dp
+                    )
                 ) {
-                    Text("-")
+                    Text("−")
                 }
 
                 if (isUpdating) {
                     CircularProgressIndicator(
-                        modifier = Modifier.height(24.dp),
+                        modifier =
+                            Modifier.height(24.dp),
                         strokeWidth = 2.dp
                     )
                 } else {
                     Text(
-                        text = item.quantity.toString(),
-                        style = MaterialTheme.typography.titleLarge
+                        text =
+                            item.quantity.toString(),
+                        style =
+                            MaterialTheme.typography.titleLarge
                     )
                 }
 
-                Button(
+                OutlinedButton(
                     onClick = onIncreaseClick,
                     enabled =
                         !isUpdating &&
-                                item.quantity < 50
+                                item.quantity < 50,
+                    contentPadding = PaddingValues(
+                        horizontal = 16.dp,
+                        vertical = 8.dp
+                    )
                 ) {
                     Text("+")
                 }
             }
 
             Spacer(
-                modifier = Modifier.height(12.dp)
+                modifier = Modifier.height(10.dp)
             )
 
-            Button(
+            TextButton(
                 onClick = onRemoveClick,
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !isUpdating
             ) {
-                Text("Ürünü Sepetten Çıkar")
+                Text(
+                    text = "Sepetten Çıkar",
+                    color =
+                        MaterialTheme.colorScheme.error
+                )
             }
         }
     }

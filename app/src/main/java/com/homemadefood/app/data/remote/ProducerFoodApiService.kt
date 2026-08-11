@@ -1,15 +1,18 @@
 package com.homemadefood.app.data.remote
 
 import com.homemadefood.app.data.model.ApiResponse
-import com.homemadefood.app.data.model.CreateFoodRequest
 import com.homemadefood.app.data.model.FoodResponse
 import com.homemadefood.app.data.model.UpdateFoodRequest
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Headers
+import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.PUT
+import retrofit2.http.Part
 import retrofit2.http.Path
 
 interface ProducerFoodApiService {
@@ -37,10 +40,26 @@ interface ProducerFoodApiService {
     @Headers(
         "X-HomemadeFood-Requires-Auth: true"
     )
+    @Multipart
     @POST("api/Food")
     suspend fun createFood(
-        @Body
-        request: CreateFoodRequest
+        @Part("CategoryId")
+        categoryId: RequestBody,
+
+        @Part("Name")
+        name: RequestBody,
+
+        @Part("Description")
+        description: RequestBody,
+
+        @Part("Price")
+        price: RequestBody,
+
+        @Part("PreparationTimeMinutes")
+        preparationTimeMinutes: RequestBody,
+
+        @Part
+        image: MultipartBody.Part
     ): Response<
             ApiResponse<FoodResponse>
             >

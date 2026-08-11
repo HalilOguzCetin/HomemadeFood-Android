@@ -2,6 +2,8 @@ package com.homemadefood.app.ui.customer
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -20,17 +22,23 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.shape.RoundedCornerShape
 import com.homemadefood.app.data.model.FoodResponse
 import java.util.Locale
 import androidx.compose.foundation.clickable
+import com.homemadefood.app.ui.components.FoodImage
 
 @Composable
 fun CustomerHomeScreen(
@@ -469,100 +477,157 @@ private fun FoodCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(
-                vertical = 7.dp
-            )
-            .clickable(
-                onClick = onClick
-            ),
-
-        elevation =
-            CardDefaults.cardElevation(
-                defaultElevation = 3.dp
-            )
+            .padding(vertical = 8.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor =
+                MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp
+        )
     ) {
-        Column(
-            modifier =
-                Modifier.padding(18.dp)
-        ) {
-            Text(
-                text = food.name,
-                style =
-                    MaterialTheme.typography
-                        .titleMedium
-            )
-
-            Spacer(
-                modifier =
-                    Modifier.height(4.dp)
-            )
-
-            Text(
-                text = food.businessName,
-                style =
-                    MaterialTheme.typography
-                        .labelLarge,
-                color =
-                    MaterialTheme.colorScheme
-                        .primary
-            )
-
-            Spacer(
-                modifier =
-                    Modifier.height(8.dp)
-            )
-
-            Text(
-                text = food.description,
-                style =
-                    MaterialTheme.typography
-                        .bodyMedium
-            )
-
-            Spacer(
-                modifier =
-                    Modifier.height(12.dp)
-            )
-
-            Row(
-                modifier =
-                    Modifier.fillMaxWidth(),
-
-                horizontalArrangement =
-                    Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text =
-                        formatPrice(food.price),
-
-                    style =
-                        MaterialTheme.typography
-                            .titleMedium
+        Column {
+            Box {
+                FoodImage(
+                    imageUrl = food.imageUrl,
+                    contentDescription = food.name,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(16f / 9f)
+                        .clip(
+                            RoundedCornerShape(
+                                topStart = 20.dp,
+                                topEnd = 20.dp
+                            )
+                        ),
+                    contentScale = ContentScale.Fit
                 )
 
-                Text(
-                    text =
-                        "${food.preparationTimeMinutes} dk",
-
-                    style =
-                        MaterialTheme.typography
-                            .bodyMedium
-                )
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(12.dp),
+                    shape = RoundedCornerShape(50.dp),
+                    color =
+                        if (food.isAvailable) {
+                            MaterialTheme.colorScheme.primaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.errorContainer
+                        }
+                ) {
+                    Text(
+                        text =
+                            if (food.isAvailable) {
+                                "Satışta"
+                            } else {
+                                "Satışta değil"
+                            },
+                        modifier = Modifier.padding(
+                            horizontal = 10.dp,
+                            vertical = 6.dp
+                        ),
+                        style =
+                            MaterialTheme.typography.labelMedium,
+                        color =
+                            if (food.isAvailable) {
+                                MaterialTheme.colorScheme.onPrimaryContainer
+                            } else {
+                                MaterialTheme.colorScheme.onErrorContainer
+                            }
+                    )
+                }
             }
 
-            Spacer(
-                modifier =
-                    Modifier.height(6.dp)
-            )
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Text(
+                    text = food.name,
+                    style =
+                        MaterialTheme.typography.titleLarge,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
 
-            Text(
-                text =
-                    "Kategori: ${food.categoryName}",
+                Spacer(
+                    modifier = Modifier.height(4.dp)
+                )
 
-                style =
-                    MaterialTheme.typography
-                        .bodySmall
-            )
+                Text(
+                    text = food.businessName,
+                    style =
+                        MaterialTheme.typography.bodyMedium,
+                    color =
+                        MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Spacer(
+                    modifier = Modifier.height(10.dp)
+                )
+
+                Text(
+                    text = food.description,
+                    style =
+                        MaterialTheme.typography.bodyMedium,
+                    color =
+                        MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Spacer(
+                    modifier = Modifier.height(14.dp)
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement =
+                        Arrangement.SpaceBetween,
+                    verticalAlignment =
+                        Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = formatPrice(food.price),
+                        style =
+                            MaterialTheme.typography.titleLarge,
+                        color =
+                            MaterialTheme.colorScheme.primary
+                    )
+
+                    Surface(
+                        shape = RoundedCornerShape(50.dp),
+                        color =
+                            MaterialTheme.colorScheme.surfaceVariant
+                    ) {
+                        Text(
+                            text =
+                                "${food.preparationTimeMinutes} dk",
+                            modifier = Modifier.padding(
+                                horizontal = 10.dp,
+                                vertical = 6.dp
+                            ),
+                            style =
+                                MaterialTheme.typography.labelLarge
+                        )
+                    }
+                }
+
+                Spacer(
+                    modifier = Modifier.height(10.dp)
+                )
+
+                Text(
+                    text = food.categoryName,
+                    style =
+                        MaterialTheme.typography.labelMedium,
+                    color =
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }

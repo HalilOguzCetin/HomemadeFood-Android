@@ -3,8 +3,8 @@ package com.homemadefood.app.ui.producer
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.homemadefood.app.data.local.SessionManager
-import com.homemadefood.app.data.model.CreateFoodRequest
 import com.homemadefood.app.data.repository.ProducerFoodRepository
+import com.homemadefood.app.data.upload.FoodImageMultipartFactory
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,7 +15,9 @@ import java.io.IOException
 
 class CreateFoodViewModel(
     private val producerFoodRepository: ProducerFoodRepository,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val foodImageMultipartFactory:
+    FoodImageMultipartFactory
 ) : ViewModel() {
 
     private val _uiState =
@@ -30,6 +32,7 @@ class CreateFoodViewModel(
                 categoryId = value.filter {
                     it.isDigit()
                 },
+                successMessage = null,
                 errorMessage = null
             )
     }
@@ -38,6 +41,7 @@ class CreateFoodViewModel(
         _uiState.value =
             _uiState.value.copy(
                 name = value,
+                successMessage = null,
                 errorMessage = null
             )
     }
@@ -46,6 +50,7 @@ class CreateFoodViewModel(
         _uiState.value =
             _uiState.value.copy(
                 description = value,
+                successMessage = null,
                 errorMessage = null
             )
     }
@@ -61,6 +66,7 @@ class CreateFoodViewModel(
         _uiState.value =
             _uiState.value.copy(
                 price = filteredValue,
+                successMessage = null,
                 errorMessage = null
             )
     }
@@ -72,14 +78,29 @@ class CreateFoodViewModel(
                     value.filter {
                         it.isDigit()
                     },
+                successMessage = null,
                 errorMessage = null
             )
     }
 
-    fun onImageUrlChange(value: String) {
+    fun onImageSelected(uri: String) {
+        if (uri.isBlank()) {
+            return
+        }
+
         _uiState.value =
             _uiState.value.copy(
-                imageUrl = value,
+                selectedImageUri = uri,
+                successMessage = null,
+                errorMessage = null
+            )
+    }
+
+    fun onImageRemoved() {
+        _uiState.value =
+            _uiState.value.copy(
+                selectedImageUri = null,
+                successMessage = null,
                 errorMessage = null
             )
     }
@@ -102,6 +123,9 @@ class CreateFoodViewModel(
         val preparationTime =
             currentState.preparationTimeMinutes
                 .toIntOrNull()
+
+        val imageUri =
+            currentState.selectedImageUri
 
         when {
             categoryId == null || categoryId <= 0 -> {
@@ -141,9 +165,9 @@ class CreateFoodViewModel(
                 return
             }
 
-            currentState.imageUrl.isBlank() -> {
+            imageUri.isNullOrBlank() -> {
                 showError(
-                    "Yemek görselinin adresini girmelisiniz."
+                    "Yemek fotoğrafı seçmelisiniz."
                 )
                 return
             }
@@ -153,6 +177,7 @@ class CreateFoodViewModel(
             _uiState.value =
                 currentState.copy(
                     isSaving = true,
+                    createdFood = null,
                     successMessage = null,
                     errorMessage = null
                 )
@@ -163,35 +188,55 @@ class CreateFoodViewModel(
                     .first()
 
             if (!isLoggedIn) {
-                _uiState.value =
-                    _uiState.value.copy(
-                        isSaving = false,
-                        errorMessage =
-                            "Oturum bilgisi bulunamadı."
-                    )
-
+                showError(
+                    "Oturum bilgisi bulunamadı. Yeniden giriş yapın."
+                )
                 return@launch
             }
 
-            val request =
-                CreateFoodRequest(
-                    categoryId = categoryId,
-                    name =
-                        currentState.name.trim(),
-                    description =
-                        currentState.description.trim(),
-                    price = price,
-                    preparationTimeMinutes =
-                        preparationTime,
-                    imageUrl =
-                        currentState.imageUrl.trim()
-                )
+            val imagePart =
+                try {
+                    foodImageMultipartFactory
+                        .createPart(imageUri)
+                } catch (
+                    exception: IllegalArgumentException
+                ) {
+                    showError(
+                        exception.message
+                            ?: "Seçilen fotoğraf yüklemeye hazırlanamadı."
+                    )
+                    return@launch
+                } catch (_: SecurityException) {
+                    showError(
+                        "Seçilen fotoğrafa erişilemiyor. Lütfen fotoğrafı yeniden seçin."
+                    )
+                    return@launch
+                } catch (_: IOException) {
+                    showError(
+                        "Seçilen fotoğraf okunamadı. Lütfen başka bir fotoğraf deneyin."
+                    )
+                    return@launch
+                } catch (_: Exception) {
+                    showError(
+                        "Fotoğraf hazırlanırken bir hata oluştu."
+                    )
+                    return@launch
+                }
 
             try {
                 val response =
-                    producerFoodRepository.createFood(
-                        request = request
-                    )
+                    producerFoodRepository
+                        .createFood(
+                            categoryId = categoryId,
+                            name =
+                                currentState.name.trim(),
+                            description =
+                                currentState.description.trim(),
+                            price = price,
+                            preparationTimeMinutes =
+                                preparationTime,
+                            image = imagePart
+                        )
 
                 val responseBody =
                     response.body()
@@ -209,34 +254,31 @@ class CreateFoodViewModel(
                             isSaving = false,
                             createdFood = createdFood,
                             successMessage =
-                                "Yemek başarıyla eklendi.",
+                                "Yemek fotoğrafıyla birlikte başarıyla eklendi.",
                             errorMessage = null
                         )
                 } else {
-                    _uiState.value =
-                        _uiState.value.copy(
-                            isSaving = false,
-                            errorMessage =
-                                parseErrorMessage(
-                                    response.errorBody()
-                                        ?.string()
-                                ) ?: "Yemek eklenemedi."
-                        )
+                    showError(
+                        parseErrorMessage(
+                            response.errorBody()
+                                ?.string()
+                        ) ?: when (response.code()) {
+                            413 ->
+                                "Yemek fotoğrafı sunucunun izin verdiği boyuttan büyük."
+
+                            else ->
+                                "Yemek eklenemedi."
+                        }
+                    )
                 }
             } catch (_: IOException) {
-                _uiState.value =
-                    _uiState.value.copy(
-                        isSaving = false,
-                        errorMessage =
-                            "Sunucuya bağlanılamadı."
-                    )
+                showError(
+                    "Sunucuya bağlanılamadı. Backend bağlantısını kontrol edin."
+                )
             } catch (_: Exception) {
-                _uiState.value =
-                    _uiState.value.copy(
-                        isSaving = false,
-                        errorMessage =
-                            "Yemek eklenirken bir hata oluştu."
-                    )
+                showError(
+                    "Yemek eklenirken bir hata oluştu."
+                )
             }
         }
     }
@@ -249,6 +291,7 @@ class CreateFoodViewModel(
                 errorMessage = null
             )
     }
+
     fun resetForm() {
         _uiState.value = CreateFoodUiState()
     }
@@ -259,6 +302,7 @@ class CreateFoodViewModel(
         _uiState.value =
             _uiState.value.copy(
                 isSaving = false,
+                successMessage = null,
                 errorMessage = message
             )
     }

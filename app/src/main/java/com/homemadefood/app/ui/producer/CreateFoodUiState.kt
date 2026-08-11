@@ -8,7 +8,10 @@ data class CreateFoodUiState(
     val description: String = "",
     val price: String = "",
     val preparationTimeMinutes: String = "",
-    val imageUrl: String = "",
+
+    // Photo Picker'dan seçilen yerel görsel URI'si.
+    // Bu değer backend'e ImageUrl olarak gönderilmez.
+    val selectedImageUri: String? = null,
 
     val isSaving: Boolean = false,
 

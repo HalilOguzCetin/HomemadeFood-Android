@@ -3,8 +3,10 @@ package com.homemadefood.app.ui.food
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.homemadefood.app.data.local.SessionManager
+import com.homemadefood.app.data.repository.CartRepository
 import com.homemadefood.app.data.repository.FavoriteRepository
 import com.homemadefood.app.data.repository.FoodRepository
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -12,8 +14,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.io.IOException
-import kotlinx.coroutines.Job
-import com.homemadefood.app.data.repository.CartRepository
 
 class FoodDetailViewModel(
     private val foodId: Int,
@@ -35,77 +35,82 @@ class FoodDetailViewModel(
     val uiState: StateFlow<FoodDetailUiState> =
         _uiState.asStateFlow()
 
-
-
     fun loadFood() {
         loadFoodJob?.cancel()
 
-        loadFoodJob = viewModelScope.launch {
-            _uiState.value =
-                FoodDetailUiState(
-                    isLoading = true
-                )
-
-            try {
-                val response =
-                    foodRepository.getFoodById(
-                        foodId = foodId
+        loadFoodJob =
+            viewModelScope.launch {
+                _uiState.value =
+                    FoodDetailUiState(
+                        isLoading = true
                     )
 
-                val responseBody =
-                    response.body()
-
-                val food =
-                    responseBody?.data
-
-                if (
-                    response.isSuccessful &&
-                    responseBody?.success == true &&
-                    food != null
-                ) {
-                    _uiState.value =
-                        FoodDetailUiState(
-                            isLoading = false,
-                            food = food,
-                            errorMessage = null,
-                            isFavoriteChecking = true
+                try {
+                    val response =
+                        foodRepository.getFoodById(
+                            foodId = foodId
                         )
 
-                    checkFavoriteStatus()
-                } else {
-                    val errorMessage =
-                        parseErrorMessage(
-                            response.errorBody()
-                                ?.string()
-                        )
+                    val responseBody =
+                        response.body()
 
+                    val food =
+                        responseBody?.data
+
+                    if (
+                        response.isSuccessful &&
+                        responseBody?.success == true &&
+                        food != null
+                    ) {
+                        _uiState.value =
+                            FoodDetailUiState(
+                                isLoading = false,
+                                food = food,
+                                errorMessage = null,
+                                isFavoriteChecking = true,
+                                isCartChecking = true
+                            )
+
+                        /*
+                         * Detay ekranı açıldığında iki state de
+                         * gerçek backend verisinden okunur.
+                         */
+                        checkFavoriteStatus()
+                        checkCartStatus()
+                    } else {
+                        val errorMessage =
+                            parseErrorMessage(
+                                response.errorBody()
+                                    ?.string()
+                            )
+
+                        _uiState.value =
+                            FoodDetailUiState(
+                                isLoading = false,
+                                food = null,
+                                errorMessage =
+                                    errorMessage
+                                        ?: "Yemek bilgisi alınamadı."
+                            )
+                    }
+                } catch (_: IOException) {
                     _uiState.value =
                         FoodDetailUiState(
                             isLoading = false,
                             food = null,
                             errorMessage =
-                                errorMessage
-                                    ?: "Yemek bilgisi alınamadı."
+                                "Sunucuya bağlanılamadı."
+                        )
+                } catch (_: Exception) {
+                    _uiState.value =
+                        FoodDetailUiState(
+                            isLoading = false,
+                            food = null,
+                            errorMessage =
+                                "Yemek bilgisi yüklenirken bir hata oluştu."
                         )
                 }
-            } catch (_: IOException) {
-                _uiState.value =
-                    FoodDetailUiState(
-                        isLoading = false,
-                        food = null,
-                        errorMessage =
-                            "Sunucuya bağlanılamadı."
-                    )
-            } catch (_: Exception) {
-                _uiState.value =
-                    FoodDetailUiState(
-                        isLoading = false,
-                        food = null,
-                        errorMessage =
-                            "Yemek bilgisi yüklenirken bir hata oluştu."
-                    )
             }
-        }
     }
 
     private suspend fun checkFavoriteStatus() {
@@ -154,18 +159,14 @@ class FoodDetailViewModel(
                         isFavoriteError = false
                     )
             } else {
-                val errorMessage =
-                    parseErrorMessage(
-                        response.errorBody()
-                            ?.string()
-                    )
-
                 _uiState.value =
                     _uiState.value.copy(
                         isFavoriteChecking = false,
                         favoriteMessage =
-                            errorMessage
-                                ?: "Favori durumu alınamadı.",
+                            parseErrorMessage(
+                                response.errorBody()
+                                    ?.string()
+                            ) ?: "Favori durumu alınamadı.",
                         isFavoriteError = true
                     )
             }
@@ -187,6 +188,85 @@ class FoodDetailViewModel(
                 )
         }
     }
+
+    private suspend fun checkCartStatus() {
+        val isLoggedIn =
+            sessionManager
+                .isLoggedIn
+                .first()
+
+        if (!isLoggedIn) {
+            _uiState.value =
+                _uiState.value.copy(
+                    isCartChecking = false,
+                    cartMessage =
+                        "Oturum bilgisi bulunamadı.",
+                    isCartError = true
+                )
+
+            return
+        }
+
+        try {
+            val response =
+                cartRepository.getCart()
+
+            val responseBody =
+                response.body()
+
+            if (
+                response.isSuccessful &&
+                responseBody?.success == true
+            ) {
+                val cart =
+                    responseBody.data
+
+                val currentItem =
+                    cart?.items?.firstOrNull {
+                        it.foodId == foodId
+                    }
+
+                _uiState.value =
+                    _uiState.value.copy(
+                        isCartChecking = false,
+                        cartItemId =
+                            currentItem?.cartItemId,
+                        cartQuantity =
+                            currentItem?.quantity ?: 0,
+                        cartMessage = null,
+                        isCartError = false
+                    )
+            } else {
+                _uiState.value =
+                    _uiState.value.copy(
+                        isCartChecking = false,
+                        cartMessage =
+                            parseErrorMessage(
+                                response.errorBody()
+                                    ?.string()
+                            ) ?: "Sepet durumu alınamadı.",
+                        isCartError = true
+                    )
+            }
+        } catch (_: IOException) {
+            _uiState.value =
+                _uiState.value.copy(
+                    isCartChecking = false,
+                    cartMessage =
+                        "Sepet durumu için sunucuya bağlanılamadı.",
+                    isCartError = true
+                )
+        } catch (_: Exception) {
+            _uiState.value =
+                _uiState.value.copy(
+                    isCartChecking = false,
+                    cartMessage =
+                        "Sepet durumu kontrol edilirken bir hata oluştu.",
+                    isCartError = true
+                )
+        }
+    }
+
     fun refreshFavoriteStatus() {
         if (_uiState.value.food == null) {
             return
@@ -201,6 +281,23 @@ class FoodDetailViewModel(
                 )
 
             checkFavoriteStatus()
+        }
+    }
+
+    fun refreshCartStatus() {
+        if (_uiState.value.food == null) {
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.value =
+                _uiState.value.copy(
+                    isCartChecking = true,
+                    cartMessage = null,
+                    isCartError = false
+                )
+
+            checkCartStatus()
         }
     }
 
@@ -259,26 +356,25 @@ class FoodDetailViewModel(
                         _uiState.value.copy(
                             isFavorite =
                                 !wasFavorite,
-
                             isFavoriteActionLoading =
                                 false,
-
                             favoriteMessage =
-                                responseBody.message,
-
+                                responseBody.message.ifBlank {
+                                    if (wasFavorite) {
+                                        "Yemek favorilerden çıkarıldı."
+                                    } else {
+                                        "Yemek favorilere eklendi."
+                                    }
+                                },
                             isFavoriteError =
                                 false
                         )
                 } else {
-                    val errorMessage =
+                    showFavoriteError(
                         parseErrorMessage(
                             response.errorBody()
                                 ?.string()
-                        )
-
-                    showFavoriteError(
-                        errorMessage
-                            ?: "Favori işlemi gerçekleştirilemedi."
+                        ) ?: "Favori işlemi gerçekleştirilemedi."
                     )
                 }
             } catch (_: IOException) {
@@ -292,11 +388,17 @@ class FoodDetailViewModel(
             }
         }
     }
+
     fun addToCart() {
         if (
+            _uiState.value.isCartChecking ||
             _uiState.value.isCartActionLoading ||
             _uiState.value.food == null
         ) {
+            return
+        }
+
+        if (_uiState.value.cartQuantity > 0) {
             return
         }
 
@@ -348,15 +450,14 @@ class FoodDetailViewModel(
                     responseBody?.success == true &&
                     responseBody.data != null
                 ) {
-                    _uiState.value =
-                        _uiState.value.copy(
-                            isCartActionLoading = false,
-                            cartMessage =
-                                responseBody.message.ifBlank {
-                                    "Yemek sepete eklendi."
-                                },
-                            isCartError = false
-                        )
+                    applyCartResponse(
+                        cart =
+                            responseBody.data,
+                        message =
+                            responseBody.message.ifBlank {
+                                "Yemek sepete eklendi."
+                            }
+                    )
                 } else {
                     showCartError(
                         parseErrorMessage(
@@ -377,11 +478,211 @@ class FoodDetailViewModel(
         }
     }
 
+    fun increaseCartQuantity() {
+        val currentQuantity =
+            _uiState.value.cartQuantity
+
+        if (currentQuantity < 1) {
+            addToCart()
+            return
+        }
+
+        if (currentQuantity >= 50) {
+            showCartError(
+                "Bir üründen en fazla 50 adet eklenebilir."
+            )
+            return
+        }
+
+        updateCartQuantity(
+            newQuantity =
+                currentQuantity + 1
+        )
+    }
+
+    fun decreaseCartQuantity() {
+        val currentState =
+            _uiState.value
+
+        if (
+            currentState.isCartChecking ||
+            currentState.isCartActionLoading
+        ) {
+            return
+        }
+
+        val cartItemId =
+            currentState.cartItemId
+                ?: return
+
+        if (currentState.cartQuantity <= 1) {
+            removeFromCart(
+                cartItemId = cartItemId
+            )
+        } else {
+            updateCartQuantity(
+                newQuantity =
+                    currentState.cartQuantity - 1
+            )
+        }
+    }
+
+    private fun updateCartQuantity(
+        newQuantity: Int
+    ) {
+        val currentState =
+            _uiState.value
+
+        if (
+            currentState.isCartChecking ||
+            currentState.isCartActionLoading
+        ) {
+            return
+        }
+
+        val cartItemId =
+            currentState.cartItemId
+                ?: return
+
+        viewModelScope.launch {
+            _uiState.value =
+                _uiState.value.copy(
+                    isCartActionLoading = true,
+                    cartMessage = null,
+                    isCartError = false
+                )
+
+            try {
+                val response =
+                    cartRepository.updateItem(
+                        cartItemId = cartItemId,
+                        quantity = newQuantity
+                    )
+
+                val responseBody =
+                    response.body()
+
+                if (
+                    response.isSuccessful &&
+                    responseBody?.success == true &&
+                    responseBody.data != null
+                ) {
+                    applyCartResponse(
+                        cart =
+                            responseBody.data,
+                        /*
+                         * + / - işlemlerinde sürekli başarı
+                         * Snackbar'ı göstermiyoruz. Miktarın
+                         * ekranda değişmesi yeterli geri bildirim.
+                         */
+                        message = null
+                    )
+                } else {
+                    showCartError(
+                        parseErrorMessage(
+                            response.errorBody()
+                                ?.string()
+                        ) ?: "Ürün miktarı güncellenemedi."
+                    )
+                }
+            } catch (_: IOException) {
+                showCartError(
+                    "Sunucuya bağlanılamadı."
+                )
+            } catch (_: Exception) {
+                showCartError(
+                    "Miktar güncellenirken bir hata oluştu."
+                )
+            }
+        }
+    }
+
+    private fun removeFromCart(
+        cartItemId: Int
+    ) {
+        viewModelScope.launch {
+            _uiState.value =
+                _uiState.value.copy(
+                    isCartActionLoading = true,
+                    cartMessage = null,
+                    isCartError = false
+                )
+
+            try {
+                val response =
+                    cartRepository.removeItem(
+                        cartItemId = cartItemId
+                    )
+
+                val responseBody =
+                    response.body()
+
+                if (
+                    response.isSuccessful &&
+                    responseBody?.success == true &&
+                    responseBody.data != null
+                ) {
+                    applyCartResponse(
+                        cart =
+                            responseBody.data,
+                        message =
+                            "Yemek sepetten çıkarıldı."
+                    )
+                } else {
+                    showCartError(
+                        parseErrorMessage(
+                            response.errorBody()
+                                ?.string()
+                        ) ?: "Yemek sepetten çıkarılamadı."
+                    )
+                }
+            } catch (_: IOException) {
+                showCartError(
+                    "Sunucuya bağlanılamadı."
+                )
+            } catch (_: Exception) {
+                showCartError(
+                    "Yemek sepetten çıkarılırken bir hata oluştu."
+                )
+            }
+        }
+    }
+
+    private fun applyCartResponse(
+        cart: com.homemadefood.app.data.model.CartResponse,
+        message: String?
+    ) {
+        val currentItem =
+            cart.items.firstOrNull {
+                it.foodId == foodId
+            }
+
+        _uiState.value =
+            _uiState.value.copy(
+                isCartChecking = false,
+                cartItemId =
+                    currentItem?.cartItemId,
+                cartQuantity =
+                    currentItem?.quantity ?: 0,
+                isCartActionLoading = false,
+                cartMessage = message,
+                isCartError = false
+            )
+    }
+
     fun clearFavoriteMessage() {
         _uiState.value =
             _uiState.value.copy(
                 favoriteMessage = null,
                 isFavoriteError = false
+            )
+    }
+
+    fun clearCartMessage() {
+        _uiState.value =
+            _uiState.value.copy(
+                cartMessage = null,
+                isCartError = false
             )
     }
 
@@ -395,11 +696,13 @@ class FoodDetailViewModel(
                 isFavoriteError = true
             )
     }
+
     private fun showCartError(
         message: String
     ) {
         _uiState.value =
             _uiState.value.copy(
+                isCartChecking = false,
                 isCartActionLoading = false,
                 cartMessage = message,
                 isCartError = true

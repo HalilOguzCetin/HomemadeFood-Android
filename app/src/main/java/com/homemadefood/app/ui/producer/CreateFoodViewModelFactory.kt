@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.homemadefood.app.data.local.SessionManager
 import com.homemadefood.app.data.repository.ProducerFoodRepository
+import com.homemadefood.app.data.upload.FoodImageMultipartFactory
 
 class CreateFoodViewModelFactory(
     private val context: Context
@@ -18,12 +19,20 @@ class CreateFoodViewModelFactory(
                 CreateFoodViewModel::class.java
             )
         ) {
+            val applicationContext =
+                context.applicationContext
+
             val producerFoodRepository =
                 ProducerFoodRepository()
 
             val sessionManager =
                 SessionManager(
-                    context.applicationContext
+                    applicationContext
+                )
+
+            val foodImageMultipartFactory =
+                FoodImageMultipartFactory(
+                    applicationContext
                 )
 
             @Suppress("UNCHECKED_CAST")
@@ -32,7 +41,10 @@ class CreateFoodViewModelFactory(
                     producerFoodRepository,
 
                 sessionManager =
-                    sessionManager
+                    sessionManager,
+
+                foodImageMultipartFactory =
+                    foodImageMultipartFactory
             ) as T
         }
 

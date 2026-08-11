@@ -9,5 +9,6 @@ data class FavoriteResponse(
     val categoryName: String,
     val foodName: String,
     val price: Double,
+    val imageUrl: String,
     val isAvailable: Boolean
 )

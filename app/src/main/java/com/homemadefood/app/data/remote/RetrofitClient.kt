@@ -10,9 +10,6 @@ import com.homemadefood.app.BuildConfig
 
 object RetrofitClient {
 
-    private const val BASE_URL =
-        "http://127.0.0.1:5062/"
-
     @Volatile
     private var isInitialized: Boolean =
         false
@@ -122,7 +119,7 @@ object RetrofitClient {
             Retrofit by lazy {
 
         Retrofit.Builder()
-            .baseUrl(BASE_URL)
+            .baseUrl(ApiConfig.BASE_URL)
             .client(okHttpClient)
             .addConverterFactory(
                 GsonConverterFactory.create()

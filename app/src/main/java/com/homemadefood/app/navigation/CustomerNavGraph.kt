@@ -16,9 +16,11 @@ import androidx.navigation.navigation
 import com.homemadefood.app.ui.customer.CustomerHomeScreen
 import com.homemadefood.app.ui.customer.CustomerHomeViewModel
 import com.homemadefood.app.ui.customer.CustomerHomeViewModelFactory
+
 import com.homemadefood.app.ui.favorite.FavoritesScreen
 import com.homemadefood.app.ui.favorite.FavoritesViewModel
 import com.homemadefood.app.ui.favorite.FavoritesViewModelFactory
+
 import com.homemadefood.app.ui.food.FoodDetailScreen
 import com.homemadefood.app.ui.food.FoodDetailViewModel
 import com.homemadefood.app.ui.food.FoodDetailViewModelFactory
@@ -312,6 +314,34 @@ private fun NavGraphBuilder.foodDetailDestination(
 
             onAddToCartClick = {
                 foodDetailViewModel.addToCart()
+            },
+
+            onIncreaseCartClick = {
+                foodDetailViewModel
+                    .increaseCartQuantity()
+            },
+
+            onDecreaseCartClick = {
+                foodDetailViewModel
+                    .decreaseCartQuantity()
+            },
+
+            onGoToCartClick = {
+                navController.navigate(
+                    AppDestination.Cart.route
+                ) {
+                    launchSingleTop = true
+                }
+            },
+
+            onFavoriteMessageShown = {
+                foodDetailViewModel
+                    .clearFavoriteMessage()
+            },
+
+            onCartMessageShown = {
+                foodDetailViewModel
+                    .clearCartMessage()
             },
 
             modifier = Modifier.fillMaxSize()
@@ -621,7 +651,17 @@ private fun NavGraphBuilder.cartDestination(
             uiState = cartUiState,
 
             onBackClick = {
-                navController.popBackStack()
+                navController.navigate(
+                    AppDestination.CustomerHome.route
+                ) {
+                    popUpTo(
+                        AppDestination.CustomerHome.route
+                    ) {
+                        inclusive = false
+                    }
+
+                    launchSingleTop = true
+                }
             },
 
             onRetryClick = {
