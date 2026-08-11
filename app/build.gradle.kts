@@ -1,6 +1,9 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    id(
+        "com.google.android.libraries.mapsplatform.secrets-gradle-plugin"
+    )
 }
 
 android {
@@ -54,12 +57,17 @@ dependencies {
     implementation(
         platform(libs.androidx.compose.bom)
     )
+    implementation(
+        "com.google.maps.android:maps-compose:6.12.0"
+    )
 
 
     implementation(
         libs.androidx.activity.compose
     )
-
+    implementation(
+        "com.google.android.gms:play-services-location:21.4.0"
+    )
     // Yemek fotoğrafı önizleme (Photo Picker'dan seçilen content:// URI)
     implementation(
         "io.coil-kt.coil3:coil-compose:3.3.0"

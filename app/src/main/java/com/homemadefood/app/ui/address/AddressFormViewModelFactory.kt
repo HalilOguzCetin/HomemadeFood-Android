@@ -18,12 +18,20 @@ class AddressFormViewModelFactory(
                 AddressFormViewModel::class.java
             )
         ) {
+            val applicationContext =
+                context.applicationContext
+
             val addressRepository =
                 AddressRepository()
 
             val sessionManager =
                 SessionManager(
-                    context.applicationContext
+                    applicationContext
+                )
+
+            val reverseGeocoder =
+                AddressReverseGeocoder(
+                    applicationContext
                 )
 
             @Suppress("UNCHECKED_CAST")
@@ -32,7 +40,10 @@ class AddressFormViewModelFactory(
                     addressRepository,
 
                 sessionManager =
-                    sessionManager
+                    sessionManager,
+
+                reverseGeocoder =
+                    reverseGeocoder
             ) as T
         }
 

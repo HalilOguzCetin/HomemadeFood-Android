@@ -57,13 +57,13 @@ class EditAddressViewModel(
                             errorMessage =
                                 "Oturum bilgisi bulunamadı."
                         )
-
                     return@launch
                 }
 
                 try {
                     val response =
-                        addressRepository.getAddresses()
+                        addressRepository
+                            .getAddresses()
 
                     val responseBody =
                         response.body()
@@ -88,9 +88,16 @@ class EditAddressViewModel(
                                     errorMessage =
                                         "Düzenlenecek adres bulunamadı."
                                 )
-
                             return@launch
                         }
+
+                        val selectedLocation =
+                            SelectedLocation(
+                                latitude =
+                                    address.latitude,
+                                longitude =
+                                    address.longitude
+                            )
 
                         _uiState.value =
                             EditAddressUiState(
@@ -98,21 +105,26 @@ class EditAddressViewModel(
                                 title = address.title,
                                 fullAddress =
                                     address.fullAddress,
-                                latitude =
-                                    address.latitude.toString(),
-                                longitude =
-                                    address.longitude.toString(),
+                                selectedLocation =
+                                    selectedLocation,
                                 isDefault =
                                     address.isDefault,
                                 isSaving = false,
                                 isSaved = false,
-                                errorMessage = null
+                                errorMessage =
+                                    if (
+                                        selectedLocation
+                                            .isValid()
+                                    ) {
+                                        null
+                                    } else {
+                                        "Kayıtlı konum bilgisi geçerli değil."
+                                    }
                             )
                     } else {
                         _uiState.value =
                             _uiState.value.copy(
                                 isLoading = false,
-
                                 errorMessage =
                                     parseErrorMessage(
                                         response.errorBody()
@@ -158,22 +170,29 @@ class EditAddressViewModel(
             )
     }
 
-    fun updateLatitude(
-        value: String
+    /*
+     * Harita ekranı eklendiğinde yeni seçim doğrudan bu fonksiyona aktarılacak.
+     */
+    fun updateSelectedLocation(
+        latitude: Double,
+        longitude: Double
     ) {
-        _uiState.value =
-            _uiState.value.copy(
-                latitude = value,
-                errorMessage = null
+        val location =
+            SelectedLocation(
+                latitude = latitude,
+                longitude = longitude
             )
-    }
 
-    fun updateLongitude(
-        value: String
-    ) {
+        if (!location.isValid()) {
+            showError(
+                "Seçilen konum geçerli değil."
+            )
+            return
+        }
+
         _uiState.value =
             _uiState.value.copy(
-                longitude = value,
+                selectedLocation = location,
                 errorMessage = null
             )
     }
@@ -189,37 +208,30 @@ class EditAddressViewModel(
     }
 
     fun updateAddress() {
+        val currentState =
+            _uiState.value
+
         if (
-            _uiState.value.isLoading ||
-            _uiState.value.isSaving
+            currentState.isLoading ||
+            currentState.isSaving
         ) {
             return
         }
 
         val title =
-            _uiState.value.title.trim()
+            currentState.title.trim()
 
         val fullAddress =
-            _uiState.value.fullAddress.trim()
+            currentState.fullAddress.trim()
 
-        val latitude =
-            _uiState.value.latitude
-                .trim()
-                .replace(",", ".")
-                .toDoubleOrNull()
-
-        val longitude =
-            _uiState.value.longitude
-                .trim()
-                .replace(",", ".")
-                .toDoubleOrNull()
+        val selectedLocation =
+            currentState.selectedLocation
 
         when {
             title.isBlank() -> {
                 showError(
                     "Adres başlığı boş bırakılamaz."
                 )
-
                 return
             }
 
@@ -227,39 +239,20 @@ class EditAddressViewModel(
                 showError(
                     "Açık adres boş bırakılamaz."
                 )
-
                 return
             }
 
-            latitude == null -> {
+            selectedLocation == null -> {
                 showError(
-                    "Geçerli bir enlem değeri girin."
+                    "Adres için konum bilgisi bulunamadı."
                 )
-
                 return
             }
 
-            longitude == null -> {
+            !selectedLocation.isValid() -> {
                 showError(
-                    "Geçerli bir boylam değeri girin."
+                    "Seçilen konum geçerli değil."
                 )
-
-                return
-            }
-
-            latitude !in -90.0..90.0 -> {
-                showError(
-                    "Enlem -90 ile 90 arasında olmalıdır."
-                )
-
-                return
-            }
-
-            longitude !in -180.0..180.0 -> {
-                showError(
-                    "Boylam -180 ile 180 arasında olmalıdır."
-                )
-
                 return
             }
         }
@@ -274,7 +267,6 @@ class EditAddressViewModel(
                 showError(
                     "Oturum bilgisi bulunamadı. Yeniden giriş yapın."
                 )
-
                 return@launch
             }
 
@@ -290,17 +282,20 @@ class EditAddressViewModel(
                     UpdateAddressRequest(
                         title = title,
                         fullAddress = fullAddress,
-                        latitude = latitude,
-                        longitude = longitude,
+                        latitude =
+                            selectedLocation.latitude,
+                        longitude =
+                            selectedLocation.longitude,
                         isDefault =
-                            _uiState.value.isDefault
+                            currentState.isDefault
                     )
 
                 val response =
-                    addressRepository.updateAddress(
-                        addressId = addressId,
-                        request = request
-                    )
+                    addressRepository
+                        .updateAddress(
+                            addressId = addressId,
+                            request = request
+                        )
 
                 val responseBody =
                     response.body()

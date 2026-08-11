@@ -78,6 +78,11 @@ sealed class AppDestination(
         AppDestination(
             route = "customer/address/add"
         )
+    data object AddressMap :
+        AppDestination(
+            route = "customer/address/map"
+        )
+
 
     data object EditAddress :
         AppDestination(
