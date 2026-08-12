@@ -56,13 +56,20 @@ import com.homemadefood.app.ui.customer.CustomerReviewsViewModel
 import com.homemadefood.app.ui.customer.CustomerReviewsViewModelFactory
 import com.homemadefood.app.ui.auth.AuthViewModel
 import com.homemadefood.app.ui.location.LocationMapScreen
-
+import com.homemadefood.app.ui.address.SelectedLocation
 
 private const val ADDRESS_MAP_RESULT_LATITUDE =
     "address_map_result_latitude"
 
 private const val ADDRESS_MAP_RESULT_LONGITUDE =
     "address_map_result_longitude"
+
+private const val ADDRESS_MAP_INITIAL_LATITUDE =
+    "address_map_initial_latitude"
+
+private const val ADDRESS_MAP_INITIAL_LONGITUDE =
+    "address_map_initial_longitude"
+
 
 fun NavGraphBuilder.customerNavGraph(
     navController: NavHostController,
@@ -474,7 +481,7 @@ private fun NavGraphBuilder.addAddressDestination(
         route = AppDestination.AddAddress.route
     ) { backStackEntry ->
 
-    val addressFormViewModel:
+        val addressFormViewModel:
                 AddressFormViewModel =
             viewModel(
                 factory =
@@ -624,34 +631,96 @@ private fun NavGraphBuilder.addressMapDestination(
     navController: NavHostController
 ) {
     composable(
-        route = AppDestination.AddressMap.route
+        route =
+            AppDestination.AddressMap.route
     ) {
+        val previousEntry =
+            navController
+                .previousBackStackEntry
+
+        val initialLatitude =
+            previousEntry
+                ?.savedStateHandle
+                ?.get<Double>(
+                    ADDRESS_MAP_INITIAL_LATITUDE
+                )
+
+        val initialLongitude =
+            previousEntry
+                ?.savedStateHandle
+                ?.get<Double>(
+                    ADDRESS_MAP_INITIAL_LONGITUDE
+                )
+
+        val initialLocation =
+            if (
+                initialLatitude != null &&
+                initialLongitude != null
+            ) {
+                SelectedLocation(
+                    latitude =
+                        initialLatitude,
+
+                    longitude =
+                        initialLongitude
+                ).takeIf {
+                    it.isValid()
+                }
+            } else {
+                null
+            }
+
+        LaunchedEffect(
+            previousEntry
+        ) {
+            previousEntry
+                ?.savedStateHandle
+                ?.remove<Double>(
+                    ADDRESS_MAP_INITIAL_LATITUDE
+                )
+
+            previousEntry
+                ?.savedStateHandle
+                ?.remove<Double>(
+                    ADDRESS_MAP_INITIAL_LONGITUDE
+                )
+        }
+
         LocationMapScreen(
+            initialSelectedLocation =
+                initialLocation,
+
             onBackClick = {
-                navController.popBackStack()
+                navController
+                    .popBackStack()
             },
 
             onConfirmLocation = {
                     latitude,
                     longitude ->
 
-                val addAddressEntry =
+                val destinationEntry =
                     navController
                         .previousBackStackEntry
 
-                if (addAddressEntry != null) {
-                    addAddressEntry
+                if (
+                    destinationEntry != null
+                ) {
+                    destinationEntry
                         .savedStateHandle[
                         ADDRESS_MAP_RESULT_LATITUDE
-                    ] = latitude
+                    ] =
+                        latitude
 
-                    addAddressEntry
+                    destinationEntry
                         .savedStateHandle[
                         ADDRESS_MAP_RESULT_LONGITUDE
-                    ] = longitude
+                    ] =
+                        longitude
                 }
 
-                navController.popBackStack()
+                navController
+                    .popBackStack()
             },
 
             modifier =
@@ -659,6 +728,8 @@ private fun NavGraphBuilder.addressMapDestination(
         )
     }
 }
+
+
 
 private fun NavGraphBuilder.editAddressDestination(
     navController: NavHostController,
@@ -709,6 +780,57 @@ private fun NavGraphBuilder.editAddressDestination(
                 navController.popBackStack()
             }
         }
+        val selectedLatitude by
+        backStackEntry
+            .savedStateHandle
+            .getStateFlow<Double?>(
+                ADDRESS_MAP_RESULT_LATITUDE,
+                null
+            )
+            .collectAsStateWithLifecycle()
+
+        val selectedLongitude by
+        backStackEntry
+            .savedStateHandle
+            .getStateFlow<Double?>(
+                ADDRESS_MAP_RESULT_LONGITUDE,
+                null
+            )
+            .collectAsStateWithLifecycle()
+
+        LaunchedEffect(
+            selectedLatitude,
+            selectedLongitude
+        ) {
+            val latitude =
+                selectedLatitude
+
+            val longitude =
+                selectedLongitude
+
+            if (
+                latitude != null &&
+                longitude != null
+            ) {
+                editAddressViewModel
+                    .updateSelectedLocation(
+                        latitude = latitude,
+                        longitude = longitude
+                    )
+
+                backStackEntry
+                    .savedStateHandle
+                    .remove<Double>(
+                        ADDRESS_MAP_RESULT_LATITUDE
+                    )
+
+                backStackEntry
+                    .savedStateHandle
+                    .remove<Double>(
+                        ADDRESS_MAP_RESULT_LONGITUDE
+                    )
+            }
+        }
 
         EditAddressScreen(
             uiState = editAddressUiState,
@@ -727,14 +849,75 @@ private fun NavGraphBuilder.editAddressDestination(
                     .updateTitle(value)
             },
 
-            onFullAddressChange = { value ->
+            onCityChange = { value ->
                 editAddressViewModel
-                    .updateFullAddress(value)
+                    .updateCity(value)
+            },
+
+            onDistrictChange = { value ->
+                editAddressViewModel
+                    .updateDistrict(value)
+            },
+
+            onNeighborhoodChange = { value ->
+                editAddressViewModel
+                    .updateNeighborhood(value)
+            },
+
+            onStreetChange = { value ->
+                editAddressViewModel
+                    .updateStreet(value)
+            },
+
+            onBuildingNoChange = { value ->
+                editAddressViewModel
+                    .updateBuildingNo(value)
+            },
+
+            onFloorChange = { value ->
+                editAddressViewModel
+                    .updateFloor(value)
+            },
+
+            onApartmentNoChange = { value ->
+                editAddressViewModel
+                    .updateApartmentNo(value)
+            },
+
+            onAddressNoteChange = { value ->
+                editAddressViewModel
+                    .updateAddressNote(value)
             },
 
             onIsDefaultChange = { value ->
                 editAddressViewModel
                     .updateIsDefault(value)
+            },
+            onSelectLocationClick = {
+                val currentLocation =
+                    editAddressUiState
+                        .selectedLocation
+
+                if (
+                    currentLocation != null &&
+                    currentLocation.isValid()
+                ) {
+                    backStackEntry
+                        .savedStateHandle[
+                        ADDRESS_MAP_INITIAL_LATITUDE
+                    ] =
+                        currentLocation.latitude
+
+                    backStackEntry
+                        .savedStateHandle[
+                        ADDRESS_MAP_INITIAL_LONGITUDE
+                    ] =
+                        currentLocation.longitude
+                }
+
+                navController.navigate(
+                    AppDestination.AddressMap.route
+                )
             },
 
             onSaveClick = {
@@ -742,7 +925,8 @@ private fun NavGraphBuilder.editAddressDestination(
                     .updateAddress()
             },
 
-            modifier = Modifier.fillMaxSize()
+            modifier =
+                Modifier.fillMaxSize()
         )
     }
 }

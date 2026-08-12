@@ -9,6 +9,10 @@ import com.homemadefood.app.data.remote.AddressApiService
 import com.homemadefood.app.data.remote.RetrofitClient
 import retrofit2.Response
 
+import com.homemadefood.app.data.model.ReverseGeocodeResponse
+
+
+
 class AddressRepository(
     private val addressApiService:
     AddressApiService =
@@ -24,6 +28,18 @@ class AddressRepository(
 
         return addressApiService
             .getAddresses()
+    }
+    suspend fun reverseGeocode(
+        latitude: Double,
+        longitude: Double
+    ): Response<
+            ApiResponse<ReverseGeocodeResponse>
+            > {
+        return addressApiService
+            .reverseGeocode(
+                latitude = latitude,
+                longitude = longitude
+            )
     }
 
     suspend fun createAddress(

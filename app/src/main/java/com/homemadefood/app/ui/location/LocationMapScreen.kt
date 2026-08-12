@@ -20,6 +20,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -46,6 +47,7 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.rememberCameraPositionState
+import com.homemadefood.app.ui.address.SelectedLocation
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -53,10 +55,15 @@ import kotlin.coroutines.resumeWithException
 @Composable
 fun LocationMapScreen(
     onBackClick: () -> Unit,
+
     onConfirmLocation: (
         latitude: Double,
         longitude: Double
     ) -> Unit,
+
+    initialSelectedLocation:
+    SelectedLocation? = null,
+
     modifier: Modifier = Modifier
 ) {
     val context =
@@ -70,12 +77,34 @@ fun LocationMapScreen(
                 )
         }
 
-    val initialLocation =
-        remember {
-            LatLng(
-                39.0,
-                35.0
-            )
+    val hasInitialLocation =
+        initialSelectedLocation
+            ?.isValid() == true
+
+    val initialMapTarget =
+        remember(
+            initialSelectedLocation
+        ) {
+            if (hasInitialLocation) {
+                LatLng(
+                    initialSelectedLocation!!
+                        .latitude,
+                    initialSelectedLocation
+                        .longitude
+                )
+            } else {
+                LatLng(
+                    39.0,
+                    35.0
+                )
+            }
+        }
+
+    val initialZoom =
+        if (hasInitialLocation) {
+            17f
+        } else {
+            5.5f
         }
 
     val cameraPositionState =
@@ -83,19 +112,16 @@ fun LocationMapScreen(
             position =
                 CameraPosition
                     .fromLatLngZoom(
-                        initialLocation,
-                        5.5f
+                        initialMapTarget,
+                        initialZoom
                     )
         }
 
-    var currentLocation by
-    remember {
-        mutableStateOf<LatLng?>(null)
-    }
-
     var isLocating by
     remember {
-        mutableStateOf(true)
+        mutableStateOf(
+            !hasInitialLocation
+        )
     }
 
     var locationError by
@@ -103,6 +129,12 @@ fun LocationMapScreen(
         mutableStateOf<String?>(null)
     }
 
+    /*
+     * requestKey:
+     * 0 -> ekranın ilk açılışı
+     * >0 -> kullanıcı "Mevcut Konumuma Git"
+     *       veya tekrar dene dedi.
+     */
     var requestKey by
     remember {
         mutableIntStateOf(0)
@@ -114,15 +146,31 @@ fun LocationMapScreen(
 
     LaunchedEffect(
         requestKey,
-        permissionLevel
+        permissionLevel,
+        initialSelectedLocation
     ) {
+        /*
+         * Edit ekranından geldiysek ilk açılışta
+         * telefonun şu anki konumuna gitmiyoruz.
+         * Harita doğrudan kayıtlı teslimat
+         * koordinatında açılıyor.
+         */
+        if (
+            requestKey == 0 &&
+            hasInitialLocation
+        ) {
+            isLocating = false
+            locationError = null
+            return@LaunchedEffect
+        }
+
         if (
             permissionLevel ==
             LocationPermissionLevel.NONE
         ) {
             isLocating = false
             locationError =
-                "Mevcut konumu bulmak için konum izni gerekiyor. Haritadan yine de teslimat noktasını seçebilirsiniz."
+                "Mevcut konumu bulmak için konum izni gerekiyor. Haritadan teslimat noktasını yine de elle seçebilirsiniz."
             return@LaunchedEffect
         }
 
@@ -142,9 +190,11 @@ fun LocationMapScreen(
                     permissionLevel ==
                     LocationPermissionLevel.PRECISE
                 ) {
-                    Priority.PRIORITY_HIGH_ACCURACY
+                    Priority
+                        .PRIORITY_HIGH_ACCURACY
                 } else {
-                    Priority.PRIORITY_BALANCED_POWER_ACCURACY
+                    Priority
+                        .PRIORITY_BALANCED_POWER_ACCURACY
                 }
 
             val location =
@@ -166,7 +216,6 @@ fun LocationMapScreen(
                     location.longitude
                 )
 
-            currentLocation = latLng
             isLocating = false
 
             cameraPositionState.animate(
@@ -191,11 +240,12 @@ fun LocationMapScreen(
 
     Scaffold(
         modifier = modifier,
+
         topBar = {
             TextButton(
                 onClick = onBackClick
             ) {
-                Text("← Adres Ekle")
+                Text("← Geri")
             }
         }
     ) { innerPadding ->
@@ -220,23 +270,24 @@ fun LocationMapScreen(
                     )
             )
 
-            /*
-             * Pin haritanın kendisine bağlı bir Marker değildir.
-             * Ekranın merkezinde sabit kalır; kullanıcı haritayı
-             * pinin altında hareket ettirir.
-             */
             CenterLocationPin(
                 modifier =
                     Modifier
-                        .align(Alignment.Center)
-                        .offset(y = (-32).dp)
+                        .align(
+                            Alignment.Center
+                        )
+                        .offset(
+                            y = (-32).dp
+                        )
             )
 
             if (isLocating) {
                 StatusCard(
                     text =
                         "Mevcut konumunuz bulunuyor...",
+
                     showProgress = true,
+
                     modifier =
                         Modifier
                             .align(
@@ -244,14 +295,19 @@ fun LocationMapScreen(
                             )
                             .padding(16.dp)
                 )
-            } else if (locationError != null) {
+            } else if (
+                locationError != null
+            ) {
                 StatusCard(
                     text =
                         locationError.orEmpty(),
+
                     showProgress = false,
+
                     onRetryClick = {
                         requestKey++
                     },
+
                     modifier =
                         Modifier
                             .align(
@@ -288,6 +344,7 @@ fun LocationMapScreen(
                     Text(
                         text =
                             "Teslimat noktasını seçin",
+
                         style =
                             MaterialTheme
                                 .typography
@@ -301,20 +358,49 @@ fun LocationMapScreen(
 
                     Text(
                         text =
-                            "Haritayı hareket ettirin ve teslimat noktasını ortadaki pinin altında bırakın.",
+                            if (hasInitialLocation) {
+                                "Harita kayıtlı teslimat konumunda açıldı. Değiştirmek için haritayı hareket ettirin."
+                            } else {
+                                "Haritayı hareket ettirin ve teslimat noktasını ortadaki pinin altında bırakın."
+                            },
+
                         style =
                             MaterialTheme
                                 .typography
                                 .bodyMedium,
+
                         color =
                             MaterialTheme
                                 .colorScheme
                                 .onSurfaceVariant
                     )
 
+                    if (hasInitialLocation) {
+                        Spacer(
+                            modifier =
+                                Modifier.height(10.dp)
+                        )
+
+                        OutlinedButton(
+                            onClick = {
+                                requestKey++
+                            },
+
+                            modifier =
+                                Modifier.fillMaxWidth(),
+
+                            enabled =
+                                !isLocating
+                        ) {
+                            Text(
+                                "Mevcut Konumuma Git"
+                            )
+                        }
+                    }
+
                     Spacer(
                         modifier =
-                            Modifier.height(14.dp)
+                            Modifier.height(12.dp)
                     )
 
                     Button(
@@ -329,15 +415,20 @@ fun LocationMapScreen(
                                 target.longitude
                             )
                         },
+
                         modifier =
                             Modifier.fillMaxWidth(),
+
                         enabled =
-                            !cameraPositionState.isMoving
+                            !cameraPositionState
+                                .isMoving &&
+                                    !isLocating
                     ) {
                         Text(
                             if (
                                 cameraPositionState
-                                    .isMoving
+                                    .isMoving ||
+                                isLocating
                             ) {
                                 "Konum belirleniyor..."
                             } else {
@@ -384,17 +475,24 @@ private fun CenterLocationPin(
         val path =
             Path().apply {
                 moveTo(
-                    centerX - radius * 0.62f,
-                    circleCenterY + radius * 0.55f
+                    centerX -
+                            radius * 0.62f,
+                    circleCenterY +
+                            radius * 0.55f
                 )
+
                 lineTo(
-                    centerX + radius * 0.62f,
-                    circleCenterY + radius * 0.55f
+                    centerX +
+                            radius * 0.62f,
+                    circleCenterY +
+                            radius * 0.55f
                 )
+
                 lineTo(
                     centerX,
                     size.height
                 )
+
                 close()
             }
 
@@ -415,7 +513,8 @@ private fun CenterLocationPin(
 
         drawCircle(
             color = centerColor,
-            radius = radius * 0.35f,
+            radius =
+                radius * 0.35f,
             center =
                 Offset(
                     centerX,
@@ -428,14 +527,20 @@ private fun CenterLocationPin(
 @Composable
 private fun StatusCard(
     text: String,
+
     showProgress: Boolean,
+
     modifier: Modifier = Modifier,
-    onRetryClick: (() -> Unit)? = null
+
+    onRetryClick:
+    (() -> Unit)? = null
 ) {
     Card(
         modifier = modifier,
+
         shape =
             RoundedCornerShape(16.dp),
+
         colors =
             CardDefaults.cardColors(
                 containerColor =
@@ -447,6 +552,7 @@ private fun StatusCard(
         Column(
             modifier =
                 Modifier.padding(16.dp),
+
             horizontalAlignment =
                 Alignment.CenterHorizontally
         ) {
@@ -461,6 +567,7 @@ private fun StatusCard(
 
             Text(
                 text = text,
+
                 style =
                     MaterialTheme
                         .typography
@@ -474,9 +581,12 @@ private fun StatusCard(
                 )
 
                 TextButton(
-                    onClick = onRetryClick
+                    onClick =
+                        onRetryClick
                 ) {
-                    Text("Konumumu Tekrar Bul")
+                    Text(
+                        "Konumumu Tekrar Bul"
+                    )
                 }
             }
         }
@@ -487,22 +597,27 @@ private suspend fun FusedLocationProviderClient
         .awaitCurrentLocation(
     priority: Int
 ): Location? =
-    suspendCancellableCoroutine { continuation ->
+    suspendCancellableCoroutine {
+            continuation ->
 
         val cancellationTokenSource =
             CancellationTokenSource()
 
         continuation
             .invokeOnCancellation {
-                cancellationTokenSource.cancel()
+                cancellationTokenSource
+                    .cancel()
             }
 
         try {
             getCurrentLocation(
                 priority,
-                cancellationTokenSource.token
+                cancellationTokenSource
+                    .token
             )
-                .addOnSuccessListener { location ->
+                .addOnSuccessListener {
+                        location ->
+
                     if (
                         continuation.isActive
                     ) {
@@ -511,7 +626,9 @@ private suspend fun FusedLocationProviderClient
                         )
                     }
                 }
-                .addOnFailureListener { error ->
+                .addOnFailureListener {
+                        error ->
+
                     if (
                         continuation.isActive
                     ) {
@@ -534,7 +651,8 @@ private suspend fun FusedLocationProviderClient
     }
 
 private fun Context
-        .isLocationServiceEnabled(): Boolean {
+        .isLocationServiceEnabled():
+        Boolean {
 
     val locationManager =
         getSystemService(
@@ -545,16 +663,21 @@ private fun Context
         Build.VERSION.SDK_INT >=
         Build.VERSION_CODES.P
     ) {
-        locationManager.isLocationEnabled
+        locationManager
+            .isLocationEnabled
     } else {
         @Suppress("DEPRECATION")
         (
-                locationManager.isProviderEnabled(
-                    LocationManager.GPS_PROVIDER
-                ) ||
-                        locationManager.isProviderEnabled(
-                            LocationManager.NETWORK_PROVIDER
-                        )
+                locationManager
+                    .isProviderEnabled(
+                        LocationManager
+                            .GPS_PROVIDER
+                    ) ||
+                        locationManager
+                            .isProviderEnabled(
+                                LocationManager
+                                    .NETWORK_PROVIDER
+                            )
                 )
     }
 }

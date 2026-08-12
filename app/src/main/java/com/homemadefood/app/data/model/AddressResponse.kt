@@ -7,5 +7,15 @@ data class AddressResponse(
     val latitude: Double,
     val longitude: Double,
     val isDefault: Boolean,
-    val createdAt: String
-)
+    val createdAt: String,
+    val city: String = "",
+    val district: String = "",
+    val neighborhood: String = "",
+    val street: String = "",
+    val buildingNo: String = "",
+
+    val floor: String? = null,
+    val apartmentNo: String? = null,
+    val addressNote: String? = null,
+
+    )

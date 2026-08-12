@@ -29,21 +29,13 @@ class AddressFormViewModelFactory(
                     applicationContext
                 )
 
-            val reverseGeocoder =
-                AddressReverseGeocoder(
-                    applicationContext
-                )
-
             @Suppress("UNCHECKED_CAST")
             return AddressFormViewModel(
                 addressRepository =
                     addressRepository,
 
                 sessionManager =
-                    sessionManager,
-
-                reverseGeocoder =
-                    reverseGeocoder
+                    sessionManager
             ) as T
         }
 

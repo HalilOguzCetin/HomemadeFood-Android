@@ -13,6 +13,9 @@ import retrofit2.http.Headers
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
+import com.homemadefood.app.data.model.ReverseGeocodeResponse
+
+import retrofit2.http.Query
 
 interface AddressApiService {
 
@@ -35,6 +38,19 @@ interface AddressApiService {
         @Body
         request: CreateAddressRequest
     ): Response<ApiResponse<AddressResponse>>
+    @Headers(
+        "X-HomemadeFood-Requires-Auth: true"
+    )
+    @GET("api/Address/reverse-geocode")
+    suspend fun reverseGeocode(
+        @Query("latitude")
+        latitude: Double,
+
+        @Query("longitude")
+        longitude: Double
+    ): Response<
+            ApiResponse<ReverseGeocodeResponse>
+            >
 
     @Headers(
         "X-HomemadeFood-Requires-Auth: true"

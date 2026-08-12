@@ -15,279 +15,203 @@ import org.json.JSONObject
 import java.io.IOException
 
 class AddressFormViewModel(
-    private val addressRepository:
-    AddressRepository,
-
-    private val sessionManager:
-    SessionManager,
-
-    private val reverseGeocoder:
-    AddressReverseGeocoder
+    private val addressRepository: AddressRepository,
+    private val sessionManager: SessionManager
 ) : ViewModel() {
 
-    private var reverseGeocodeJob:
-            Job? = null
+    private var reverseGeocodeJob: Job? = null
 
     private val _uiState =
-        MutableStateFlow(
-            AddressFormUiState()
-        )
+        MutableStateFlow(AddressFormUiState())
 
-    val uiState:
-            StateFlow<AddressFormUiState> =
+    val uiState: StateFlow<AddressFormUiState> =
         _uiState.asStateFlow()
 
-    fun updateTitle(
-        value: String
-    ) {
+    fun updateTitle(value: String) {
         _uiState.value =
             _uiState.value.copy(
-                title =
-                    value.take(60),
+                title = value.take(60),
                 errorMessage = null
             )
     }
 
-    fun updateCity(
-        value: String
-    ) {
+    fun updateCity(value: String) =
         updateAddressField {
-            copy(
-                city = value.take(100)
-            )
+            copy(city = value.take(100))
         }
-    }
 
-    fun updateDistrict(
-        value: String
-    ) {
+    fun updateDistrict(value: String) =
         updateAddressField {
-            copy(
-                district = value.take(100)
-            )
+            copy(district = value.take(100))
         }
-    }
 
-    fun updateNeighborhood(
-        value: String
-    ) {
+    fun updateNeighborhood(value: String) =
         updateAddressField {
-            copy(
-                neighborhood =
-                    value.take(120)
-            )
+            copy(neighborhood = value.take(120))
         }
-    }
 
-    fun updateStreet(
-        value: String
-    ) {
+    fun updateStreet(value: String) =
         updateAddressField {
-            copy(
-                street = value.take(150)
-            )
+            copy(street = value.take(150))
         }
-    }
 
-    fun updateBuildingNo(
-        value: String
-    ) {
+    fun updateBuildingNo(value: String) =
         updateAddressField {
-            copy(
-                buildingNo =
-                    value.take(30)
-            )
+            copy(buildingNo = value.take(30))
         }
-    }
 
-    fun updateFloor(
-        value: String
-    ) {
+    fun updateFloor(value: String) =
         updateAddressField {
-            copy(
-                floor = value.take(20)
-            )
+            copy(floor = value.take(20))
         }
-    }
 
-    fun updateApartmentNo(
-        value: String
-    ) {
+    fun updateApartmentNo(value: String) =
         updateAddressField {
-            copy(
-                apartmentNo =
-                    value.take(20)
-            )
+            copy(apartmentNo = value.take(20))
         }
-    }
 
-    fun updateAddressNote(
-        value: String
-    ) {
+    fun updateAddressNote(value: String) =
         updateAddressField {
-            copy(
-                addressNote =
-                    value.take(300)
-            )
+            copy(addressNote = value.take(300))
         }
-    }
 
     fun updateSelectedLocation(
         latitude: Double,
         longitude: Double
     ) {
         val location =
-            SelectedLocation(
-                latitude = latitude,
-                longitude = longitude
-            )
+            SelectedLocation(latitude, longitude)
 
         if (!location.isValid()) {
-            showError(
-                "Seçilen konum geçerli değil."
-            )
+            showError("Seçilen konum geçerli değil.")
             return
         }
 
         reverseGeocodeJob?.cancel()
 
-        /*
-         * Konum değiştiğinde konuma bağlı eski
-         * adres parçalarını temizliyoruz.
-         * Kat, daire, not ve adres başlığı korunur.
-         */
         _uiState.value =
             _uiState.value.copy(
-                selectedLocation =
-                    location,
-
+                selectedLocation = location,
                 city = "",
                 district = "",
                 neighborhood = "",
                 street = "",
                 buildingNo = "",
-
                 isResolvingAddress = true,
-
                 locationLookupMessage =
                     "Konumdan adres bilgileri bulunuyor...",
-
                 errorMessage = null
             )
 
         reverseGeocodeJob =
             viewModelScope.launch {
-
-                val result =
-                    reverseGeocoder
-                        .reverseGeocode(
-                            latitude =
-                                location.latitude,
-
-                            longitude =
-                                location.longitude
+                try {
+                    val response =
+                        addressRepository.reverseGeocode(
+                            latitude = location.latitude,
+                            longitude = location.longitude
                         )
 
-                /*
-                 * Kullanıcı bu işlem sürerken
-                 * başka bir konum seçtiyse eski
-                 * geocoding sonucu state'i bozmasın.
-                 */
-                if (
-                    _uiState.value
-                        .selectedLocation !=
-                    location
-                ) {
-                    return@launch
-                }
+                    if (
+                        _uiState.value.selectedLocation !=
+                        location
+                    ) {
+                        return@launch
+                    }
 
-                result
-                    .onSuccess {
-                            address ->
+                    val body = response.body()
+                    val address = body?.data
 
-                        val requiredFieldsComplete =
-                            address.city
-                                .isNotBlank() &&
-                                    address.district
-                                        .isNotBlank() &&
-                                    address.neighborhood
-                                        .isNotBlank() &&
-                                    address.street
-                                        .isNotBlank() &&
-                                    address.buildingNo
-                                        .isNotBlank()
+                    if (
+                        response.isSuccessful &&
+                        body?.success == true &&
+                        address != null
+                    ) {
+                        val complete =
+                            address.city.isNotBlank() &&
+                                    address.district.isNotBlank() &&
+                                    address.neighborhood.isNotBlank() &&
+                                    address.street.isNotBlank() &&
+                                    address.buildingNo.isNotBlank()
 
                         _uiState.value =
                             _uiState.value.copy(
-                                city =
-                                    address.city,
-
-                                district =
-                                    address.district,
-
+                                city = address.city,
+                                district = address.district,
                                 neighborhood =
-                                    address
-                                        .neighborhood,
-
-                                street =
-                                    address.street,
-
+                                    address.neighborhood,
+                                street = address.street,
                                 buildingNo =
-                                    address
-                                        .buildingNo,
-
-                                isResolvingAddress =
-                                    false,
-
+                                    address.buildingNo,
+                                isResolvingAddress = false,
                                 locationLookupMessage =
-                                    if (
-                                        requiredFieldsComplete
-                                    ) {
-                                        "Adres bilgileri konumdan otomatik dolduruldu. Kaydetmeden önce kontrol edin."
+                                    if (complete) {
+                                        "Adres bilgileri Google konum servisinden otomatik dolduruldu. Kaydetmeden önce kontrol edin."
                                     } else {
                                         "Konum bulundu. Bazı adres alanları otomatik bulunamadı; eksik alanları tamamlayın."
                                     },
-
                                 errorMessage = null
                             )
+                        return@launch
                     }
-                    .onFailure {
+
+                    _uiState.value =
+                        _uiState.value.copy(
+                            isResolvingAddress = false,
+                            locationLookupMessage =
+                                parseErrorMessage(
+                                    response.errorBody()
+                                        ?.string()
+                                ) ?: "Konum seçildi ancak adres bilgileri otomatik bulunamadı. Alanları elle doldurabilirsiniz.",
+                            errorMessage = null
+                        )
+                } catch (_: IOException) {
+                    if (
+                        _uiState.value.selectedLocation ==
+                        location
+                    ) {
                         _uiState.value =
                             _uiState.value.copy(
-                                isResolvingAddress =
-                                    false,
-
+                                isResolvingAddress = false,
                                 locationLookupMessage =
-                                    "Konum seçildi ancak adres bilgileri otomatik bulunamadı. Alanları elle doldurabilirsiniz.",
-
+                                    "Adres servisine bağlanılamadı. Alanları elle doldurabilirsiniz.",
                                 errorMessage = null
                             )
                     }
+                } catch (_: Exception) {
+                    if (
+                        _uiState.value.selectedLocation ==
+                        location
+                    ) {
+                        _uiState.value =
+                            _uiState.value.copy(
+                                isResolvingAddress = false,
+                                locationLookupMessage =
+                                    "Adres bilgileri alınırken bir hata oluştu. Alanları elle doldurabilirsiniz.",
+                                errorMessage = null
+                            )
+                    }
+                }
             }
     }
 
     fun clearSelectedLocation() {
         reverseGeocodeJob?.cancel()
-
         _uiState.value =
             _uiState.value.copy(
                 selectedLocation = null,
-
                 city = "",
                 district = "",
                 neighborhood = "",
                 street = "",
                 buildingNo = "",
-
                 isResolvingAddress = false,
                 locationLookupMessage = null,
                 errorMessage = null
             )
     }
 
-    fun updateIsDefault(
-        value: Boolean
-    ) {
+    fun updateIsDefault(value: Boolean) {
         _uiState.value =
             _uiState.value.copy(
                 isDefault = value,
@@ -296,78 +220,56 @@ class AddressFormViewModel(
     }
 
     fun saveAddress() {
-        val currentState =
-            _uiState.value
+        val current = _uiState.value
 
         if (
-            currentState.isSaving ||
-            currentState.isResolvingAddress
+            current.isSaving ||
+            current.isResolvingAddress
         ) {
             return
         }
 
-        val title =
-            currentState.title.trim()
-
-        val selectedLocation =
-            currentState.selectedLocation
+        val title = current.title.trim()
+        val location = current.selectedLocation
 
         when {
-            selectedLocation == null -> {
+            location == null -> {
                 showError(
                     "Önce haritadan teslimat konumunu seçmelisiniz."
                 )
                 return
             }
-
-            !selectedLocation.isValid() -> {
-                showError(
-                    "Seçilen konum geçerli değil."
-                )
+            !location.isValid() -> {
+                showError("Seçilen konum geçerli değil.")
                 return
             }
-
             title.isBlank() -> {
                 showError(
                     "Adres başlığı boş bırakılamaz."
                 )
                 return
             }
-
-            currentState.city
-                .isBlank() -> {
-                showError(
-                    "İl alanı boş bırakılamaz."
-                )
+            current.city.isBlank() -> {
+                showError("İl alanı boş bırakılamaz.")
                 return
             }
-
-            currentState.district
-                .isBlank() -> {
-                showError(
-                    "İlçe alanı boş bırakılamaz."
-                )
+            current.district.isBlank() -> {
+                showError("İlçe alanı boş bırakılamaz.")
                 return
             }
-
-            currentState.neighborhood
-                .isBlank() -> {
+            current.neighborhood.isBlank() -> {
                 showError(
                     "Mahalle alanı boş bırakılamaz."
                 )
                 return
             }
-
-            currentState.street
-                .isBlank() -> {
+            current.street.isBlank() -> {
                 showError(
                     "Cadde / sokak alanı boş bırakılamaz."
                 )
                 return
             }
-
-            currentState.buildingNo
-                .isBlank() -> {
+            current.buildingNo.isBlank() -> {
                 showError(
                     "Bina numarası boş bırakılamaz."
                 )
@@ -376,22 +278,11 @@ class AddressFormViewModel(
         }
 
         val fullAddress =
-            currentState
-                .buildFullAddress()
-                .trim()
-
-        if (fullAddress.isBlank()) {
-            showError(
-                "Adres bilgileri oluşturulamadı."
-            )
-            return
-        }
+            current.buildFullAddress().trim()
 
         viewModelScope.launch {
             val isLoggedIn =
-                sessionManager
-                    .isLoggedIn
-                    .first()
+                sessionManager.isLoggedIn.first()
 
             if (!isLoggedIn) {
                 showError(
@@ -401,53 +292,49 @@ class AddressFormViewModel(
             }
 
             _uiState.value =
-                _uiState.value.copy(
+                current.copy(
                     isSaving = true,
                     isSaved = false,
                     errorMessage = null
                 )
 
             try {
-                /*
-                 * Aşama 12'ye kadar backend DTO'sunu
-                 * değiştirmiyoruz. Yapılandırılmış
-                 * alanları okunabilir FullAddress
-                 * metnine çevirip mevcut endpoint'e
-                 * göndermeye devam ediyoruz.
-                 */
                 val request =
                     CreateAddressRequest(
                         title = title,
-
-                        fullAddress =
-                            fullAddress,
-
-                        latitude =
-                            selectedLocation
-                                .latitude,
-
-                        longitude =
-                            selectedLocation
-                                .longitude,
-
-                        isDefault =
-                            currentState
-                                .isDefault
+                        fullAddress = fullAddress,
+                        city = current.city.trim(),
+                        district = current.district.trim(),
+                        neighborhood =
+                            current.neighborhood.trim(),
+                        street = current.street.trim(),
+                        buildingNo =
+                            current.buildingNo.trim(),
+                        floor =
+                            current.floor.trim()
+                                .takeIf { it.isNotBlank() },
+                        apartmentNo =
+                            current.apartmentNo.trim()
+                                .takeIf { it.isNotBlank() },
+                        addressNote =
+                            current.addressNote.trim()
+                                .takeIf { it.isNotBlank() },
+                        latitude = location.latitude,
+                        longitude = location.longitude,
+                        isDefault = current.isDefault
                     )
 
                 val response =
-                    addressRepository
-                        .createAddress(
-                            request = request
-                        )
+                    addressRepository.createAddress(
+                        request = request
+                    )
 
-                val responseBody =
-                    response.body()
+                val body = response.body()
 
                 if (
                     response.isSuccessful &&
-                    responseBody?.success == true &&
-                    responseBody.data != null
+                    body?.success == true &&
+                    body.data != null
                 ) {
                     _uiState.value =
                         _uiState.value.copy(
@@ -477,9 +364,7 @@ class AddressFormViewModel(
 
     fun resetSavedState() {
         _uiState.value =
-            _uiState.value.copy(
-                isSaved = false
-            )
+            _uiState.value.copy(isSaved = false)
     }
 
     private fun updateAddressField(
@@ -490,14 +375,10 @@ class AddressFormViewModel(
         _uiState.value =
             _uiState.value
                 .transform()
-                .copy(
-                    errorMessage = null
-                )
+                .copy(errorMessage = null)
     }
 
-    private fun showError(
-        message: String
-    ) {
+    private fun showError(message: String) {
         _uiState.value =
             _uiState.value.copy(
                 isSaving = false,
@@ -516,9 +397,7 @@ class AddressFormViewModel(
         return runCatching {
             JSONObject(errorJson)
                 .optString("message")
-                .takeIf {
-                    it.isNotBlank()
-                }
+                .takeIf { it.isNotBlank() }
         }.getOrNull()
     }
 }

@@ -16,18 +16,25 @@ import java.io.IOException
 
 class EditAddressViewModel(
     private val addressId: Int,
-    private val addressRepository: AddressRepository,
-    private val sessionManager: SessionManager
+    private val addressRepository:
+    AddressRepository,
+    private val sessionManager:
+    SessionManager
 ) : ViewModel() {
 
-    private var loadAddressJob: Job? = null
+    private var loadAddressJob:
+            Job? = null
+
+    private var reverseGeocodeJob:
+            Job? = null
 
     private val _uiState =
         MutableStateFlow(
             EditAddressUiState()
         )
 
-    val uiState: StateFlow<EditAddressUiState> =
+    val uiState:
+            StateFlow<EditAddressUiState> =
         _uiState.asStateFlow()
 
     init {
@@ -39,6 +46,7 @@ class EditAddressViewModel(
 
         loadAddressJob =
             viewModelScope.launch {
+
                 _uiState.value =
                     _uiState.value.copy(
                         isLoading = true,
@@ -99,18 +107,63 @@ class EditAddressViewModel(
                                     address.longitude
                             )
 
+                        val hasStructuredAddress =
+                            address.city.isNotBlank() ||
+                                    address.district.isNotBlank() ||
+                                    address.neighborhood.isNotBlank() ||
+                                    address.street.isNotBlank() ||
+                                    address.buildingNo.isNotBlank()
+
                         _uiState.value =
                             EditAddressUiState(
                                 isLoading = false,
-                                title = address.title,
-                                fullAddress =
-                                    address.fullAddress,
+
+                                title =
+                                    address.title,
+
+                                city =
+                                    address.city,
+
+                                district =
+                                    address.district,
+
+                                neighborhood =
+                                    address.neighborhood,
+
+                                street =
+                                    address.street,
+
+                                buildingNo =
+                                    address.buildingNo,
+
+                                floor =
+                                    address.floor.orEmpty(),
+
+                                apartmentNo =
+                                    address.apartmentNo.orEmpty(),
+
+                                addressNote =
+                                    address.addressNote.orEmpty(),
+
                                 selectedLocation =
                                     selectedLocation,
+
+                                isResolvingAddress =
+                                    false,
+
+                                locationLookupMessage =
+                                    if (!hasStructuredAddress) {
+                                        "Bu adres eski kayıt formatında. İl, ilçe, mahalle, sokak ve bina numarası alanlarını kontrol edip tamamlayın."
+                                    } else {
+                                        null
+                                    },
+
                                 isDefault =
                                     address.isDefault,
+
                                 isSaving = false,
                                 isSaved = false,
+
                                 errorMessage =
                                     if (
                                         selectedLocation
@@ -125,11 +178,13 @@ class EditAddressViewModel(
                         _uiState.value =
                             _uiState.value.copy(
                                 isLoading = false,
+
                                 errorMessage =
                                     parseErrorMessage(
                                         response.errorBody()
                                             ?.string()
-                                    ) ?: "Adres bilgisi alınamadı."
+                                    )
+                                        ?: "Adres bilgisi alınamadı."
                             )
                     }
                 } catch (_: IOException) {
@@ -155,23 +210,71 @@ class EditAddressViewModel(
     ) {
         _uiState.value =
             _uiState.value.copy(
-                title = value,
+                title = value.take(60),
                 errorMessage = null
             )
     }
 
-    fun updateFullAddress(
-        value: String
-    ) {
-        _uiState.value =
-            _uiState.value.copy(
-                fullAddress = value,
-                errorMessage = null
+    fun updateCity(value: String) =
+        updateAddressField {
+            copy(city = value.take(100))
+        }
+
+    fun updateDistrict(value: String) =
+        updateAddressField {
+            copy(district = value.take(100))
+        }
+
+    fun updateNeighborhood(value: String) =
+        updateAddressField {
+            copy(
+                neighborhood =
+                    value.take(120)
             )
-    }
+        }
+
+    fun updateStreet(value: String) =
+        updateAddressField {
+            copy(street = value.take(150))
+        }
+
+    fun updateBuildingNo(value: String) =
+        updateAddressField {
+            copy(
+                buildingNo =
+                    value.take(30)
+            )
+        }
+
+    fun updateFloor(value: String) =
+        updateAddressField {
+            copy(floor = value.take(20))
+        }
+
+    fun updateApartmentNo(value: String) =
+        updateAddressField {
+            copy(
+                apartmentNo =
+                    value.take(20)
+            )
+        }
+
+    fun updateAddressNote(value: String) =
+        updateAddressField {
+            copy(
+                addressNote =
+                    value.take(300)
+            )
+        }
 
     /*
-     * Harita ekranı eklendiğinde yeni seçim doğrudan bu fonksiyona aktarılacak.
+     * Sonraki alt adımda Edit ekranındaki
+     * "Konumu Değiştir" butonu bu fonksiyona
+     * harita sonucunu gönderecek.
+     *
+     * Şimdiden backend Google Geocoding ile
+     * yeni koordinata bağlı adres alanlarını
+     * yenileyecek şekilde hazırlandı.
      */
     fun updateSelectedLocation(
         latitude: Double,
@@ -190,11 +293,137 @@ class EditAddressViewModel(
             return
         }
 
+        reverseGeocodeJob?.cancel()
+
         _uiState.value =
             _uiState.value.copy(
                 selectedLocation = location,
+
+                city = "",
+                district = "",
+                neighborhood = "",
+                street = "",
+                buildingNo = "",
+
+                isResolvingAddress = true,
+
+                locationLookupMessage =
+                    "Yeni konumdan adres bilgileri bulunuyor...",
+
                 errorMessage = null
             )
+
+        reverseGeocodeJob =
+            viewModelScope.launch {
+                try {
+                    val response =
+                        addressRepository
+                            .reverseGeocode(
+                                latitude =
+                                    location.latitude,
+
+                                longitude =
+                                    location.longitude
+                            )
+
+                    if (
+                        _uiState.value
+                            .selectedLocation !=
+                        location
+                    ) {
+                        return@launch
+                    }
+
+                    val body =
+                        response.body()
+
+                    val address =
+                        body?.data
+
+                    if (
+                        response.isSuccessful &&
+                        body?.success == true &&
+                        address != null
+                    ) {
+                        _uiState.value =
+                            _uiState.value.copy(
+                                city =
+                                    address.city,
+
+                                district =
+                                    address.district,
+
+                                neighborhood =
+                                    address.neighborhood,
+
+                                street =
+                                    address.street,
+
+                                buildingNo =
+                                    address.buildingNo,
+
+                                isResolvingAddress =
+                                    false,
+
+                                locationLookupMessage =
+                                    "Yeni konumun adres bilgileri getirildi. Kaydetmeden önce kontrol edin.",
+
+                                errorMessage = null
+                            )
+
+                        return@launch
+                    }
+
+                    _uiState.value =
+                        _uiState.value.copy(
+                            isResolvingAddress =
+                                false,
+
+                            locationLookupMessage =
+                                parseErrorMessage(
+                                    response.errorBody()
+                                        ?.string()
+                                )
+                                    ?: "Yeni konum seçildi ancak adres bilgileri otomatik bulunamadı. Alanları elle doldurun.",
+
+                            errorMessage = null
+                        )
+                } catch (_: IOException) {
+                    if (
+                        _uiState.value
+                            .selectedLocation ==
+                        location
+                    ) {
+                        _uiState.value =
+                            _uiState.value.copy(
+                                isResolvingAddress =
+                                    false,
+
+                                locationLookupMessage =
+                                    "Adres servisine bağlanılamadı. Alanları elle doldurabilirsiniz.",
+
+                                errorMessage = null
+                            )
+                    }
+                } catch (_: Exception) {
+                    if (
+                        _uiState.value
+                            .selectedLocation ==
+                        location
+                    ) {
+                        _uiState.value =
+                            _uiState.value.copy(
+                                isResolvingAddress =
+                                    false,
+
+                                locationLookupMessage =
+                                    "Adres bilgileri alınırken bir hata oluştu. Alanları elle doldurabilirsiniz.",
+
+                                errorMessage = null
+                            )
+                    }
+                }
+            }
     }
 
     fun updateIsDefault(
@@ -208,24 +437,22 @@ class EditAddressViewModel(
     }
 
     fun updateAddress() {
-        val currentState =
+        val current =
             _uiState.value
 
         if (
-            currentState.isLoading ||
-            currentState.isSaving
+            current.isLoading ||
+            current.isSaving ||
+            current.isResolvingAddress
         ) {
             return
         }
 
         val title =
-            currentState.title.trim()
+            current.title.trim()
 
-        val fullAddress =
-            currentState.fullAddress.trim()
-
-        val selectedLocation =
-            currentState.selectedLocation
+        val location =
+            current.selectedLocation
 
         when {
             title.isBlank() -> {
@@ -235,27 +462,60 @@ class EditAddressViewModel(
                 return
             }
 
-            fullAddress.isBlank() -> {
+            current.city.isBlank() -> {
                 showError(
-                    "Açık adres boş bırakılamaz."
+                    "İl alanı boş bırakılamaz."
                 )
                 return
             }
 
-            selectedLocation == null -> {
+            current.district.isBlank() -> {
+                showError(
+                    "İlçe alanı boş bırakılamaz."
+                )
+                return
+            }
+
+            current.neighborhood.isBlank() -> {
+                showError(
+                    "Mahalle alanı boş bırakılamaz."
+                )
+                return
+            }
+
+            current.street.isBlank() -> {
+                showError(
+                    "Cadde / sokak alanı boş bırakılamaz."
+                )
+                return
+            }
+
+            current.buildingNo.isBlank() -> {
+                showError(
+                    "Bina numarası boş bırakılamaz."
+                )
+                return
+            }
+
+            location == null -> {
                 showError(
                     "Adres için konum bilgisi bulunamadı."
                 )
                 return
             }
 
-            !selectedLocation.isValid() -> {
+            !location.isValid() -> {
                 showError(
                     "Seçilen konum geçerli değil."
                 )
                 return
             }
         }
+
+        val fullAddress =
+            current
+                .buildFullAddress()
+                .trim()
 
         viewModelScope.launch {
             val isLoggedIn =
@@ -271,7 +531,7 @@ class EditAddressViewModel(
             }
 
             _uiState.value =
-                _uiState.value.copy(
+                current.copy(
                     isSaving = true,
                     isSaved = false,
                     errorMessage = null
@@ -281,20 +541,68 @@ class EditAddressViewModel(
                 val request =
                     UpdateAddressRequest(
                         title = title,
-                        fullAddress = fullAddress,
+
+                        fullAddress =
+                            fullAddress,
+
+                        city =
+                            current.city.trim(),
+
+                        district =
+                            current.district.trim(),
+
+                        neighborhood =
+                            current
+                                .neighborhood
+                                .trim(),
+
+                        street =
+                            current.street.trim(),
+
+                        buildingNo =
+                            current
+                                .buildingNo
+                                .trim(),
+
+                        floor =
+                            current.floor
+                                .trim()
+                                .takeIf {
+                                    it.isNotBlank()
+                                },
+
+                        apartmentNo =
+                            current.apartmentNo
+                                .trim()
+                                .takeIf {
+                                    it.isNotBlank()
+                                },
+
+                        addressNote =
+                            current.addressNote
+                                .trim()
+                                .takeIf {
+                                    it.isNotBlank()
+                                },
+
                         latitude =
-                            selectedLocation.latitude,
+                            location.latitude,
+
                         longitude =
-                            selectedLocation.longitude,
+                            location.longitude,
+
                         isDefault =
-                            currentState.isDefault
+                            current.isDefault
                     )
 
                 val response =
                     addressRepository
                         .updateAddress(
-                            addressId = addressId,
-                            request = request
+                            addressId =
+                                addressId,
+
+                            request =
+                                request
                         )
 
                 val responseBody =
@@ -316,7 +624,8 @@ class EditAddressViewModel(
                         parseErrorMessage(
                             response.errorBody()
                                 ?.string()
-                        ) ?: "Adres güncellenemedi."
+                        )
+                            ?: "Adres güncellenemedi."
                     )
                 }
             } catch (_: IOException) {
@@ -336,6 +645,19 @@ class EditAddressViewModel(
             _uiState.value.copy(
                 isSaved = false
             )
+    }
+
+    private fun updateAddressField(
+        transform:
+        EditAddressUiState.() ->
+        EditAddressUiState
+    ) {
+        _uiState.value =
+            _uiState.value
+                .transform()
+                .copy(
+                    errorMessage = null
+                )
     }
 
     private fun showError(
