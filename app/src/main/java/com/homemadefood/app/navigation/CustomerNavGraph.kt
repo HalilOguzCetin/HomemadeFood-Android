@@ -1337,13 +1337,13 @@ private fun NavGraphBuilder
     context: Context,
     authViewModel: AuthViewModel
 ) {
-
     composable(
         route =
             AppDestination
                 .CustomerProducerApplication
                 .route
-    ) {
+    ) { backStackEntry ->
+
         val applicationViewModel:
                 CustomerProducerApplicationViewModel =
             viewModel(
@@ -1357,10 +1357,73 @@ private fun NavGraphBuilder
         applicationViewModel.uiState
             .collectAsStateWithLifecycle()
 
+        val selectedLatitude by
+        backStackEntry
+            .savedStateHandle
+            .getStateFlow<Double?>(
+                ADDRESS_MAP_RESULT_LATITUDE,
+                null
+            )
+            .collectAsStateWithLifecycle()
+
+        val selectedLongitude by
+        backStackEntry
+            .savedStateHandle
+            .getStateFlow<Double?>(
+                ADDRESS_MAP_RESULT_LONGITUDE,
+                null
+            )
+            .collectAsStateWithLifecycle()
+
         LaunchedEffect(Unit) {
-            applicationViewModel
-                .loadApplication()
+            /*
+             * Haritadan geri dönüldüğünde ViewModel'deki
+             * form state'i zaten korunur.
+             *
+             * Başvuruyu yalnızca ekran ilk kez açılırken
+             * yükle. Böylece seçilen işletme konumu
+             * tekrar loadApplication tarafından silinmez.
+             */
+            if (applicationUiState.isLoading) {
+                applicationViewModel
+                    .loadApplication()
+            }
         }
+
+        LaunchedEffect(
+            selectedLatitude,
+            selectedLongitude
+        ) {
+            val latitude =
+                selectedLatitude
+
+            val longitude =
+                selectedLongitude
+
+            if (
+                latitude != null &&
+                longitude != null
+            ) {
+                applicationViewModel
+                    .updateSelectedLocation(
+                        latitude = latitude,
+                        longitude = longitude
+                    )
+
+                backStackEntry
+                    .savedStateHandle
+                    .remove<Double>(
+                        ADDRESS_MAP_RESULT_LATITUDE
+                    )
+
+                backStackEntry
+                    .savedStateHandle
+                    .remove<Double>(
+                        ADDRESS_MAP_RESULT_LONGITUDE
+                    )
+            }
+        }
+
         LaunchedEffect(
             applicationUiState
                 .application
@@ -1403,19 +1466,71 @@ private fun NavGraphBuilder
                     .updateDescription(value)
             },
 
-            onAddressChange = { value ->
+            onCityChange = { value ->
                 applicationViewModel
-                    .updateAddress(value)
+                    .updateCity(value)
             },
 
-            onLatitudeChange = { value ->
+            onDistrictChange = { value ->
                 applicationViewModel
-                    .updateLatitudeText(value)
+                    .updateDistrict(value)
             },
 
-            onLongitudeChange = { value ->
+            onNeighborhoodChange = { value ->
                 applicationViewModel
-                    .updateLongitudeText(value)
+                    .updateNeighborhood(value)
+            },
+
+            onStreetChange = { value ->
+                applicationViewModel
+                    .updateStreet(value)
+            },
+
+            onBuildingNoChange = { value ->
+                applicationViewModel
+                    .updateBuildingNo(value)
+            },
+
+            onFloorChange = { value ->
+                applicationViewModel
+                    .updateFloor(value)
+            },
+
+            onApartmentNoChange = { value ->
+                applicationViewModel
+                    .updateApartmentNo(value)
+            },
+
+            onAddressNoteChange = { value ->
+                applicationViewModel
+                    .updateAddressNote(value)
+            },
+
+            onSelectLocationClick = {
+                val currentLocation =
+                    applicationUiState
+                        .selectedLocation
+
+                if (
+                    currentLocation != null &&
+                    currentLocation.isValid()
+                ) {
+                    backStackEntry
+                        .savedStateHandle[
+                        ADDRESS_MAP_INITIAL_LATITUDE
+                    ] =
+                        currentLocation.latitude
+
+                    backStackEntry
+                        .savedStateHandle[
+                        ADDRESS_MAP_INITIAL_LONGITUDE
+                    ] =
+                        currentLocation.longitude
+                }
+
+                navController.navigate(
+                    AppDestination.AddressMap.route
+                )
             },
 
             onDailyCapacityChange = { value ->

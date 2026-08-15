@@ -20,8 +20,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,9 +38,15 @@ fun CustomerProducerApplicationScreen(
     onRetryClick: () -> Unit,
     onBusinessNameChange: (String) -> Unit,
     onDescriptionChange: (String) -> Unit,
-    onAddressChange: (String) -> Unit,
-    onLatitudeChange: (String) -> Unit,
-    onLongitudeChange: (String) -> Unit,
+    onCityChange: (String) -> Unit,
+    onDistrictChange: (String) -> Unit,
+    onNeighborhoodChange: (String) -> Unit,
+    onStreetChange: (String) -> Unit,
+    onBuildingNoChange: (String) -> Unit,
+    onFloorChange: (String) -> Unit,
+    onApartmentNoChange: (String) -> Unit,
+    onAddressNoteChange: (String) -> Unit,
+    onSelectLocationClick: () -> Unit,
     onDailyCapacityChange: (String) -> Unit,
     onSubmitClick: () -> Unit,
     onShowReapplicationFormClick: () -> Unit,
@@ -187,14 +191,32 @@ fun CustomerProducerApplicationScreen(
                         onDescriptionChange =
                             onDescriptionChange,
 
-                        onAddressChange =
-                            onAddressChange,
+                        onCityChange =
+                            onCityChange,
 
-                        onLatitudeChange =
-                            onLatitudeChange,
+                        onDistrictChange =
+                            onDistrictChange,
 
-                        onLongitudeChange =
-                            onLongitudeChange,
+                        onNeighborhoodChange =
+                            onNeighborhoodChange,
+
+                        onStreetChange =
+                            onStreetChange,
+
+                        onBuildingNoChange =
+                            onBuildingNoChange,
+
+                        onFloorChange =
+                            onFloorChange,
+
+                        onApartmentNoChange =
+                            onApartmentNoChange,
+
+                        onAddressNoteChange =
+                            onAddressNoteChange,
+
+                        onSelectLocationClick =
+                            onSelectLocationClick,
 
                         onDailyCapacityChange =
                             onDailyCapacityChange,
@@ -236,9 +258,15 @@ private fun ProducerApplicationForm(
     uiState: CustomerProducerApplicationUiState,
     onBusinessNameChange: (String) -> Unit,
     onDescriptionChange: (String) -> Unit,
-    onAddressChange: (String) -> Unit,
-    onLatitudeChange: (String) -> Unit,
-    onLongitudeChange: (String) -> Unit,
+    onCityChange: (String) -> Unit,
+    onDistrictChange: (String) -> Unit,
+    onNeighborhoodChange: (String) -> Unit,
+    onStreetChange: (String) -> Unit,
+    onBuildingNoChange: (String) -> Unit,
+    onFloorChange: (String) -> Unit,
+    onApartmentNoChange: (String) -> Unit,
+    onAddressNoteChange: (String) -> Unit,
+    onSelectLocationClick: () -> Unit,
     onDailyCapacityChange: (String) -> Unit,
     onSubmitClick: () -> Unit,
     onCancelClick: () -> Unit,
@@ -304,28 +332,168 @@ private fun ProducerApplicationForm(
     )
 
     Spacer(
-        modifier = Modifier.height(12.dp)
+        modifier = Modifier.height(18.dp)
     )
 
-    OutlinedTextField(
-        value = uiState.address,
-        onValueChange = onAddressChange,
-        modifier = Modifier.fillMaxWidth(),
-        label = {
-            Text("İşletme Adresi")
-        },
-        supportingText = {
-            Text(
-                "${uiState.address.length}/500"
-            )
-        },
-        minLines = 3,
-        maxLines = 5,
-        enabled = !uiState.isSubmitting
+    Text(
+        text = "İşletme Konumu",
+        style =
+            MaterialTheme.typography.titleMedium
     )
 
     Spacer(
-        modifier = Modifier.height(12.dp)
+        modifier = Modifier.height(8.dp)
+    )
+
+    Card(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp)
+        ) {
+            Text(
+                text =
+                    if (
+                        uiState.selectedLocation != null
+                    ) {
+                        "İşletme konumu seçildi."
+                    } else {
+                        "İşletmenizin konumunu haritadan seçin."
+                    },
+
+                style =
+                    MaterialTheme.typography.bodyMedium
+            )
+
+            if (
+                !uiState.locationLookupMessage
+                    .isNullOrBlank()
+            ) {
+                Spacer(
+                    modifier =
+                        Modifier.height(8.dp)
+                )
+
+                Text(
+                    text =
+                        uiState.locationLookupMessage,
+
+                    style =
+                        MaterialTheme.typography.bodySmall
+                )
+            }
+
+            if (uiState.isResolvingAddress) {
+                Spacer(
+                    modifier =
+                        Modifier.height(10.dp)
+                )
+
+                CircularProgressIndicator()
+            }
+
+            Spacer(
+                modifier = Modifier.height(10.dp)
+            )
+
+            OutlinedButton(
+                onClick =
+                    onSelectLocationClick,
+
+                modifier =
+                    Modifier.fillMaxWidth(),
+
+                enabled =
+                    !uiState.isSubmitting &&
+                            !uiState.isResolvingAddress
+            ) {
+                Text(
+                    if (
+                        uiState.selectedLocation == null
+                    ) {
+                        "Haritadan İşletme Konumu Seç"
+                    } else {
+                        "İşletme Konumunu Değiştir"
+                    }
+                )
+            }
+        }
+    }
+
+    Spacer(
+        modifier = Modifier.height(16.dp)
+    )
+
+    Text(
+        text = "İşletme Adresi",
+        style =
+            MaterialTheme.typography.titleMedium
+    )
+
+    Spacer(
+        modifier = Modifier.height(8.dp)
+    )
+
+    OutlinedTextField(
+        value = uiState.city,
+        onValueChange = onCityChange,
+        modifier = Modifier.fillMaxWidth(),
+        label = { Text("İl *") },
+        singleLine = true,
+        enabled =
+            !uiState.isSubmitting &&
+                    !uiState.isResolvingAddress
+    )
+
+    Spacer(
+        modifier = Modifier.height(10.dp)
+    )
+
+    OutlinedTextField(
+        value = uiState.district,
+        onValueChange = onDistrictChange,
+        modifier = Modifier.fillMaxWidth(),
+        label = { Text("İlçe *") },
+        singleLine = true,
+        enabled =
+            !uiState.isSubmitting &&
+                    !uiState.isResolvingAddress
+    )
+
+    Spacer(
+        modifier = Modifier.height(10.dp)
+    )
+
+    OutlinedTextField(
+        value = uiState.neighborhood,
+        onValueChange = onNeighborhoodChange,
+        modifier = Modifier.fillMaxWidth(),
+        label = { Text("Mahalle *") },
+        singleLine = true,
+        enabled =
+            !uiState.isSubmitting &&
+                    !uiState.isResolvingAddress
+    )
+
+    Spacer(
+        modifier = Modifier.height(10.dp)
+    )
+
+    OutlinedTextField(
+        value = uiState.street,
+        onValueChange = onStreetChange,
+        modifier = Modifier.fillMaxWidth(),
+        label = {
+            Text("Cadde / Sokak *")
+        },
+        singleLine = true,
+        enabled =
+            !uiState.isSubmitting &&
+                    !uiState.isResolvingAddress
+    )
+
+    Spacer(
+        modifier = Modifier.height(10.dp)
     )
 
     Row(
@@ -334,51 +502,118 @@ private fun ProducerApplicationForm(
             Arrangement.spacedBy(10.dp)
     ) {
         OutlinedTextField(
-            value = uiState.latitudeText,
-            onValueChange = onLatitudeChange,
+            value = uiState.buildingNo,
+            onValueChange =
+                onBuildingNoChange,
+
             modifier = Modifier.weight(1f),
-            label = {
-                Text("Enlem")
-            },
-            placeholder = {
-                Text("39.93")
-            },
+            label = { Text("Bina No *") },
             singleLine = true,
-            enabled = !uiState.isSubmitting,
-            keyboardOptions =
-                KeyboardOptions(
-                    keyboardType =
-                        KeyboardType.Decimal
-                )
+            enabled =
+                !uiState.isSubmitting &&
+                        !uiState.isResolvingAddress
         )
 
         OutlinedTextField(
-            value = uiState.longitudeText,
-            onValueChange = onLongitudeChange,
+            value = uiState.floor,
+            onValueChange =
+                onFloorChange,
+
             modifier = Modifier.weight(1f),
-            label = {
-                Text("Boylam")
-            },
-            placeholder = {
-                Text("26.40")
-            },
+            label = { Text("Kat") },
             singleLine = true,
-            enabled = !uiState.isSubmitting,
-            keyboardOptions =
-                KeyboardOptions(
-                    keyboardType =
-                        KeyboardType.Decimal
-                )
+            enabled =
+                !uiState.isSubmitting
         )
     }
 
     Spacer(
-        modifier = Modifier.height(12.dp)
+        modifier = Modifier.height(10.dp)
+    )
+
+    OutlinedTextField(
+        value = uiState.apartmentNo,
+        onValueChange =
+            onApartmentNoChange,
+
+        modifier = Modifier.fillMaxWidth(),
+        label = {
+            Text("Daire / İş Yeri No")
+        },
+        singleLine = true,
+        enabled = !uiState.isSubmitting
+    )
+
+    Spacer(
+        modifier = Modifier.height(10.dp)
+    )
+
+    OutlinedTextField(
+        value = uiState.addressNote,
+        onValueChange =
+            onAddressNoteChange,
+
+        modifier = Modifier.fillMaxWidth(),
+        label = {
+            Text("Adres Tarifi")
+        },
+        placeholder = {
+            Text(
+                "Örn: Belediye binasının karşısı"
+            )
+        },
+        minLines = 2,
+        maxLines = 4,
+        enabled = !uiState.isSubmitting
+    )
+
+    if (uiState.fullAddress.isNotBlank()) {
+        Spacer(
+            modifier = Modifier.height(12.dp)
+        )
+
+        Card(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier =
+                    Modifier.padding(14.dp)
+            ) {
+                Text(
+                    text =
+                        "Kaydedilecek İşletme Adresi",
+
+                    style =
+                        MaterialTheme.typography
+                            .labelLarge
+                )
+
+                Spacer(
+                    modifier =
+                        Modifier.height(6.dp)
+                )
+
+                Text(
+                    text =
+                        uiState.fullAddress,
+
+                    style =
+                        MaterialTheme.typography
+                            .bodyMedium
+                )
+            }
+        }
+    }
+
+    Spacer(
+        modifier = Modifier.height(14.dp)
     )
 
     OutlinedTextField(
         value = uiState.dailyCapacityText,
-        onValueChange = onDailyCapacityChange,
+        onValueChange =
+            onDailyCapacityChange,
+
         modifier = Modifier.fillMaxWidth(),
         label = {
             Text("Günlük Kapasite")
@@ -407,7 +642,7 @@ private fun ProducerApplicationForm(
     Button(
         onClick = onSubmitClick,
         modifier = Modifier.fillMaxWidth(),
-        enabled = !uiState.isSubmitting
+        enabled = uiState.canSubmit
     ) {
         if (uiState.isSubmitting) {
             CircularProgressIndicator(
@@ -456,7 +691,9 @@ private fun ProducerApplicationStatusContent(
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                text = application.businessName,
+                text =
+                    application.businessName,
+
                 style =
                     MaterialTheme.typography
                         .headlineSmall
@@ -572,7 +809,9 @@ private fun ProducerApplicationStatusContent(
                         Modifier.padding(16.dp)
                 ) {
                     Text(
-                        text = "Başvuru Red Nedeni",
+                        text =
+                            "Başvuru Red Nedeni",
+
                         color =
                             MaterialTheme.colorScheme
                                 .error,
@@ -589,7 +828,8 @@ private fun ProducerApplicationStatusContent(
 
                     Text(
                         text =
-                            application.rejectionReason
+                            application
+                                .rejectionReason
                                 ?: "Red nedeni belirtilmedi.",
 
                         style =
@@ -610,7 +850,9 @@ private fun ProducerApplicationStatusContent(
                 modifier =
                     Modifier.fillMaxWidth()
             ) {
-                Text("Bilgileri Düzenleyerek Yeniden Başvur")
+                Text(
+                    "Bilgileri Düzenleyerek Yeniden Başvur"
+                )
             }
         }
     }

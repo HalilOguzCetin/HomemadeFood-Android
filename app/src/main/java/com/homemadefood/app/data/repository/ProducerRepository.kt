@@ -53,9 +53,21 @@ class ProducerRepository(
     suspend fun updateMyProfile(
         businessName: String,
         description: String,
+
         address: String,
+
+        city: String,
+        district: String,
+        neighborhood: String,
+        street: String,
+        buildingNo: String,
+        floor: String?,
+        apartmentNo: String?,
+        addressNote: String?,
+
         latitude: Double,
         longitude: Double,
+
         dailyCapacity: Int,
         isAvailable: Boolean
     ): Response<
@@ -76,6 +88,30 @@ class ProducerRepository(
 
                         address =
                             address,
+
+                        city =
+                            city,
+
+                        district =
+                            district,
+
+                        neighborhood =
+                            neighborhood,
+
+                        street =
+                            street,
+
+                        buildingNo =
+                            buildingNo,
+
+                        floor =
+                            floor,
+
+                        apartmentNo =
+                            apartmentNo,
+
+                        addressNote =
+                            addressNote,
 
                         latitude =
                             latitude,

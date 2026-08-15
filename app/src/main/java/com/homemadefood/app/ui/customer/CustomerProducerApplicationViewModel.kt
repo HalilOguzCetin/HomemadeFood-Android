@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.homemadefood.app.data.local.SessionManager
 import com.homemadefood.app.data.model.ProducerApplicationRequest
+import com.homemadefood.app.data.repository.AddressRepository
 import com.homemadefood.app.data.repository.ProducerRepository
+import com.homemadefood.app.ui.address.SelectedLocation
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,6 +20,9 @@ class CustomerProducerApplicationViewModel(
     private val producerRepository:
     ProducerRepository,
 
+    private val addressRepository:
+    AddressRepository,
+
     private val sessionManager:
     SessionManager
 ) : ViewModel() {
@@ -26,6 +31,9 @@ class CustomerProducerApplicationViewModel(
         null
 
     private var submitApplicationJob: Job? =
+        null
+
+    private var reverseGeocodeJob: Job? =
         null
 
     private val _uiState =
@@ -44,7 +52,6 @@ class CustomerProducerApplicationViewModel(
 
         loadApplicationJob =
             viewModelScope.launch {
-
                 _uiState.value =
                     _uiState.value.copy(
                         isLoading = true,
@@ -60,7 +67,6 @@ class CustomerProducerApplicationViewModel(
                     showError(
                         "Oturum bilgisi bulunamadı."
                     )
-
                     return@launch
                 }
 
@@ -69,37 +75,36 @@ class CustomerProducerApplicationViewModel(
                         producerRepository
                             .getMyApplication()
 
-                    val responseBody =
+                    val body =
                         response.body()
 
                     when {
                         response.isSuccessful &&
-                                responseBody?.success == true &&
-                                responseBody.data != null -> {
+                                body?.success == true &&
+                                body.data != null -> {
 
                             _uiState.value =
                                 _uiState.value.copy(
                                     isLoading = false,
-
-                                    application =
-                                        responseBody.data,
-
-                                    isFormVisible =
-                                        false,
-
+                                    application = body.data,
+                                    isFormVisible = false,
                                     errorMessage = null
                                 )
                         }
 
                         response.code() == 404 -> {
+                            /*
+                             * Yeni başvuru yapan kullanıcıda mevcut
+                             * form state'ini yok etme.
+                             *
+                             * Özellikle haritadan geri dönüşte seçilen
+                             * konum ve doldurulmuş form alanları korunur.
+                             */
                             _uiState.value =
                                 _uiState.value.copy(
                                     isLoading = false,
                                     application = null,
-
-                                    isFormVisible =
-                                        true,
-
+                                    isFormVisible = true,
                                     errorMessage = null
                                 )
                         }
@@ -107,9 +112,11 @@ class CustomerProducerApplicationViewModel(
                         else -> {
                             showError(
                                 parseErrorMessage(
-                                    response.errorBody()
+                                    response
+                                        .errorBody()
                                         ?.string()
-                                ) ?: "Üretici başvurusu alınamadı."
+                                )
+                                    ?: "Üretici başvurusu alınamadı."
                             )
                         }
                     }
@@ -153,46 +160,220 @@ class CustomerProducerApplicationViewModel(
             )
     }
 
-    fun updateAddress(
-        value: String
+    fun updateCity(value: String) =
+        updateAddressField {
+            copy(city = value.take(100))
+        }
+
+    fun updateDistrict(value: String) =
+        updateAddressField {
+            copy(district = value.take(100))
+        }
+
+    fun updateNeighborhood(value: String) =
+        updateAddressField {
+            copy(
+                neighborhood =
+                    value.take(120)
+            )
+        }
+
+    fun updateStreet(value: String) =
+        updateAddressField {
+            copy(street = value.take(150))
+        }
+
+    fun updateBuildingNo(value: String) =
+        updateAddressField {
+            copy(
+                buildingNo =
+                    value.take(30)
+            )
+        }
+
+    fun updateFloor(value: String) =
+        updateAddressField {
+            copy(floor = value.take(20))
+        }
+
+    fun updateApartmentNo(value: String) =
+        updateAddressField {
+            copy(
+                apartmentNo =
+                    value.take(20)
+            )
+        }
+
+    fun updateAddressNote(value: String) =
+        updateAddressField {
+            copy(
+                addressNote =
+                    value.take(300)
+            )
+        }
+
+    fun updateSelectedLocation(
+        latitude: Double,
+        longitude: Double
     ) {
-        if (value.length > 500) {
+        val location =
+            SelectedLocation(
+                latitude = latitude,
+                longitude = longitude
+            )
+
+        if (!location.isValid()) {
+            showError(
+                "Seçilen işletme konumu geçerli değil."
+            )
             return
         }
 
-        _uiState.value =
-            _uiState.value.copy(
-                address = value,
-                errorMessage = null
-            )
-    }
-
-    fun updateLatitudeText(
-        value: String
-    ) {
-        if (value.length > 20) {
-            return
-        }
+        reverseGeocodeJob?.cancel()
 
         _uiState.value =
             _uiState.value.copy(
-                latitudeText = value,
+                selectedLocation = location,
+
+                city = "",
+                district = "",
+                neighborhood = "",
+                street = "",
+                buildingNo = "",
+
+                isResolvingAddress = true,
+
+                locationLookupMessage =
+                    "İşletme konumundan adres bilgileri bulunuyor...",
+
                 errorMessage = null
             )
-    }
 
-    fun updateLongitudeText(
-        value: String
-    ) {
-        if (value.length > 20) {
-            return
-        }
+        reverseGeocodeJob =
+            viewModelScope.launch {
+                try {
+                    val response =
+                        addressRepository
+                            .reverseGeocode(
+                                latitude =
+                                    location.latitude,
 
-        _uiState.value =
-            _uiState.value.copy(
-                longitudeText = value,
-                errorMessage = null
-            )
+                                longitude =
+                                    location.longitude
+                            )
+
+                    if (
+                        _uiState.value
+                            .selectedLocation !=
+                        location
+                    ) {
+                        return@launch
+                    }
+
+                    val body =
+                        response.body()
+
+                    val address =
+                        body?.data
+
+                    if (
+                        response.isSuccessful &&
+                        body?.success == true &&
+                        address != null
+                    ) {
+                        val complete =
+                            address.city
+                                .isNotBlank() &&
+                                    address.district
+                                        .isNotBlank() &&
+                                    address.neighborhood
+                                        .isNotBlank() &&
+                                    address.street
+                                        .isNotBlank() &&
+                                    address.buildingNo
+                                        .isNotBlank()
+
+                        _uiState.value =
+                            _uiState.value.copy(
+                                city =
+                                    address.city,
+
+                                district =
+                                    address.district,
+
+                                neighborhood =
+                                    address.neighborhood,
+
+                                street =
+                                    address.street,
+
+                                buildingNo =
+                                    address.buildingNo,
+
+                                isResolvingAddress =
+                                    false,
+
+                                locationLookupMessage =
+                                    if (complete) {
+                                        "İşletme adresi otomatik dolduruldu. Başvurmadan önce kontrol edin."
+                                    } else {
+                                        "Konum bulundu. Otomatik bulunamayan adres alanlarını tamamlayın."
+                                    },
+
+                                errorMessage = null
+                            )
+
+                        return@launch
+                    }
+
+                    _uiState.value =
+                        _uiState.value.copy(
+                            isResolvingAddress = false,
+
+                            locationLookupMessage =
+                                parseErrorMessage(
+                                    response
+                                        .errorBody()
+                                        ?.string()
+                                )
+                                    ?: "Konum seçildi ancak adres bilgileri otomatik bulunamadı. Alanları elle doldurabilirsiniz.",
+
+                            errorMessage = null
+                        )
+                } catch (_: IOException) {
+                    if (
+                        _uiState.value
+                            .selectedLocation ==
+                        location
+                    ) {
+                        _uiState.value =
+                            _uiState.value.copy(
+                                isResolvingAddress = false,
+
+                                locationLookupMessage =
+                                    "Adres servisine bağlanılamadı. Alanları elle doldurabilirsiniz.",
+
+                                errorMessage = null
+                            )
+                    }
+                } catch (_: Exception) {
+                    if (
+                        _uiState.value
+                            .selectedLocation ==
+                        location
+                    ) {
+                        _uiState.value =
+                            _uiState.value.copy(
+                                isResolvingAddress = false,
+
+                                locationLookupMessage =
+                                    "Adres bilgileri alınırken bir hata oluştu. Alanları elle doldurabilirsiniz.",
+
+                                errorMessage = null
+                            )
+                    }
+                }
+            }
     }
 
     fun updateDailyCapacityText(
@@ -200,9 +381,7 @@ class CustomerProducerApplicationViewModel(
     ) {
         if (
             value.isNotEmpty() &&
-            value.any { character ->
-                !character.isDigit()
-            }
+            value.any { !it.isDigit() }
         ) {
             return
         }
@@ -227,6 +406,14 @@ class CustomerProducerApplicationViewModel(
             return
         }
 
+        val storedLocation =
+            SelectedLocation(
+                latitude = application.latitude,
+                longitude = application.longitude
+            ).takeIf {
+                it.isValid()
+            }
+
         _uiState.value =
             _uiState.value.copy(
                 isFormVisible = true,
@@ -237,24 +424,68 @@ class CustomerProducerApplicationViewModel(
                 description =
                     application.description,
 
-                address =
-                    application.address,
+                city =
+                    application.city,
 
-                latitudeText =
-                    application.latitude
-                        .toString(),
+                district =
+                    application.district,
 
-                longitudeText =
-                    application.longitude
-                        .toString(),
+                neighborhood =
+                    application.neighborhood,
+
+                street =
+                    application.street,
+
+                buildingNo =
+                    application.buildingNo,
+
+                floor =
+                    application.floor.orEmpty(),
+
+                apartmentNo =
+                    application.apartmentNo.orEmpty(),
+
+                addressNote =
+                    application.addressNote.orEmpty(),
+
+                selectedLocation =
+                    storedLocation,
 
                 dailyCapacityText =
                     application.dailyCapacity
                         .toString(),
 
+                isResolvingAddress = false,
+                locationLookupMessage = null,
+
                 errorMessage = null,
                 successMessage = null
             )
+
+        val structuredAddressMissing =
+            application.city.isBlank() ||
+                    application.district.isBlank() ||
+                    application.neighborhood.isBlank() ||
+                    application.street.isBlank() ||
+                    application.buildingNo.isBlank()
+
+        /*
+         * Migration öncesi eski rejected başvurularda
+         * structured kolonlar boş olabilir.
+         * Kayıtlı koordinat varsa otomatik tamamlamayı deneriz.
+         */
+        if (
+            structuredAddressMissing &&
+            storedLocation != null
+        ) {
+            updateSelectedLocation(
+                latitude =
+                    storedLocation.latitude,
+
+                longitude =
+                    storedLocation.longitude
+            )
+        }
     }
 
     fun hideReapplicationForm() {
@@ -262,45 +493,40 @@ class CustomerProducerApplicationViewModel(
             return
         }
 
+        reverseGeocodeJob?.cancel()
+
         _uiState.value =
             _uiState.value.copy(
                 isFormVisible = false,
+                isResolvingAddress = false,
+                locationLookupMessage = null,
                 errorMessage = null
             )
     }
 
     fun submitApplication() {
+        val current =
+            _uiState.value
+
         if (
-            _uiState.value.isSubmitting ||
-            _uiState.value.isLoading
+            current.isSubmitting ||
+            current.isLoading ||
+            current.isResolvingAddress
         ) {
             return
         }
 
         val businessName =
-            _uiState.value.businessName
-                .trim()
+            current.businessName.trim()
 
         val description =
-            _uiState.value.description
-                .trim()
+            current.description.trim()
 
-        val address =
-            _uiState.value.address
-                .trim()
-
-        val latitude =
-            parseDecimal(
-                _uiState.value.latitudeText
-            )
-
-        val longitude =
-            parseDecimal(
-                _uiState.value.longitudeText
-            )
+        val location =
+            current.selectedLocation
 
         val dailyCapacity =
-            _uiState.value.dailyCapacityText
+            current.dailyCapacityText
                 .toIntOrNull()
 
         when {
@@ -308,7 +534,6 @@ class CustomerProducerApplicationViewModel(
                 showError(
                     "İşletme adı 2 ile 150 karakter arasında olmalıdır."
                 )
-
                 return
             }
 
@@ -316,54 +541,77 @@ class CustomerProducerApplicationViewModel(
                 showError(
                     "İşletme açıklaması 10 ile 1000 karakter arasında olmalıdır."
                 )
-
                 return
             }
 
-            address.length !in 10..500 -> {
+            location == null ||
+                    !location.isValid() -> {
                 showError(
-                    "İşletme adresi 10 ile 500 karakter arasında olmalıdır."
+                    "Önce haritadan işletme konumunu seçmelisiniz."
                 )
-
                 return
             }
 
-            latitude == null ||
-                    latitude !in -90.0..90.0 -> {
-
+            current.city.isBlank() -> {
                 showError(
-                    "Enlem -90 ile 90 arasında olmalıdır."
+                    "İl alanı boş bırakılamaz."
                 )
-
                 return
             }
 
-            longitude == null ||
-                    longitude !in -180.0..180.0 -> {
-
+            current.district.isBlank() -> {
                 showError(
-                    "Boylam -180 ile 180 arasında olmalıdır."
+                    "İlçe alanı boş bırakılamaz."
                 )
+                return
+            }
 
+            current.neighborhood.isBlank() -> {
+                showError(
+                    "Mahalle alanı boş bırakılamaz."
+                )
+                return
+            }
+
+            current.street.isBlank() -> {
+                showError(
+                    "Cadde / sokak alanı boş bırakılamaz."
+                )
+                return
+            }
+
+            current.buildingNo.isBlank() -> {
+                showError(
+                    "Bina numarası boş bırakılamaz."
+                )
                 return
             }
 
             dailyCapacity == null ||
                     dailyCapacity !in 1..1000 -> {
-
                 showError(
                     "Günlük kapasite 1 ile 1000 arasında olmalıdır."
                 )
-
                 return
             }
+        }
+
+        val address =
+            current
+                .buildFullAddress()
+                .trim()
+
+        if (address.length !in 10..500) {
+            showError(
+                "İşletme adresi 10 ile 500 karakter arasında olmalıdır."
+            )
+            return
         }
 
         submitApplicationJob?.cancel()
 
         submitApplicationJob =
             viewModelScope.launch {
-
                 val isLoggedIn =
                     sessionManager
                         .isLoggedIn
@@ -373,7 +621,6 @@ class CustomerProducerApplicationViewModel(
                     showError(
                         "Oturum bilgisi bulunamadı."
                     )
-
                     return@launch
                 }
 
@@ -398,24 +645,64 @@ class CustomerProducerApplicationViewModel(
                                     address =
                                         address,
 
+                                    city =
+                                        current.city.trim(),
+
+                                    district =
+                                        current.district.trim(),
+
+                                    neighborhood =
+                                        current
+                                            .neighborhood
+                                            .trim(),
+
+                                    street =
+                                        current.street.trim(),
+
+                                    buildingNo =
+                                        current
+                                            .buildingNo
+                                            .trim(),
+
+                                    floor =
+                                        current.floor
+                                            .trim()
+                                            .takeIf {
+                                                it.isNotBlank()
+                                            },
+
+                                    apartmentNo =
+                                        current.apartmentNo
+                                            .trim()
+                                            .takeIf {
+                                                it.isNotBlank()
+                                            },
+
+                                    addressNote =
+                                        current.addressNote
+                                            .trim()
+                                            .takeIf {
+                                                it.isNotBlank()
+                                            },
+
                                     latitude =
-                                        latitude,
+                                        location.latitude,
 
                                     longitude =
-                                        longitude,
+                                        location.longitude,
 
                                     dailyCapacity =
                                         dailyCapacity
                                 )
                         )
 
-                    val responseBody =
+                    val body =
                         response.body()
 
                     if (
                         response.isSuccessful &&
-                        responseBody?.success == true &&
-                        responseBody.data != null
+                        body?.success == true &&
+                        body.data != null
                     ) {
                         _uiState.value =
                             _uiState.value.copy(
@@ -423,7 +710,7 @@ class CustomerProducerApplicationViewModel(
                                 isFormVisible = false,
 
                                 successMessage =
-                                    responseBody.message
+                                    body.message
                                         .ifBlank {
                                             "Üretici başvurusu başarıyla gönderildi."
                                         },
@@ -435,9 +722,11 @@ class CustomerProducerApplicationViewModel(
                     } else {
                         showError(
                             parseErrorMessage(
-                                response.errorBody()
+                                response
+                                    .errorBody()
                                     ?.string()
-                            ) ?: "Üretici başvurusu gönderilemedi."
+                            )
+                                ?: "Üretici başvurusu gönderilemedi."
                         )
                     }
                 } catch (_: IOException) {
@@ -460,16 +749,17 @@ class CustomerProducerApplicationViewModel(
             )
     }
 
-    private fun parseDecimal(
-        value: String
-    ): Double? {
-        return value
-            .trim()
-            .replace(
-                oldChar = ',',
-                newChar = '.'
-            )
-            .toDoubleOrNull()
+    private fun updateAddressField(
+        transform:
+        CustomerProducerApplicationUiState.() ->
+        CustomerProducerApplicationUiState
+    ) {
+        _uiState.value =
+            _uiState.value
+                .transform()
+                .copy(
+                    errorMessage = null
+                )
     }
 
     private fun showError(
@@ -479,6 +769,7 @@ class CustomerProducerApplicationViewModel(
             _uiState.value.copy(
                 isLoading = false,
                 isSubmitting = false,
+                isResolvingAddress = false,
                 errorMessage = message
             )
     }
@@ -493,8 +784,8 @@ class CustomerProducerApplicationViewModel(
         return runCatching {
             JSONObject(errorJson)
                 .optString("message")
-                .takeIf { message ->
-                    message.isNotBlank()
+                .takeIf {
+                    it.isNotBlank()
                 }
         }.getOrNull()
     }

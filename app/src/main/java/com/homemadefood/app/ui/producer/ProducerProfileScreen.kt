@@ -1,6 +1,7 @@
 package com.homemadefood.app.ui.producer
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -43,11 +44,20 @@ fun ProducerProfileScreen(
     onRetryClick: () -> Unit,
     onStartEditingClick: () -> Unit,
     onCancelEditingClick: () -> Unit,
+
     onBusinessNameChange: (String) -> Unit,
     onDescriptionChange: (String) -> Unit,
-    onAddressChange: (String) -> Unit,
-    onLatitudeChange: (String) -> Unit,
-    onLongitudeChange: (String) -> Unit,
+
+    onCityChange: (String) -> Unit,
+    onDistrictChange: (String) -> Unit,
+    onNeighborhoodChange: (String) -> Unit,
+    onStreetChange: (String) -> Unit,
+    onBuildingNoChange: (String) -> Unit,
+    onFloorChange: (String) -> Unit,
+    onApartmentNoChange: (String) -> Unit,
+    onAddressNoteChange: (String) -> Unit,
+    onSelectLocationClick: () -> Unit,
+
     onDailyCapacityChange: (String) -> Unit,
     onAvailabilityChange: (Boolean) -> Unit,
     onSaveClick: () -> Unit,
@@ -155,14 +165,32 @@ fun ProducerProfileScreen(
                     onDescriptionChange =
                         onDescriptionChange,
 
-                    onAddressChange =
-                        onAddressChange,
+                    onCityChange =
+                        onCityChange,
 
-                    onLatitudeChange =
-                        onLatitudeChange,
+                    onDistrictChange =
+                        onDistrictChange,
 
-                    onLongitudeChange =
-                        onLongitudeChange,
+                    onNeighborhoodChange =
+                        onNeighborhoodChange,
+
+                    onStreetChange =
+                        onStreetChange,
+
+                    onBuildingNoChange =
+                        onBuildingNoChange,
+
+                    onFloorChange =
+                        onFloorChange,
+
+                    onApartmentNoChange =
+                        onApartmentNoChange,
+
+                    onAddressNoteChange =
+                        onAddressNoteChange,
+
+                    onSelectLocationClick =
+                        onSelectLocationClick,
 
                     onDailyCapacityChange =
                         onDailyCapacityChange,
@@ -205,27 +233,25 @@ fun ProducerProfileScreen(
 private fun ProducerProfileLoadingContent(
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(20.dp),
-
-        horizontalAlignment =
-            Alignment.CenterHorizontally,
-
-        verticalArrangement =
-            Arrangement.Center
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center
     ) {
-        CircularProgressIndicator()
+        Column(
+            horizontalAlignment =
+                Alignment.CenterHorizontally
+        ) {
+            CircularProgressIndicator()
 
-        Spacer(
-            modifier = Modifier.height(14.dp)
-        )
+            Spacer(
+                modifier = Modifier.height(14.dp)
+            )
 
-        Text(
-            text =
-                "İşletme profiliniz yükleniyor..."
-        )
+            Text(
+                text =
+                    "İşletme profiliniz yükleniyor..."
+            )
+        }
     }
 }
 
@@ -265,7 +291,6 @@ private fun ProducerProfileErrorContent(
 
         Text(
             text = message,
-
             style =
                 MaterialTheme.typography
                     .bodyLarge
@@ -302,11 +327,20 @@ private fun ProducerProfileContent(
     onBackClick: () -> Unit,
     onStartEditingClick: () -> Unit,
     onCancelEditingClick: () -> Unit,
+
     onBusinessNameChange: (String) -> Unit,
     onDescriptionChange: (String) -> Unit,
-    onAddressChange: (String) -> Unit,
-    onLatitudeChange: (String) -> Unit,
-    onLongitudeChange: (String) -> Unit,
+
+    onCityChange: (String) -> Unit,
+    onDistrictChange: (String) -> Unit,
+    onNeighborhoodChange: (String) -> Unit,
+    onStreetChange: (String) -> Unit,
+    onBuildingNoChange: (String) -> Unit,
+    onFloorChange: (String) -> Unit,
+    onApartmentNoChange: (String) -> Unit,
+    onAddressNoteChange: (String) -> Unit,
+    onSelectLocationClick: () -> Unit,
+
     onDailyCapacityChange: (String) -> Unit,
     onAvailabilityChange: (Boolean) -> Unit,
     onSaveClick: () -> Unit,
@@ -336,7 +370,6 @@ private fun ProducerProfileContent(
 
         Text(
             text = "İşletme Profilim",
-
             style =
                 MaterialTheme.typography
                     .headlineMedium
@@ -349,7 +382,7 @@ private fun ProducerProfileContent(
         Text(
             text =
                 if (uiState.isEditing) {
-                    "İşletme bilgilerinizi ve sipariş alma durumunuzu güncelleyin."
+                    "İşletme bilgilerinizi, konumunuzu ve sipariş alma durumunuzu güncelleyin."
                 } else {
                     "İşletme, kapasite ve sipariş alma bilgilerinizi yönetin."
                 },
@@ -389,14 +422,32 @@ private fun ProducerProfileContent(
                 onDescriptionChange =
                     onDescriptionChange,
 
-                onAddressChange =
-                    onAddressChange,
+                onCityChange =
+                    onCityChange,
 
-                onLatitudeChange =
-                    onLatitudeChange,
+                onDistrictChange =
+                    onDistrictChange,
 
-                onLongitudeChange =
-                    onLongitudeChange,
+                onNeighborhoodChange =
+                    onNeighborhoodChange,
+
+                onStreetChange =
+                    onStreetChange,
+
+                onBuildingNoChange =
+                    onBuildingNoChange,
+
+                onFloorChange =
+                    onFloorChange,
+
+                onApartmentNoChange =
+                    onApartmentNoChange,
+
+                onAddressNoteChange =
+                    onAddressNoteChange,
+
+                onSelectLocationClick =
+                    onSelectLocationClick,
 
                 onDailyCapacityChange =
                     onDailyCapacityChange,
@@ -469,7 +520,6 @@ private fun ProducerProfileStatusCard(
         ) {
             Text(
                 text = "Profil Durumu",
-
                 style =
                     MaterialTheme.typography
                         .titleLarge
@@ -481,7 +531,6 @@ private fun ProducerProfileStatusCard(
 
             ProducerProfileInfoLine(
                 title = "Onay durumu",
-
                 value =
                     producerApprovalStatusText(
                         profile
@@ -540,7 +589,6 @@ private fun ProducerCapacityCard(
         ) {
             Text(
                 text = "Günlük Kapasite",
-
                 style =
                     MaterialTheme.typography
                         .titleLarge
@@ -552,7 +600,6 @@ private fun ProducerCapacityCard(
 
             ProducerProfileInfoLine(
                 title = "Toplam kapasite",
-
                 value =
                     profile.dailyCapacity
                         .toString()
@@ -564,7 +611,6 @@ private fun ProducerCapacityCard(
 
             ProducerProfileInfoLine(
                 title = "Kalan kapasite",
-
                 value =
                     profile.remainingCapacity
                         .toString()
@@ -576,7 +622,6 @@ private fun ProducerCapacityCard(
 
             ProducerProfileInfoLine(
                 title = "Kullanılan kapasite",
-
                 value =
                     usedCapacity.toString()
             )
@@ -609,7 +654,6 @@ private fun ProducerProfileInformationCard(
         ) {
             Text(
                 text = "İşletme Bilgileri",
-
                 style =
                     MaterialTheme.typography
                         .titleLarge
@@ -637,14 +681,6 @@ private fun ProducerProfileInformationCard(
                 title = "Adres",
                 value = profile.address
             )
-
-            HorizontalDivider()
-
-            ProducerProfileInformationSection(
-                title = "Konum",
-                value =
-                    "${profile.latitude}, ${profile.longitude}"
-            )
         }
     }
 }
@@ -664,7 +700,6 @@ private fun ProducerProfileInformationSection(
     ) {
         Text(
             text = title,
-
             style =
                 MaterialTheme.typography
                     .labelLarge
@@ -697,7 +732,6 @@ private fun ProducerProfileInfoLine(
     ) {
         Text(
             text = title,
-
             style =
                 MaterialTheme.typography
                     .bodySmall
@@ -709,7 +743,6 @@ private fun ProducerProfileInfoLine(
 
         Text(
             text = value,
-
             style =
                 MaterialTheme.typography
                     .titleMedium
@@ -722,9 +755,17 @@ private fun ProducerProfileEditForm(
     uiState: ProducerProfileUiState,
     onBusinessNameChange: (String) -> Unit,
     onDescriptionChange: (String) -> Unit,
-    onAddressChange: (String) -> Unit,
-    onLatitudeChange: (String) -> Unit,
-    onLongitudeChange: (String) -> Unit,
+
+    onCityChange: (String) -> Unit,
+    onDistrictChange: (String) -> Unit,
+    onNeighborhoodChange: (String) -> Unit,
+    onStreetChange: (String) -> Unit,
+    onBuildingNoChange: (String) -> Unit,
+    onFloorChange: (String) -> Unit,
+    onApartmentNoChange: (String) -> Unit,
+    onAddressNoteChange: (String) -> Unit,
+    onSelectLocationClick: () -> Unit,
+
     onDailyCapacityChange: (String) -> Unit,
     onAvailabilityChange: (Boolean) -> Unit,
     onSaveClick: () -> Unit,
@@ -738,7 +779,6 @@ private fun ProducerProfileEditForm(
         ) {
             Text(
                 text = "Profili Düzenle",
-
                 style =
                     MaterialTheme.typography
                         .titleLarge
@@ -749,9 +789,7 @@ private fun ProducerProfileEditForm(
             )
 
             OutlinedTextField(
-                value =
-                    uiState.businessName,
-
+                value = uiState.businessName,
                 onValueChange =
                     onBusinessNameChange,
 
@@ -777,9 +815,7 @@ private fun ProducerProfileEditForm(
             )
 
             OutlinedTextField(
-                value =
-                    uiState.description,
-
+                value = uiState.description,
                 onValueChange =
                     onDescriptionChange,
 
@@ -802,92 +838,298 @@ private fun ProducerProfileEditForm(
             )
 
             Spacer(
-                modifier = Modifier.height(12.dp)
+                modifier = Modifier.height(18.dp)
+            )
+
+            Text(
+                text = "İşletme Konumu",
+                style =
+                    MaterialTheme.typography
+                        .titleMedium
+            )
+
+            Spacer(
+                modifier = Modifier.height(8.dp)
+            )
+
+            Card(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier =
+                        Modifier.padding(14.dp)
+                ) {
+                    Text(
+                        text =
+                            if (
+                                uiState.selectedLocation !=
+                                null
+                            ) {
+                                "Kayıtlı işletme konumu hazır."
+                            } else {
+                                "İşletme konumu bulunamadı."
+                            },
+
+                        style =
+                            MaterialTheme.typography
+                                .bodyMedium
+                    )
+
+                    if (
+                        !uiState.locationLookupMessage
+                            .isNullOrBlank()
+                    ) {
+                        Spacer(
+                            modifier =
+                                Modifier.height(8.dp)
+                        )
+
+                        Text(
+                            text =
+                                uiState.locationLookupMessage,
+
+                            style =
+                                MaterialTheme.typography
+                                    .bodySmall
+                        )
+                    }
+
+                    if (uiState.isResolvingAddress) {
+                        Spacer(
+                            modifier =
+                                Modifier.height(10.dp)
+                        )
+
+                        CircularProgressIndicator()
+                    }
+
+                    Spacer(
+                        modifier =
+                            Modifier.height(10.dp)
+                    )
+
+                    OutlinedButton(
+                        onClick =
+                            onSelectLocationClick,
+
+                        modifier =
+                            Modifier.fillMaxWidth(),
+
+                        enabled =
+                            !uiState.isSaving &&
+                                    !uiState.isResolvingAddress
+                    ) {
+                        Text(
+                            "İşletme Konumunu Değiştir"
+                        )
+                    }
+                }
+            }
+
+            Spacer(
+                modifier = Modifier.height(16.dp)
+            )
+
+            Text(
+                text = "İşletme Adresi",
+                style =
+                    MaterialTheme.typography
+                        .titleMedium
+            )
+
+            Spacer(
+                modifier = Modifier.height(8.dp)
             )
 
             OutlinedTextField(
-                value =
-                    uiState.address,
+                value = uiState.city,
+                onValueChange = onCityChange,
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("İl *") },
+                singleLine = true,
+                enabled =
+                    !uiState.isSaving &&
+                            !uiState.isResolvingAddress
+            )
 
+            Spacer(
+                modifier = Modifier.height(10.dp)
+            )
+
+            OutlinedTextField(
+                value = uiState.district,
+                onValueChange = onDistrictChange,
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("İlçe *") },
+                singleLine = true,
+                enabled =
+                    !uiState.isSaving &&
+                            !uiState.isResolvingAddress
+            )
+
+            Spacer(
+                modifier = Modifier.height(10.dp)
+            )
+
+            OutlinedTextField(
+                value = uiState.neighborhood,
                 onValueChange =
-                    onAddressChange,
+                    onNeighborhoodChange,
 
-                modifier =
-                    Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Mahalle *") },
+                singleLine = true,
+                enabled =
+                    !uiState.isSaving &&
+                            !uiState.isResolvingAddress
+            )
 
+            Spacer(
+                modifier = Modifier.height(10.dp)
+            )
+
+            OutlinedTextField(
+                value = uiState.street,
+                onValueChange = onStreetChange,
+                modifier = Modifier.fillMaxWidth(),
                 label = {
-                    Text("İşletme Adresi")
+                    Text("Cadde / Sokak *")
                 },
+                singleLine = true,
+                enabled =
+                    !uiState.isSaving &&
+                            !uiState.isResolvingAddress
+            )
 
-                supportingText = {
+            Spacer(
+                modifier = Modifier.height(10.dp)
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement =
+                    Arrangement.spacedBy(10.dp)
+            ) {
+                OutlinedTextField(
+                    value =
+                        uiState.buildingNo,
+
+                    onValueChange =
+                        onBuildingNoChange,
+
+                    modifier =
+                        Modifier.weight(1f),
+
+                    label = {
+                        Text("Bina No *")
+                    },
+
+                    singleLine = true,
+
+                    enabled =
+                        !uiState.isSaving &&
+                                !uiState.isResolvingAddress
+                )
+
+                OutlinedTextField(
+                    value = uiState.floor,
+                    onValueChange =
+                        onFloorChange,
+
+                    modifier =
+                        Modifier.weight(1f),
+
+                    label = {
+                        Text("Kat")
+                    },
+
+                    singleLine = true,
+                    enabled = !uiState.isSaving
+                )
+            }
+
+            Spacer(
+                modifier = Modifier.height(10.dp)
+            )
+
+            OutlinedTextField(
+                value = uiState.apartmentNo,
+                onValueChange =
+                    onApartmentNoChange,
+
+                modifier = Modifier.fillMaxWidth(),
+                label = {
+                    Text("Daire / İş Yeri No")
+                },
+                singleLine = true,
+                enabled = !uiState.isSaving
+            )
+
+            Spacer(
+                modifier = Modifier.height(10.dp)
+            )
+
+            OutlinedTextField(
+                value = uiState.addressNote,
+                onValueChange =
+                    onAddressNoteChange,
+
+                modifier = Modifier.fillMaxWidth(),
+                label = {
+                    Text("Adres Tarifi")
+                },
+                placeholder = {
                     Text(
-                        "${uiState.address.length}/500"
+                        "Örn: Belediye binasının karşısı"
                     )
                 },
-
                 minLines = 2,
-                maxLines = 5,
+                maxLines = 4,
                 enabled = !uiState.isSaving
             )
 
-            Spacer(
-                modifier = Modifier.height(12.dp)
-            )
+            if (uiState.fullAddress.isNotBlank()) {
+                Spacer(
+                    modifier =
+                        Modifier.height(12.dp)
+                )
 
-            OutlinedTextField(
-                value =
-                    uiState.latitudeText,
+                Card(
+                    modifier =
+                        Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier =
+                            Modifier.padding(14.dp)
+                    ) {
+                        Text(
+                            text =
+                                "Kaydedilecek İşletme Adresi",
 
-                onValueChange =
-                    onLatitudeChange,
+                            style =
+                                MaterialTheme.typography
+                                    .labelLarge
+                        )
 
-                modifier =
-                    Modifier.fillMaxWidth(),
+                        Spacer(
+                            modifier =
+                                Modifier.height(6.dp)
+                        )
 
-                label = {
-                    Text("Enlem")
-                },
+                        Text(
+                            text =
+                                uiState.fullAddress,
 
-                keyboardOptions =
-                    KeyboardOptions(
-                        keyboardType =
-                            KeyboardType.Decimal
-                    ),
-
-                singleLine = true,
-                enabled = !uiState.isSaving
-            )
-
-            Spacer(
-                modifier = Modifier.height(12.dp)
-            )
-
-            OutlinedTextField(
-                value =
-                    uiState.longitudeText,
-
-                onValueChange =
-                    onLongitudeChange,
-
-                modifier =
-                    Modifier.fillMaxWidth(),
-
-                label = {
-                    Text("Boylam")
-                },
-
-                keyboardOptions =
-                    KeyboardOptions(
-                        keyboardType =
-                            KeyboardType.Decimal
-                    ),
-
-                singleLine = true,
-                enabled = !uiState.isSaving
-            )
+                            style =
+                                MaterialTheme.typography
+                                    .bodyMedium
+                        )
+                    }
+                }
+            }
 
             Spacer(
-                modifier = Modifier.height(12.dp)
+                modifier = Modifier.height(14.dp)
             )
 
             OutlinedTextField(
@@ -940,7 +1182,10 @@ private fun ProducerProfileEditForm(
                     verticalAlignment =
                         Alignment.CenterVertically
                 ) {
-                    Column {
+                    Column(
+                        modifier =
+                            Modifier.weight(1f)
+                    ) {
                         Text(
                             text =
                                 "Sipariş Almaya Açık",
@@ -988,12 +1233,11 @@ private fun ProducerProfileEditForm(
 
             Button(
                 onClick = onSaveClick,
-
                 modifier =
                     Modifier.fillMaxWidth(),
 
                 enabled =
-                    !uiState.isSaving
+                    uiState.canSave
             ) {
                 if (uiState.isSaving) {
                     CircularProgressIndicator(
@@ -1003,7 +1247,9 @@ private fun ProducerProfileEditForm(
                         strokeWidth = 2.dp
                     )
                 } else {
-                    Text("Değişiklikleri Kaydet")
+                    Text(
+                        "Değişiklikleri Kaydet"
+                    )
                 }
             }
 
@@ -1013,7 +1259,6 @@ private fun ProducerProfileEditForm(
 
             OutlinedButton(
                 onClick = onCancelClick,
-
                 modifier =
                     Modifier.fillMaxWidth(),
 

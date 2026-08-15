@@ -11,249 +11,167 @@ sealed class AppDestination(
     val route: String
 ) {
 
-    // -------------------------
-    // Auth ekranları
-    // -------------------------
-
+    // Auth
     data object Login :
-        AppDestination(
-            route = "auth/login"
-        )
+        AppDestination("auth/login")
 
     data object Register :
-        AppDestination(
-            route = "auth/register"
-        )
+        AppDestination("auth/register")
 
     data object EmailVerification :
-        AppDestination(
-            route = "auth/verify-email"
-        )
+        AppDestination("auth/verify-email")
 
     data object ForgotPassword :
-        AppDestination(
-            route = "auth/forgot-password"
-        )
+        AppDestination("auth/forgot-password")
 
     data object ResetPassword :
-        AppDestination(
-            route = "auth/reset-password"
-        )
+        AppDestination("auth/reset-password")
 
-    // -------------------------
-    // Customer ekranları
-    // -------------------------
-
+    // Customer
     data object CustomerHome :
-        AppDestination(
-            route = "customer/home"
-        )
+        AppDestination("customer/home")
 
     data object FoodDetail :
         AppDestination(
-            route = "customer/food/{foodId}"
+            "customer/food/{foodId}"
         ) {
+        const val FOOD_ID_ARGUMENT = "foodId"
 
-        const val FOOD_ID_ARGUMENT =
-            "foodId"
-
-        fun createRoute(
-            foodId: Int
-        ): String {
-            return "customer/food/$foodId"
-        }
+        fun createRoute(foodId: Int) =
+            "customer/food/$foodId"
     }
 
     data object Favorites :
-        AppDestination(
-            route = "customer/favorites"
-        )
+        AppDestination("customer/favorites")
 
     data object Addresses :
-        AppDestination(
-            route = "customer/addresses"
-        )
+        AppDestination("customer/addresses")
 
     data object AddAddress :
-        AppDestination(
-            route = "customer/address/add"
-        )
-    data object AddressMap :
-        AppDestination(
-            route = "customer/address/map"
-        )
+        AppDestination("customer/address/add")
 
+    data object AddressMap :
+        AppDestination("customer/address/map")
 
     data object EditAddress :
         AppDestination(
-            route = "customer/address/edit/{addressId}"
+            "customer/address/edit/{addressId}"
         ) {
-
         const val ADDRESS_ID_ARGUMENT =
             "addressId"
 
-        fun createRoute(
-            addressId: Int
-        ): String {
-            return "customer/address/edit/$addressId"
-        }
+        fun createRoute(addressId: Int) =
+            "customer/address/edit/$addressId"
     }
 
     data object Cart :
-        AppDestination(
-            route = "customer/cart"
-        )
+        AppDestination("customer/cart")
 
     data object CreateOrder :
-        AppDestination(
-            route = "customer/order/create"
-        )
+        AppDestination("customer/order/create")
 
     data object Orders :
-        AppDestination(
-            route = "customer/orders"
-        )
+        AppDestination("customer/orders")
 
     data object OrderDetail :
         AppDestination(
-            route = "customer/order/{orderId}"
+            "customer/order/{orderId}"
         ) {
-
         const val ORDER_ID_ARGUMENT =
             "orderId"
 
-        fun createRoute(
-            orderId: Int
-        ): String {
-            return "customer/order/$orderId"
-        }
+        fun createRoute(orderId: Int) =
+            "customer/order/$orderId"
     }
 
     data object Recommendation :
         AppDestination(
-            route = "customer/recommendation"
+            "customer/recommendation"
         )
 
     data object CustomerProducerApplication :
         AppDestination(
-            route = "customer/producer-application"
+            "customer/producer-application"
         )
 
     data object CustomerReviews :
-        AppDestination(
-            route = "customer/reviews"
-        )
+        AppDestination("customer/reviews")
 
-    // -------------------------
-    // Producer ekranları
-    // -------------------------
-
+    // Producer
     data object ProducerHome :
-        AppDestination(
-            route = "producer/home"
-        )
+        AppDestination("producer/home")
 
     data object ProducerApplication :
         AppDestination(
-            route = "producer/application"
+            "producer/application"
         )
 
     data object ProducerFoods :
-        AppDestination(
-            route = "producer/foods"
-        )
+        AppDestination("producer/foods")
 
     data object CreateFood :
-        AppDestination(
-            route = "producer/food/create"
-        )
+        AppDestination("producer/food/create")
 
     data object EditFood :
         AppDestination(
-            route = "producer/food/edit/{foodId}"
+            "producer/food/edit/{foodId}"
         ) {
-
         const val FOOD_ID_ARGUMENT =
             "foodId"
 
-        fun createRoute(
-            foodId: Int
-        ): String {
-            return "producer/food/edit/$foodId"
-        }
+        fun createRoute(foodId: Int) =
+            "producer/food/edit/$foodId"
     }
 
     data object ProducerOrders :
-        AppDestination(
-            route = "producer/orders"
-        )
+        AppDestination("producer/orders")
 
     data object ProducerReviews :
-        AppDestination(
-            route = "producer/reviews"
-        )
+        AppDestination("producer/reviews")
 
     data object ProducerProfile :
+        AppDestination("producer/profile")
+
+    data object ProducerProfileAddressMap :
         AppDestination(
-            route = "producer/profile"
+            "producer/profile/address/map"
         )
 
-    // -------------------------
-    // Admin ekranları
-    // -------------------------
-
+    // Admin
     data object AdminHome :
-        AppDestination(
-            route = "admin/home"
-        )
+        AppDestination("admin/home")
 
     data object AdminApplications :
-        AppDestination(
-            route = "admin/applications"
-        )
+        AppDestination("admin/applications")
 
     data object AdminUsers :
-        AppDestination(
-            route = "admin/users"
-        )
+        AppDestination("admin/users")
 
     data object AdminUserDetail :
         AppDestination(
-            route = "admin/users/{userId}"
+            "admin/users/{userId}"
         ) {
-
         const val USER_ID_ARGUMENT =
             "userId"
 
-        fun createRoute(
-            userId: Int
-        ): String {
-            return "admin/users/$userId"
-        }
+        fun createRoute(userId: Int) =
+            "admin/users/$userId"
     }
 
     data object AdminOrders :
-        AppDestination(
-            route = "admin/orders"
-        )
+        AppDestination("admin/orders")
 
     data object AdminOrderDetail :
         AppDestination(
-            route = "admin/orders/{orderId}"
+            "admin/orders/{orderId}"
         ) {
-
         const val ORDER_ID_ARGUMENT =
             "orderId"
 
-        fun createRoute(
-            orderId: Int
-        ): String {
-            return "admin/orders/$orderId"
-        }
+        fun createRoute(orderId: Int) =
+            "admin/orders/$orderId"
     }
 
     data object RecommendationAnalytics :
-        AppDestination(
-            route = "admin/analytics"
-        )
+        AppDestination("admin/analytics")
 }

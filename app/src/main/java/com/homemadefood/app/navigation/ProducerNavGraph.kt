@@ -36,6 +36,20 @@ import com.homemadefood.app.ui.producer.ProducerProfileScreen
 import com.homemadefood.app.ui.producer.ProducerProfileViewModel
 import com.homemadefood.app.ui.producer.ProducerProfileViewModelFactory
 import com.homemadefood.app.ui.auth.AuthViewModel
+import com.homemadefood.app.ui.address.SelectedLocation
+import com.homemadefood.app.ui.location.LocationMapScreen
+private const val PRODUCER_PROFILE_MAP_RESULT_LATITUDE =
+    "producer_profile_map_result_latitude"
+
+private const val PRODUCER_PROFILE_MAP_RESULT_LONGITUDE =
+    "producer_profile_map_result_longitude"
+
+private const val PRODUCER_PROFILE_MAP_INITIAL_LATITUDE =
+    "producer_profile_map_initial_latitude"
+
+private const val PRODUCER_PROFILE_MAP_INITIAL_LONGITUDE =
+    "producer_profile_map_initial_longitude"
+
 fun NavGraphBuilder.producerNavGraph(
     navController: NavHostController,
     context: Context,
@@ -60,6 +74,9 @@ fun NavGraphBuilder.producerNavGraph(
         producerProfileDestination(
             navController = navController,
             context = context
+        )
+        producerProfileAddressMapDestination(
+            navController = navController
         )
         producerFoodsDestination(
             navController = navController,
@@ -571,7 +588,8 @@ private fun NavGraphBuilder.producerProfileDestination(
             AppDestination
                 .ProducerProfile
                 .route
-    ) {
+    ) { backStackEntry ->
+
         val producerProfileViewModel:
                 ProducerProfileViewModel =
             viewModel(
@@ -586,9 +604,67 @@ private fun NavGraphBuilder.producerProfileDestination(
             .uiState
             .collectAsStateWithLifecycle()
 
+        val selectedLatitude by
+        backStackEntry
+            .savedStateHandle
+            .getStateFlow<Double?>(
+                PRODUCER_PROFILE_MAP_RESULT_LATITUDE,
+                null
+            )
+            .collectAsStateWithLifecycle()
+
+        val selectedLongitude by
+        backStackEntry
+            .savedStateHandle
+            .getStateFlow<Double?>(
+                PRODUCER_PROFILE_MAP_RESULT_LONGITUDE,
+                null
+            )
+            .collectAsStateWithLifecycle()
+
+        /*
+         * Haritadan geri dönüldüğünde form state'ini
+         * tekrar backend verisiyle ezmeyelim.
+         */
         LaunchedEffect(Unit) {
-            producerProfileViewModel
-                .loadProfile()
+            if (producerProfileUiState.isLoading) {
+                producerProfileViewModel
+                    .loadProfile()
+            }
+        }
+
+        LaunchedEffect(
+            selectedLatitude,
+            selectedLongitude
+        ) {
+            val latitude =
+                selectedLatitude
+
+            val longitude =
+                selectedLongitude
+
+            if (
+                latitude != null &&
+                longitude != null
+            ) {
+                producerProfileViewModel
+                    .updateSelectedLocation(
+                        latitude = latitude,
+                        longitude = longitude
+                    )
+
+                backStackEntry
+                    .savedStateHandle
+                    .remove<Double>(
+                        PRODUCER_PROFILE_MAP_RESULT_LATITUDE
+                    )
+
+                backStackEntry
+                    .savedStateHandle
+                    .remove<Double>(
+                        PRODUCER_PROFILE_MAP_RESULT_LONGITUDE
+                    )
+            }
         }
 
         ProducerProfileScreen(
@@ -624,19 +700,73 @@ private fun NavGraphBuilder.producerProfileDestination(
                     .updateDescription(value)
             },
 
-            onAddressChange = { value ->
+            onCityChange = { value ->
                 producerProfileViewModel
-                    .updateAddress(value)
+                    .updateCity(value)
             },
 
-            onLatitudeChange = { value ->
+            onDistrictChange = { value ->
                 producerProfileViewModel
-                    .updateLatitudeText(value)
+                    .updateDistrict(value)
             },
 
-            onLongitudeChange = { value ->
+            onNeighborhoodChange = { value ->
                 producerProfileViewModel
-                    .updateLongitudeText(value)
+                    .updateNeighborhood(value)
+            },
+
+            onStreetChange = { value ->
+                producerProfileViewModel
+                    .updateStreet(value)
+            },
+
+            onBuildingNoChange = { value ->
+                producerProfileViewModel
+                    .updateBuildingNo(value)
+            },
+
+            onFloorChange = { value ->
+                producerProfileViewModel
+                    .updateFloor(value)
+            },
+
+            onApartmentNoChange = { value ->
+                producerProfileViewModel
+                    .updateApartmentNo(value)
+            },
+
+            onAddressNoteChange = { value ->
+                producerProfileViewModel
+                    .updateAddressNote(value)
+            },
+
+            onSelectLocationClick = {
+                val currentLocation =
+                    producerProfileUiState
+                        .selectedLocation
+
+                if (
+                    currentLocation != null &&
+                    currentLocation.isValid()
+                ) {
+                    backStackEntry
+                        .savedStateHandle[
+                        PRODUCER_PROFILE_MAP_INITIAL_LATITUDE
+                    ] =
+                        currentLocation.latitude
+
+                    backStackEntry
+                        .savedStateHandle[
+                        PRODUCER_PROFILE_MAP_INITIAL_LONGITUDE
+                    ] =
+                        currentLocation.longitude
+                }
+
+                navController.navigate(
+                    AppDestination
+                        .ProducerProfileAddressMap
+                        .route
+                )
             },
 
             onDailyCapacityChange = { value ->
@@ -657,6 +787,109 @@ private fun NavGraphBuilder.producerProfileDestination(
             onMessageShown = {
                 producerProfileViewModel
                     .clearMessages()
+            },
+
+            modifier =
+                Modifier.fillMaxSize()
+        )
+    }
+}
+
+private fun NavGraphBuilder
+        .producerProfileAddressMapDestination(
+    navController: NavHostController
+) {
+    composable(
+        route =
+            AppDestination
+                .ProducerProfileAddressMap
+                .route
+    ) {
+        val previousEntry =
+            navController
+                .previousBackStackEntry
+
+        val initialLatitude =
+            previousEntry
+                ?.savedStateHandle
+                ?.get<Double>(
+                    PRODUCER_PROFILE_MAP_INITIAL_LATITUDE
+                )
+
+        val initialLongitude =
+            previousEntry
+                ?.savedStateHandle
+                ?.get<Double>(
+                    PRODUCER_PROFILE_MAP_INITIAL_LONGITUDE
+                )
+
+        val initialLocation =
+            if (
+                initialLatitude != null &&
+                initialLongitude != null
+            ) {
+                SelectedLocation(
+                    latitude =
+                        initialLatitude,
+
+                    longitude =
+                        initialLongitude
+                ).takeIf {
+                    it.isValid()
+                }
+            } else {
+                null
+            }
+
+        LaunchedEffect(
+            previousEntry
+        ) {
+            previousEntry
+                ?.savedStateHandle
+                ?.remove<Double>(
+                    PRODUCER_PROFILE_MAP_INITIAL_LATITUDE
+                )
+
+            previousEntry
+                ?.savedStateHandle
+                ?.remove<Double>(
+                    PRODUCER_PROFILE_MAP_INITIAL_LONGITUDE
+                )
+        }
+
+        LocationMapScreen(
+            initialSelectedLocation =
+                initialLocation,
+
+            onBackClick = {
+                navController
+                    .popBackStack()
+            },
+
+            onConfirmLocation = {
+                    latitude,
+                    longitude ->
+
+                val destinationEntry =
+                    navController
+                        .previousBackStackEntry
+
+                if (destinationEntry != null) {
+                    destinationEntry
+                        .savedStateHandle[
+                        PRODUCER_PROFILE_MAP_RESULT_LATITUDE
+                    ] =
+                        latitude
+
+                    destinationEntry
+                        .savedStateHandle[
+                        PRODUCER_PROFILE_MAP_RESULT_LONGITUDE
+                    ] =
+                        longitude
+                }
+
+                navController
+                    .popBackStack()
             },
 
             modifier =

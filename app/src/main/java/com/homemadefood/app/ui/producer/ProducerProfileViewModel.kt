@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.homemadefood.app.data.local.SessionManager
 import com.homemadefood.app.data.model.ProducerApplicationStatusResponse
+import com.homemadefood.app.data.repository.AddressRepository
 import com.homemadefood.app.data.repository.ProducerRepository
+import com.homemadefood.app.ui.address.SelectedLocation
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,12 +20,16 @@ class ProducerProfileViewModel(
     private val producerRepository:
     ProducerRepository,
 
+    private val addressRepository:
+    AddressRepository,
+
     private val sessionManager:
     SessionManager
 ) : ViewModel() {
 
     private var loadProfileJob: Job? = null
     private var saveProfileJob: Job? = null
+    private var reverseGeocodeJob: Job? = null
 
     private val _uiState =
         MutableStateFlow(
@@ -55,7 +61,6 @@ class ProducerProfileViewModel(
                     showLoadError(
                         "Oturum bilgisi bulunamadı."
                     )
-
                     return@launch
                 }
 
@@ -81,9 +86,11 @@ class ProducerProfileViewModel(
                     } else {
                         showLoadError(
                             parseErrorMessage(
-                                response.errorBody()
+                                response
+                                    .errorBody()
                                     ?.string()
-                            ) ?: "Üretici profili alınamadı."
+                            )
+                                ?: "Üretici profili alınamadı."
                         )
                     }
                 } catch (_: IOException) {
@@ -106,7 +113,6 @@ class ProducerProfileViewModel(
             showActionError(
                 "Üretici profil bilgisi bulunamadı."
             )
-
             return
         }
 
@@ -114,9 +120,13 @@ class ProducerProfileViewModel(
             showActionError(
                 "Yalnızca onaylanmış üretici profilleri düzenlenebilir."
             )
-
             return
         }
+
+        val location =
+            profileLocation(
+                profile
+            )
 
         _uiState.value =
             _uiState.value.copy(
@@ -128,14 +138,32 @@ class ProducerProfileViewModel(
                 description =
                     profile.description,
 
-                address =
-                    profile.address,
+                city =
+                    profile.city,
 
-                latitudeText =
-                    profile.latitude.toString(),
+                district =
+                    profile.district,
 
-                longitudeText =
-                    profile.longitude.toString(),
+                neighborhood =
+                    profile.neighborhood,
+
+                street =
+                    profile.street,
+
+                buildingNo =
+                    profile.buildingNo,
+
+                floor =
+                    profile.floor.orEmpty(),
+
+                apartmentNo =
+                    profile.apartmentNo.orEmpty(),
+
+                addressNote =
+                    profile.addressNote.orEmpty(),
+
+                selectedLocation =
+                    location,
 
                 dailyCapacityText =
                     profile.dailyCapacity
@@ -144,9 +172,37 @@ class ProducerProfileViewModel(
                 isAvailable =
                     profile.isAvailable,
 
+                isResolvingAddress = false,
+                locationLookupMessage = null,
+
                 errorMessage = null,
                 successMessage = null
             )
+
+        val structuredAddressMissing =
+            profile.city.isBlank() ||
+                    profile.district.isBlank() ||
+                    profile.neighborhood.isBlank() ||
+                    profile.street.isBlank() ||
+                    profile.buildingNo.isBlank()
+
+        /*
+         * Migration öncesi eski profillerde structured
+         * kolonlar boş olabilir. Kayıtlı koordinat varsa
+         * reverse geocoding ile tamamlamayı deneriz.
+         */
+        if (
+            structuredAddressMissing &&
+            location != null
+        ) {
+            updateSelectedLocation(
+                latitude =
+                    location.latitude,
+
+                longitude =
+                    location.longitude
+            )
+        }
     }
 
     fun cancelEditing() {
@@ -154,43 +210,68 @@ class ProducerProfileViewModel(
             return
         }
 
+        reverseGeocodeJob?.cancel()
+
         val profile =
             _uiState.value.profile
+
+        if (profile == null) {
+            _uiState.value =
+                _uiState.value.copy(
+                    isEditing = false,
+                    isResolvingAddress = false,
+                    locationLookupMessage = null,
+                    errorMessage = null
+                )
+            return
+        }
 
         _uiState.value =
             _uiState.value.copy(
                 isEditing = false,
 
                 businessName =
-                    profile?.businessName
-                        .orEmpty(),
+                    profile.businessName,
 
                 description =
-                    profile?.description
-                        .orEmpty(),
+                    profile.description,
 
-                address =
-                    profile?.address
-                        .orEmpty(),
+                city =
+                    profile.city,
 
-                latitudeText =
-                    profile?.latitude
-                        ?.toString()
-                        .orEmpty(),
+                district =
+                    profile.district,
 
-                longitudeText =
-                    profile?.longitude
-                        ?.toString()
-                        .orEmpty(),
+                neighborhood =
+                    profile.neighborhood,
+
+                street =
+                    profile.street,
+
+                buildingNo =
+                    profile.buildingNo,
+
+                floor =
+                    profile.floor.orEmpty(),
+
+                apartmentNo =
+                    profile.apartmentNo.orEmpty(),
+
+                addressNote =
+                    profile.addressNote.orEmpty(),
+
+                selectedLocation =
+                    profileLocation(profile),
 
                 dailyCapacityText =
-                    profile?.dailyCapacity
-                        ?.toString()
-                        .orEmpty(),
+                    profile.dailyCapacity
+                        .toString(),
 
                 isAvailable =
-                    profile?.isAvailable
-                        ?: false,
+                    profile.isAvailable,
+
+                isResolvingAddress = false,
+                locationLookupMessage = null,
 
                 errorMessage = null
             )
@@ -228,52 +309,226 @@ class ProducerProfileViewModel(
         }
     }
 
-    fun updateAddress(
-        value: String
+    fun updateCity(value: String) =
+        updateAddressField {
+            copy(city = value.take(100))
+        }
+
+    fun updateDistrict(value: String) =
+        updateAddressField {
+            copy(district = value.take(100))
+        }
+
+    fun updateNeighborhood(value: String) =
+        updateAddressField {
+            copy(
+                neighborhood =
+                    value.take(120)
+            )
+        }
+
+    fun updateStreet(value: String) =
+        updateAddressField {
+            copy(street = value.take(150))
+        }
+
+    fun updateBuildingNo(value: String) =
+        updateAddressField {
+            copy(
+                buildingNo =
+                    value.take(30)
+            )
+        }
+
+    fun updateFloor(value: String) =
+        updateAddressField {
+            copy(floor = value.take(20))
+        }
+
+    fun updateApartmentNo(value: String) =
+        updateAddressField {
+            copy(
+                apartmentNo =
+                    value.take(20)
+            )
+        }
+
+    fun updateAddressNote(value: String) =
+        updateAddressField {
+            copy(
+                addressNote =
+                    value.take(300)
+            )
+        }
+
+    fun updateSelectedLocation(
+        latitude: Double,
+        longitude: Double
     ) {
-        if (_uiState.value.isSaving) {
+        if (
+            !_uiState.value.isEditing ||
+            _uiState.value.isSaving
+        ) {
             return
         }
 
-        if (value.length <= 500) {
-            _uiState.value =
-                _uiState.value.copy(
-                    address = value,
-                    errorMessage = null
-                )
-        }
-    }
+        val location =
+            SelectedLocation(
+                latitude = latitude,
+                longitude = longitude
+            )
 
-    fun updateLatitudeText(
-        value: String
-    ) {
-        if (_uiState.value.isSaving) {
+        if (!location.isValid()) {
+            showActionError(
+                "Seçilen işletme konumu geçerli değil."
+            )
             return
         }
 
-        if (isValidDecimalInput(value)) {
-            _uiState.value =
-                _uiState.value.copy(
-                    latitudeText = value,
-                    errorMessage = null
-                )
-        }
-    }
+        reverseGeocodeJob?.cancel()
 
-    fun updateLongitudeText(
-        value: String
-    ) {
-        if (_uiState.value.isSaving) {
-            return
-        }
+        /*
+         * Yeni konuma bağlı alanlar temizlenir.
+         * Kat, daire/iş yeri no ve adres tarifi korunur.
+         */
+        _uiState.value =
+            _uiState.value.copy(
+                selectedLocation = location,
 
-        if (isValidDecimalInput(value)) {
-            _uiState.value =
-                _uiState.value.copy(
-                    longitudeText = value,
-                    errorMessage = null
-                )
-        }
+                city = "",
+                district = "",
+                neighborhood = "",
+                street = "",
+                buildingNo = "",
+
+                isResolvingAddress = true,
+
+                locationLookupMessage =
+                    "İşletme konumundan adres bilgileri bulunuyor...",
+
+                errorMessage = null
+            )
+
+        reverseGeocodeJob =
+            viewModelScope.launch {
+                try {
+                    val response =
+                        addressRepository
+                            .reverseGeocode(
+                                latitude =
+                                    location.latitude,
+
+                                longitude =
+                                    location.longitude
+                            )
+
+                    if (
+                        _uiState.value
+                            .selectedLocation !=
+                        location
+                    ) {
+                        return@launch
+                    }
+
+                    val body =
+                        response.body()
+
+                    val address =
+                        body?.data
+
+                    if (
+                        response.isSuccessful &&
+                        body?.success == true &&
+                        address != null
+                    ) {
+                        val complete =
+                            address.city.isNotBlank() &&
+                                    address.district.isNotBlank() &&
+                                    address.neighborhood.isNotBlank() &&
+                                    address.street.isNotBlank() &&
+                                    address.buildingNo.isNotBlank()
+
+                        _uiState.value =
+                            _uiState.value.copy(
+                                city =
+                                    address.city,
+
+                                district =
+                                    address.district,
+
+                                neighborhood =
+                                    address.neighborhood,
+
+                                street =
+                                    address.street,
+
+                                buildingNo =
+                                    address.buildingNo,
+
+                                isResolvingAddress =
+                                    false,
+
+                                locationLookupMessage =
+                                    if (complete) {
+                                        "İşletme adresi otomatik dolduruldu. Kaydetmeden önce kontrol edin."
+                                    } else {
+                                        "Konum bulundu. Otomatik bulunamayan adres alanlarını tamamlayın."
+                                    },
+
+                                errorMessage = null
+                            )
+
+                        return@launch
+                    }
+
+                    _uiState.value =
+                        _uiState.value.copy(
+                            isResolvingAddress = false,
+
+                            locationLookupMessage =
+                                parseErrorMessage(
+                                    response
+                                        .errorBody()
+                                        ?.string()
+                                )
+                                    ?: "Konum seçildi ancak adres bilgileri otomatik bulunamadı. Alanları elle doldurabilirsiniz.",
+
+                            errorMessage = null
+                        )
+                } catch (_: IOException) {
+                    if (
+                        _uiState.value
+                            .selectedLocation ==
+                        location
+                    ) {
+                        _uiState.value =
+                            _uiState.value.copy(
+                                isResolvingAddress = false,
+
+                                locationLookupMessage =
+                                    "Adres servisine bağlanılamadı. Alanları elle doldurabilirsiniz.",
+
+                                errorMessage = null
+                            )
+                    }
+                } catch (_: Exception) {
+                    if (
+                        _uiState.value
+                            .selectedLocation ==
+                        location
+                    ) {
+                        _uiState.value =
+                            _uiState.value.copy(
+                                isResolvingAddress = false,
+
+                                locationLookupMessage =
+                                    "Adres bilgileri alınırken bir hata oluştu. Alanları elle doldurabilirsiniz.",
+
+                                errorMessage = null
+                            )
+                    }
+                }
+            }
     }
 
     fun updateDailyCapacityText(
@@ -285,15 +540,19 @@ class ProducerProfileViewModel(
 
         if (
             value.isEmpty() ||
-            value.all { character ->
-                character.isDigit()
+            value.all {
+                it.isDigit()
             }
         ) {
-            _uiState.value =
-                _uiState.value.copy(
-                    dailyCapacityText = value,
-                    errorMessage = null
-                )
+            if (value.length <= 4) {
+                _uiState.value =
+                    _uiState.value.copy(
+                        dailyCapacityText =
+                            value,
+
+                        errorMessage = null
+                    )
+            }
         }
     }
 
@@ -312,41 +571,28 @@ class ProducerProfileViewModel(
     }
 
     fun saveProfile() {
+        val current =
+            _uiState.value
+
         if (
-            _uiState.value.isSaving ||
-            !_uiState.value.isEditing
+            current.isSaving ||
+            !current.isEditing ||
+            current.isResolvingAddress
         ) {
             return
         }
 
         val businessName =
-            _uiState.value
-                .businessName
-                .trim()
+            current.businessName.trim()
 
         val description =
-            _uiState.value
-                .description
-                .trim()
+            current.description.trim()
 
-        val address =
-            _uiState.value
-                .address
-                .trim()
-
-        val latitude =
-            parseDecimal(
-                _uiState.value.latitudeText
-            )
-
-        val longitude =
-            parseDecimal(
-                _uiState.value.longitudeText
-            )
+        val location =
+            current.selectedLocation
 
         val dailyCapacity =
-            _uiState.value
-                .dailyCapacityText
+            current.dailyCapacityText
                 .toIntOrNull()
 
         when {
@@ -354,7 +600,6 @@ class ProducerProfileViewModel(
                 showActionError(
                     "İşletme adı 2 ile 150 karakter arasında olmalıdır."
                 )
-
                 return
             }
 
@@ -362,47 +607,71 @@ class ProducerProfileViewModel(
                 showActionError(
                     "İşletme açıklaması 10 ile 1000 karakter arasında olmalıdır."
                 )
-
                 return
             }
 
-            address.length !in 10..500 -> {
+            location == null ||
+                    !location.isValid() -> {
                 showActionError(
-                    "Adres 10 ile 500 karakter arasında olmalıdır."
+                    "Geçerli bir işletme konumu seçmelisiniz."
                 )
-
                 return
             }
 
-            latitude == null ||
-                    latitude !in -90.0..90.0 -> {
-
+            current.city.isBlank() -> {
                 showActionError(
-                    "Enlem -90 ile 90 arasında olmalıdır."
+                    "İl alanı boş bırakılamaz."
                 )
-
                 return
             }
 
-            longitude == null ||
-                    longitude !in -180.0..180.0 -> {
-
+            current.district.isBlank() -> {
                 showActionError(
-                    "Boylam -180 ile 180 arasında olmalıdır."
+                    "İlçe alanı boş bırakılamaz."
                 )
+                return
+            }
 
+            current.neighborhood.isBlank() -> {
+                showActionError(
+                    "Mahalle alanı boş bırakılamaz."
+                )
+                return
+            }
+
+            current.street.isBlank() -> {
+                showActionError(
+                    "Cadde / sokak alanı boş bırakılamaz."
+                )
+                return
+            }
+
+            current.buildingNo.isBlank() -> {
+                showActionError(
+                    "Bina numarası boş bırakılamaz."
+                )
                 return
             }
 
             dailyCapacity == null ||
                     dailyCapacity !in 1..1000 -> {
-
                 showActionError(
                     "Günlük kapasite 1 ile 1000 arasında olmalıdır."
                 )
-
                 return
             }
+        }
+
+        val address =
+            current
+                .buildFullAddress()
+                .trim()
+
+        if (address.length !in 10..500) {
+            showActionError(
+                "İşletme adresi 10 ile 500 karakter arasında olmalıdır."
+            )
+            return
         }
 
         saveProfileJob?.cancel()
@@ -418,7 +687,6 @@ class ProducerProfileViewModel(
                     showSaveError(
                         "Oturum bilgisi bulunamadı."
                     )
-
                     return@launch
                 }
 
@@ -435,21 +703,65 @@ class ProducerProfileViewModel(
                             .updateMyProfile(
                                 businessName =
                                     businessName,
+
                                 description =
                                     description,
+
                                 address =
                                     address,
+
+                                city =
+                                    current.city.trim(),
+
+                                district =
+                                    current.district.trim(),
+
+                                neighborhood =
+                                    current
+                                        .neighborhood
+                                        .trim(),
+
+                                street =
+                                    current.street.trim(),
+
+                                buildingNo =
+                                    current
+                                        .buildingNo
+                                        .trim(),
+
+                                floor =
+                                    current.floor
+                                        .trim()
+                                        .takeIf {
+                                            it.isNotBlank()
+                                        },
+
+                                apartmentNo =
+                                    current.apartmentNo
+                                        .trim()
+                                        .takeIf {
+                                            it.isNotBlank()
+                                        },
+
+                                addressNote =
+                                    current.addressNote
+                                        .trim()
+                                        .takeIf {
+                                            it.isNotBlank()
+                                        },
+
                                 latitude =
-                                    latitude,
+                                    location.latitude,
+
                                 longitude =
-                                    longitude,
+                                    location.longitude,
+
                                 dailyCapacity =
                                     dailyCapacity,
-                                isAvailable =
-                                    _uiState.value
-                                        .isAvailable
-                            )
 
+                                isAvailable =
+                                    current.isAvailable
+                            )
 
                     val responseBody =
                         response.body()
@@ -462,59 +774,24 @@ class ProducerProfileViewModel(
                         responseBody?.success == true &&
                         updatedProfile != null
                     ) {
-                        _uiState.value =
-                            _uiState.value.copy(
-                                isSaving = false,
-                                isEditing = false,
+                        applySavedProfile(
+                            profile =
+                                updatedProfile,
 
-                                profile =
-                                    updatedProfile,
-
-                                businessName =
-                                    updatedProfile
-                                        .businessName,
-
-                                description =
-                                    updatedProfile
-                                        .description,
-
-                                address =
-                                    updatedProfile
-                                        .address,
-
-                                latitudeText =
-                                    updatedProfile
-                                        .latitude
-                                        .toString(),
-
-                                longitudeText =
-                                    updatedProfile
-                                        .longitude
-                                        .toString(),
-
-                                dailyCapacityText =
-                                    updatedProfile
-                                        .dailyCapacity
-                                        .toString(),
-
-                                isAvailable =
-                                    updatedProfile
-                                        .isAvailable,
-
-                                successMessage =
-                                    responseBody.message
-                                        .ifBlank {
-                                            "Üretici profili başarıyla güncellendi."
-                                        },
-
-                                errorMessage = null
-                            )
+                            message =
+                                responseBody.message
+                                    .ifBlank {
+                                        "Üretici profili başarıyla güncellendi."
+                                    }
+                        )
                     } else {
                         showSaveError(
                             parseErrorMessage(
-                                response.errorBody()
+                                response
+                                    .errorBody()
                                     ?.string()
-                            ) ?: "Üretici profili güncellenemedi."
+                            )
+                                ?: "Üretici profili güncellenemedi."
                         )
                     }
                 } catch (_: IOException) {
@@ -538,11 +815,13 @@ class ProducerProfileViewModel(
     }
 
     private fun applyLoadedProfile(
-        profile: ProducerApplicationStatusResponse
+        profile:
+        ProducerApplicationStatusResponse
     ) {
         _uiState.value =
             ProducerProfileUiState(
                 isLoading = false,
+
                 profile = profile,
 
                 businessName =
@@ -551,14 +830,32 @@ class ProducerProfileViewModel(
                 description =
                     profile.description,
 
-                address =
-                    profile.address,
+                city =
+                    profile.city,
 
-                latitudeText =
-                    profile.latitude.toString(),
+                district =
+                    profile.district,
 
-                longitudeText =
-                    profile.longitude.toString(),
+                neighborhood =
+                    profile.neighborhood,
+
+                street =
+                    profile.street,
+
+                buildingNo =
+                    profile.buildingNo,
+
+                floor =
+                    profile.floor.orEmpty(),
+
+                apartmentNo =
+                    profile.apartmentNo.orEmpty(),
+
+                addressNote =
+                    profile.addressNote.orEmpty(),
+
+                selectedLocation =
+                    profileLocation(profile),
 
                 dailyCapacityText =
                     profile.dailyCapacity
@@ -567,6 +864,97 @@ class ProducerProfileViewModel(
                 isAvailable =
                     profile.isAvailable
             )
+    }
+
+    private fun applySavedProfile(
+        profile:
+        ProducerApplicationStatusResponse,
+
+        message: String
+    ) {
+        _uiState.value =
+            ProducerProfileUiState(
+                isLoading = false,
+                isSaving = false,
+
+                profile = profile,
+                isEditing = false,
+
+                businessName =
+                    profile.businessName,
+
+                description =
+                    profile.description,
+
+                city =
+                    profile.city,
+
+                district =
+                    profile.district,
+
+                neighborhood =
+                    profile.neighborhood,
+
+                street =
+                    profile.street,
+
+                buildingNo =
+                    profile.buildingNo,
+
+                floor =
+                    profile.floor.orEmpty(),
+
+                apartmentNo =
+                    profile.apartmentNo.orEmpty(),
+
+                addressNote =
+                    profile.addressNote.orEmpty(),
+
+                selectedLocation =
+                    profileLocation(profile),
+
+                dailyCapacityText =
+                    profile.dailyCapacity
+                        .toString(),
+
+                isAvailable =
+                    profile.isAvailable,
+
+                successMessage =
+                    message
+            )
+    }
+
+    private fun profileLocation(
+        profile:
+        ProducerApplicationStatusResponse
+    ): SelectedLocation? {
+        return SelectedLocation(
+            latitude =
+                profile.latitude,
+
+            longitude =
+                profile.longitude
+        ).takeIf {
+            it.isValid()
+        }
+    }
+
+    private fun updateAddressField(
+        transform:
+        ProducerProfileUiState.() ->
+        ProducerProfileUiState
+    ) {
+        if (_uiState.value.isSaving) {
+            return
+        }
+
+        _uiState.value =
+            _uiState.value
+                .transform()
+                .copy(
+                    errorMessage = null
+                )
     }
 
     private fun showLoadError(
@@ -600,34 +988,6 @@ class ProducerProfileViewModel(
             )
     }
 
-    private fun isValidDecimalInput(
-        value: String
-    ): Boolean {
-        if (value.isEmpty() || value == "-") {
-            return true
-        }
-
-        val normalized =
-            value.replace(
-                oldChar = ',',
-                newChar = '.'
-            )
-
-        return normalized.toDoubleOrNull() != null
-    }
-
-    private fun parseDecimal(
-        value: String
-    ): Double? {
-        return value
-            .trim()
-            .replace(
-                oldChar = ',',
-                newChar = '.'
-            )
-            .toDoubleOrNull()
-    }
-
     private fun parseErrorMessage(
         errorJson: String?
     ): String? {
@@ -638,8 +998,8 @@ class ProducerProfileViewModel(
         return runCatching {
             JSONObject(errorJson)
                 .optString("message")
-                .takeIf { message ->
-                    message.isNotBlank()
+                .takeIf {
+                    it.isNotBlank()
                 }
         }.getOrNull()
     }
