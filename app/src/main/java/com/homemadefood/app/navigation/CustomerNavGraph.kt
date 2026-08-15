@@ -16,6 +16,9 @@ import androidx.navigation.navigation
 import com.homemadefood.app.ui.customer.CustomerHomeScreen
 import com.homemadefood.app.ui.customer.CustomerHomeViewModel
 import com.homemadefood.app.ui.customer.CustomerHomeViewModelFactory
+import com.homemadefood.app.ui.customer.StorefrontMenuScreen
+import com.homemadefood.app.ui.customer.StorefrontMenuViewModel
+import com.homemadefood.app.ui.customer.StorefrontMenuViewModelFactory
 
 import com.homemadefood.app.ui.favorite.FavoritesScreen
 import com.homemadefood.app.ui.favorite.FavoritesViewModel
@@ -87,6 +90,10 @@ fun NavGraphBuilder.customerNavGraph(
             navController = navController,
             authViewModel = authViewModel,
             onLogoutClick = onLogoutClick
+        )
+
+        storefrontMenuDestination(
+            navController = navController
         )
 
         foodDetailDestination(
@@ -182,7 +189,7 @@ private fun NavGraphBuilder.customerHomeDestination(
 
             onSearchClick = {
                 customerHomeViewModel
-                    .searchFoods()
+                    .searchStorefronts()
             },
 
             onCategoryClick = { categoryId ->
@@ -200,15 +207,20 @@ private fun NavGraphBuilder.customerHomeDestination(
                     .loadCategories()
             },
 
-            onRetryFoodsClick = {
+            onRetryStorefrontsClick = {
                 customerHomeViewModel
-                    .loadFoods()
+                    .loadStorefronts()
             },
 
-            onFoodClick = { foodId ->
+            onStorefrontClick = {
+                    producerProfileId ->
+
                 navController.navigate(
-                    AppDestination.FoodDetail
-                        .createRoute(foodId)
+                    AppDestination
+                        .StorefrontMenu
+                        .createRoute(
+                            producerProfileId
+                        )
                 )
             },
 
@@ -269,6 +281,85 @@ private fun NavGraphBuilder.customerHomeDestination(
 
 
             modifier = Modifier.fillMaxSize()
+        )
+    }
+}
+
+private fun NavGraphBuilder.storefrontMenuDestination(
+    navController: NavHostController
+) {
+    composable(
+        route =
+            AppDestination.StorefrontMenu.route,
+
+        arguments = listOf(
+            navArgument(
+                AppDestination
+                    .StorefrontMenu
+                    .PRODUCER_PROFILE_ID_ARGUMENT
+            ) {
+                type = NavType.IntType
+            }
+        )
+    ) { backStackEntry ->
+
+        val producerProfileId =
+            backStackEntry.arguments
+                ?.getInt(
+                    AppDestination
+                        .StorefrontMenu
+                        .PRODUCER_PROFILE_ID_ARGUMENT
+                )
+                ?: return@composable
+
+        val storefrontMenuViewModel:
+                StorefrontMenuViewModel =
+            viewModel(
+                factory =
+                    StorefrontMenuViewModelFactory(
+                        producerProfileId =
+                            producerProfileId
+                    )
+            )
+
+        val storefrontMenuUiState by
+        storefrontMenuViewModel
+            .uiState
+            .collectAsStateWithLifecycle()
+
+        LaunchedEffect(
+            producerProfileId
+        ) {
+            storefrontMenuViewModel
+                .loadMenu()
+        }
+
+        StorefrontMenuScreen(
+            uiState =
+                storefrontMenuUiState,
+
+            onBackClick = {
+                navController
+                    .popBackStack()
+            },
+
+            onRetryClick = {
+                storefrontMenuViewModel
+                    .loadMenu()
+            },
+
+            onFoodClick = { foodId ->
+                navController.navigate(
+                    AppDestination
+                        .FoodDetail
+                        .createRoute(
+                            foodId
+                        )
+                )
+            },
+
+            modifier =
+                Modifier.fillMaxSize()
         )
     }
 }

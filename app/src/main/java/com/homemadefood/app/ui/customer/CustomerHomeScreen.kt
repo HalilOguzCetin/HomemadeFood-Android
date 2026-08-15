@@ -1,9 +1,9 @@
 package com.homemadefood.app.ui.customer
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,8 +11,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -22,23 +22,22 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.shape.RoundedCornerShape
-import com.homemadefood.app.data.model.FoodResponse
+import coil3.compose.AsyncImage
+import com.homemadefood.app.data.model.ProducerStorefrontSummaryResponse
+import com.homemadefood.app.data.remote.ApiConfig
 import java.util.Locale
-import androidx.compose.foundation.clickable
-import com.homemadefood.app.ui.components.FoodImage
 
 @Composable
 fun CustomerHomeScreen(
@@ -48,8 +47,8 @@ fun CustomerHomeScreen(
     onCategoryClick: (Int?) -> Unit,
     onClearFiltersClick: () -> Unit,
     onRetryCategoriesClick: () -> Unit,
-    onRetryFoodsClick: () -> Unit,
-    onFoodClick: (Int) -> Unit,
+    onRetryStorefrontsClick: () -> Unit,
+    onStorefrontClick: (Int) -> Unit,
     onFavoritesClick: () -> Unit,
     onCartClick: () -> Unit,
     onOrdersClick: () -> Unit,
@@ -62,7 +61,6 @@ fun CustomerHomeScreen(
     onLogoutClick: () -> Unit,
     onAddressesClick: () -> Unit,
     modifier: Modifier = Modifier
-
 ) {
     Column(
         modifier = modifier
@@ -73,15 +71,19 @@ fun CustomerHomeScreen(
             .padding(20.dp)
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier =
+                Modifier.fillMaxWidth(),
+
             horizontalArrangement =
                 Arrangement.SpaceBetween,
+
             verticalAlignment =
                 Alignment.CenterVertically
         ) {
             Column {
                 Text(
                     text = "Hoş Geldiniz",
+
                     style =
                         MaterialTheme.typography
                             .headlineSmall
@@ -89,7 +91,8 @@ fun CustomerHomeScreen(
 
                 Text(
                     text =
-                        "Bugün ne yemek istersiniz?",
+                        "Bugün hangi mutfaktan yemek istersiniz?",
+
                     style =
                         MaterialTheme.typography
                             .bodyMedium
@@ -104,7 +107,8 @@ fun CustomerHomeScreen(
         }
 
         Spacer(
-            modifier = Modifier.height(24.dp)
+            modifier =
+                Modifier.height(24.dp)
         )
 
         OutlinedTextField(
@@ -117,11 +121,13 @@ fun CustomerHomeScreen(
                 Modifier.fillMaxWidth(),
 
             label = {
-                Text("Yemek ara")
+                Text("İşletme ara")
             },
 
             placeholder = {
-                Text("Mantı, çorba, tatlı...")
+                Text(
+                    "İşletme adı, açıklama, şehir..."
+                )
             },
 
             singleLine = true,
@@ -141,15 +147,19 @@ fun CustomerHomeScreen(
         )
 
         Spacer(
-            modifier = Modifier.height(12.dp)
+            modifier =
+                Modifier.height(12.dp)
         )
 
         Button(
             onClick = onSearchClick,
+
             modifier =
                 Modifier.fillMaxWidth(),
+
             enabled =
-                !uiState.isFoodsLoading
+                !uiState
+                    .isStorefrontsLoading
         ) {
             Text("Ara")
         }
@@ -161,6 +171,7 @@ fun CustomerHomeScreen(
             TextButton(
                 onClick =
                     onClearFiltersClick,
+
                 modifier =
                     Modifier.align(
                         Alignment.End
@@ -171,18 +182,21 @@ fun CustomerHomeScreen(
         }
 
         Spacer(
-            modifier = Modifier.height(20.dp)
+            modifier =
+                Modifier.height(20.dp)
         )
 
         Text(
             text = "Kategoriler",
+
             style =
                 MaterialTheme.typography
                     .titleLarge
         )
 
         Spacer(
-            modifier = Modifier.height(12.dp)
+            modifier =
+                Modifier.height(12.dp)
         )
 
         when {
@@ -196,13 +210,17 @@ fun CustomerHomeScreen(
             }
 
             uiState.categories.isEmpty() &&
-                    uiState.errorMessage != null -> {
+                    uiState.categoryErrorMessage != null -> {
 
                 Text(
                     text =
-                        uiState.errorMessage,
+                        uiState
+                            .categoryErrorMessage,
+
                     color =
-                        MaterialTheme.colorScheme.error
+                        MaterialTheme
+                            .colorScheme
+                            .error
                 )
 
                 Spacer(
@@ -214,7 +232,9 @@ fun CustomerHomeScreen(
                     onClick =
                         onRetryCategoriesClick
                 ) {
-                    Text("Kategorileri Tekrar Yükle")
+                    Text(
+                        "Kategorileri Tekrar Yükle"
+                    )
                 }
             }
 
@@ -227,11 +247,12 @@ fun CustomerHomeScreen(
 
             else -> {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(
-                            rememberScrollState()
-                        ),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(
+                                rememberScrollState()
+                            ),
 
                     horizontalArrangement =
                         Arrangement.spacedBy(
@@ -240,7 +261,8 @@ fun CustomerHomeScreen(
                 ) {
                     FilterChip(
                         selected =
-                            uiState.selectedCategoryId ==
+                            uiState
+                                .selectedCategoryId ==
                                     null,
 
                         onClick = {
@@ -252,47 +274,79 @@ fun CustomerHomeScreen(
                         }
                     )
 
-                    uiState.categories.forEach {
-                            category ->
+                    uiState.categories
+                        .forEach {
+                                category ->
 
-                        FilterChip(
-                            selected =
-                                uiState
-                                    .selectedCategoryId ==
-                                        category.id,
+                            FilterChip(
+                                selected =
+                                    uiState
+                                        .selectedCategoryId ==
+                                            category.id,
 
-                            onClick = {
-                                onCategoryClick(
-                                    category.id
-                                )
-                            },
+                                onClick = {
+                                    onCategoryClick(
+                                        category.id
+                                    )
+                                },
 
-                            label = {
-                                Text(category.name)
-                            }
-                        )
-                    }
+                                label = {
+                                    Text(
+                                        category.name
+                                    )
+                                }
+                            )
+                        }
                 }
             }
         }
 
         Spacer(
-            modifier = Modifier.height(28.dp)
+            modifier =
+                Modifier.height(28.dp)
         )
 
         Text(
-            text = "Yemekler",
+            text = "İşletmeler",
+
             style =
                 MaterialTheme.typography
                     .titleLarge
         )
 
+        Text(
+            text =
+                if (
+                    uiState.selectedCategoryId ==
+                    null
+                ) {
+                    "Aktif yemekleri bulunan işletmeler"
+                } else {
+                    "Seçili kategoride yemek sunan işletmeler"
+                },
+
+            modifier =
+                Modifier.padding(
+                    top = 4.dp
+                ),
+
+            style =
+                MaterialTheme.typography
+                    .bodyMedium,
+
+            color =
+                MaterialTheme
+                    .colorScheme
+                    .onSurfaceVariant
+        )
+
         Spacer(
-            modifier = Modifier.height(12.dp)
+            modifier =
+                Modifier.height(12.dp)
         )
 
         when {
-            uiState.isFoodsLoading -> {
+            uiState.isStorefrontsLoading -> {
                 CircularProgressIndicator(
                     modifier =
                         Modifier.align(
@@ -301,14 +355,19 @@ fun CustomerHomeScreen(
                 )
             }
 
-            uiState.foods.isEmpty() &&
-                    uiState.errorMessage != null -> {
+            uiState.storefronts.isEmpty() &&
+                    uiState
+                        .storefrontErrorMessage != null -> {
 
                 Text(
                     text =
-                        uiState.errorMessage,
+                        uiState
+                            .storefrontErrorMessage,
+
                     color =
-                        MaterialTheme.colorScheme.error
+                        MaterialTheme
+                            .colorScheme
+                            .error
                 )
 
                 Spacer(
@@ -318,18 +377,35 @@ fun CustomerHomeScreen(
 
                 Button(
                     onClick =
-                        onRetryFoodsClick,
+                        onRetryStorefrontsClick,
+
                     modifier =
                         Modifier.fillMaxWidth()
                 ) {
-                    Text("Yemekleri Tekrar Yükle")
+                    Text(
+                        "İşletmeleri Tekrar Yükle"
+                    )
                 }
             }
 
-            uiState.foods.isEmpty() -> {
+            uiState.storefronts.isEmpty() -> {
                 Text(
                     text =
-                        "Arama ölçütlerine uygun yemek bulunamadı.",
+                        if (
+                            uiState.searchQuery
+                                .isNotBlank()
+                        ) {
+                            "Aramanıza uygun işletme bulunamadı."
+                        } else if (
+                            uiState
+                                .selectedCategoryId !=
+                            null
+                        ) {
+                            "Bu kategoride aktif yemek sunan işletme bulunamadı."
+                        } else {
+                            "Şu anda listelenecek aktif işletme bulunamadı."
+                        },
+
                     style =
                         MaterialTheme.typography
                             .bodyMedium
@@ -337,87 +413,121 @@ fun CustomerHomeScreen(
             }
 
             else -> {
-                uiState.foods.forEach { food ->
-                    FoodCard(
-                        food = food,
-                        onClick = {
-                            onFoodClick(food.id)
-                        }
-                    )
-                }
+                uiState.storefronts
+                    .forEach {
+                            storefront ->
+
+                        StorefrontCard(
+                            storefront =
+                                storefront,
+
+                            categoryFiltered =
+                                uiState
+                                    .selectedCategoryId !=
+                                        null,
+
+                            onClick = {
+                                onStorefrontClick(
+                                    storefront
+                                        .producerProfileId
+                                )
+                            }
+                        )
+                    }
             }
         }
 
         Spacer(
-            modifier = Modifier.height(28.dp)
+            modifier =
+                Modifier.height(28.dp)
         )
 
         Text(
             text = "Hızlı İşlemler",
+
             style =
                 MaterialTheme.typography
                     .titleLarge
         )
 
         Spacer(
-            modifier = Modifier.height(12.dp)
+            modifier =
+                Modifier.height(12.dp)
         )
 
-
-
-        Spacer(
-            modifier = Modifier.height(12.dp)
-        )
         Button(
-            onClick = onRecommendationClick,
-            modifier = Modifier.fillMaxWidth()
+            onClick =
+                onRecommendationClick,
+
+            modifier =
+                Modifier.fillMaxWidth()
         ) {
-            Text("Akıllı Üretici Önerisi")
+            Text(
+                "Akıllı Üretici Önerisi"
+            )
         }
 
         Spacer(
-            modifier = Modifier.height(12.dp)
+            modifier =
+                Modifier.height(12.dp)
         )
+
         Button(
             onClick = onCartClick,
-            modifier = Modifier.fillMaxWidth()
+
+            modifier =
+                Modifier.fillMaxWidth()
         ) {
             Text("Sepetim")
         }
 
         Spacer(
-            modifier = Modifier.height(12.dp)
+            modifier =
+                Modifier.height(12.dp)
         )
 
         Button(
             onClick = onOrdersClick,
-            modifier = Modifier.fillMaxWidth()
+
+            modifier =
+                Modifier.fillMaxWidth()
         ) {
             Text("Siparişlerim")
         }
 
         Spacer(
-            modifier = Modifier.height(12.dp)
+            modifier =
+                Modifier.height(12.dp)
         )
+
         Button(
-            onClick = onAddressesClick,
-            modifier = Modifier.fillMaxWidth()
+            onClick =
+                onAddressesClick,
+
+            modifier =
+                Modifier.fillMaxWidth()
         ) {
             Text("Adreslerim")
         }
 
         Spacer(
-            modifier = Modifier.height(12.dp)
+            modifier =
+                Modifier.height(12.dp)
         )
 
         Button(
-            onClick = onFavoritesClick,
-            modifier = Modifier.fillMaxWidth()
+            onClick =
+                onFavoritesClick,
+
+            modifier =
+                Modifier.fillMaxWidth()
         ) {
             Text("Favorilerim")
         }
+
         Spacer(
-            modifier = Modifier.height(12.dp)
+            modifier =
+                Modifier.height(12.dp)
         )
 
         val producerButtonText =
@@ -425,16 +535,18 @@ fun CustomerHomeScreen(
                 canUseProducerMode ->
                     "Üretici Paneline Geç"
 
-                producerVerificationStatus.equals(
-                    "Pending",
-                    ignoreCase = true
-                ) ->
+                producerVerificationStatus
+                    .equals(
+                        "Pending",
+                        ignoreCase = true
+                    ) ->
                     "Üretici Başvurum İnceleniyor"
 
-                producerVerificationStatus.equals(
-                    "Rejected",
-                    ignoreCase = true
-                ) ->
+                producerVerificationStatus
+                    .equals(
+                        "Rejected",
+                        ignoreCase = true
+                    ) ->
                     "Üretici Başvurumu Güncelle"
 
                 else ->
@@ -455,189 +567,286 @@ fun CustomerHomeScreen(
         ) {
             Text(producerButtonText)
         }
+
         Spacer(
-            modifier = Modifier.height(12.dp)
+            modifier =
+                Modifier.height(12.dp)
         )
 
         Button(
             onClick = onReviewsClick,
-            modifier = Modifier.fillMaxWidth()
+
+            modifier =
+                Modifier.fillMaxWidth()
         ) {
             Text("Değerlendirmelerim")
         }
     }
 }
 
-
 @Composable
-private fun FoodCard(
-    food: FoodResponse,
+private fun StorefrontCard(
+    storefront:
+    ProducerStorefrontSummaryResponse,
+
+    categoryFiltered: Boolean,
+
     onClick: () -> Unit
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp)
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor =
-                MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 2.dp
-        )
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(
+                    vertical = 7.dp
+                )
+                .clickable(
+                    onClick = onClick
+                ),
+
+        shape =
+            RoundedCornerShape(
+                18.dp
+            ),
+
+        elevation =
+            CardDefaults.cardElevation(
+                defaultElevation = 3.dp
+            )
     ) {
         Column {
-            Box {
-                FoodImage(
-                    imageUrl = food.imageUrl,
-                    contentDescription = food.name,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(16f / 9f)
-                        .clip(
-                            RoundedCornerShape(
-                                topStart = 20.dp,
-                                topEnd = 20.dp
-                            )
-                        ),
-                    contentScale = ContentScale.Fit
-                )
+            StorefrontImage(
+                businessImageUrl =
+                    storefront
+                        .businessImageUrl,
 
-                Surface(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(12.dp),
-                    shape = RoundedCornerShape(50.dp),
-                    color =
-                        if (food.isAvailable) {
-                            MaterialTheme.colorScheme.primaryContainer
-                        } else {
-                            MaterialTheme.colorScheme.errorContainer
-                        }
-                ) {
-                    Text(
-                        text =
-                            if (food.isAvailable) {
-                                "Satışta"
-                            } else {
-                                "Satışta değil"
-                            },
-                        modifier = Modifier.padding(
-                            horizontal = 10.dp,
-                            vertical = 6.dp
-                        ),
-                        style =
-                            MaterialTheme.typography.labelMedium,
-                        color =
-                            if (food.isAvailable) {
-                                MaterialTheme.colorScheme.onPrimaryContainer
-                            } else {
-                                MaterialTheme.colorScheme.onErrorContainer
-                            }
-                    )
-                }
-            }
+                businessName =
+                    storefront
+                        .businessName
+            )
 
             Column(
-                modifier = Modifier.padding(16.dp)
+                modifier =
+                    Modifier.padding(
+                        18.dp
+                    )
             ) {
                 Text(
-                    text = food.name,
+                    text =
+                        storefront.businessName,
+
                     style =
-                        MaterialTheme.typography.titleLarge,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                        MaterialTheme.typography
+                            .titleLarge,
+
+                    fontWeight =
+                        FontWeight.SemiBold
                 )
 
                 Spacer(
-                    modifier = Modifier.height(4.dp)
-                )
-
-                Text(
-                    text = food.businessName,
-                    style =
-                        MaterialTheme.typography.bodyMedium,
-                    color =
-                        MaterialTheme.colorScheme.primary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-
-                Spacer(
-                    modifier = Modifier.height(10.dp)
-                )
-
-                Text(
-                    text = food.description,
-                    style =
-                        MaterialTheme.typography.bodyMedium,
-                    color =
-                        MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-
-                Spacer(
-                    modifier = Modifier.height(14.dp)
+                    modifier =
+                        Modifier.height(6.dp)
                 )
 
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier =
+                        Modifier.fillMaxWidth(),
+
                     horizontalArrangement =
                         Arrangement.SpaceBetween,
+
                     verticalAlignment =
                         Alignment.CenterVertically
                 ) {
                     Text(
-                        text = formatPrice(food.price),
+                        text =
+                            if (
+                                storefront.rating >
+                                0.0
+                            ) {
+                                "★ ${
+                                    formatRating(
+                                        storefront.rating
+                                    )
+                                }"
+                            } else {
+                                "Yeni işletme"
+                            },
+
                         style =
-                            MaterialTheme.typography.titleLarge,
+                            MaterialTheme.typography
+                                .labelLarge,
+
                         color =
-                            MaterialTheme.colorScheme.primary
+                            MaterialTheme
+                                .colorScheme
+                                .primary
                     )
 
-                    Surface(
-                        shape = RoundedCornerShape(50.dp),
-                        color =
-                            MaterialTheme.colorScheme.surfaceVariant
-                    ) {
-                        Text(
-                            text =
-                                "${food.preparationTimeMinutes} dk",
-                            modifier = Modifier.padding(
-                                horizontal = 10.dp,
-                                vertical = 6.dp
-                            ),
-                            style =
-                                MaterialTheme.typography.labelLarge
-                        )
-                    }
+                    Text(
+                        text =
+                            listOf(
+                                storefront.district,
+                                storefront.city
+                            )
+                                .filter {
+                                    it.isNotBlank()
+                                }
+                                .joinToString(
+                                    " / "
+                                ),
+
+                        style =
+                            MaterialTheme.typography
+                                .bodySmall
+                    )
+                }
+
+                if (
+                    storefront.description
+                        .isNotBlank()
+                ) {
+                    Spacer(
+                        modifier =
+                            Modifier.height(10.dp)
+                    )
+
+                    Text(
+                        text =
+                            storefront.description,
+
+                        style =
+                            MaterialTheme.typography
+                                .bodyMedium,
+
+                        maxLines = 3,
+
+                        overflow =
+                            TextOverflow.Ellipsis
+                    )
                 }
 
                 Spacer(
-                    modifier = Modifier.height(10.dp)
+                    modifier =
+                        Modifier.height(14.dp)
                 )
 
                 Text(
-                    text = food.categoryName,
+                    text =
+                        if (categoryFiltered) {
+                            "Bu kategoride ${storefront.matchingFoodCount} aktif yemek"
+                        } else {
+                            "${storefront.availableFoodCount} aktif yemek"
+                        },
+
                     style =
-                        MaterialTheme.typography.labelMedium,
-                    color =
-                        MaterialTheme.colorScheme.onSurfaceVariant
+                        MaterialTheme.typography
+                            .labelLarge
                 )
+
+                Spacer(
+                    modifier =
+                        Modifier.height(5.dp)
+                )
+
+                Text(
+                    text =
+                        "${storefront.availableCategoryCount} kategoride menü",
+
+                    style =
+                        MaterialTheme.typography
+                            .bodySmall
+                )
+
+                storefront
+                    .minimumPreparationTimeMinutes
+                    ?.let {
+                            minutes ->
+
+                        Spacer(
+                            modifier =
+                                Modifier.height(
+                                    5.dp
+                                )
+                        )
+
+                        Text(
+                            text =
+                                "En kısa hazırlama: $minutes dk",
+
+                            style =
+                                MaterialTheme.typography
+                                    .bodySmall
+                        )
+                    }
             }
         }
     }
 }
 
-private fun formatPrice(
-    price: Double
+@Composable
+private fun StorefrontImage(
+    businessImageUrl: String?,
+    businessName: String
+) {
+    val resolvedImageUrl =
+        ApiConfig.resolveMediaUrl(
+            businessImageUrl
+        )
+
+    if (resolvedImageUrl == null) {
+        Surface(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(190.dp),
+
+            tonalElevation = 1.dp
+        ) {
+            Box(
+                modifier =
+                    Modifier.fillMaxSize(),
+
+                contentAlignment =
+                    Alignment.Center
+            ) {
+                Text(
+                    text =
+                        "İşletme görseli bulunmuyor",
+
+                    style =
+                        MaterialTheme.typography
+                            .bodyMedium
+                )
+            }
+        }
+
+        return
+    }
+
+    AsyncImage(
+        model =
+            resolvedImageUrl,
+
+        contentDescription =
+            "$businessName işletme vitrin görseli",
+
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(190.dp),
+
+        contentScale =
+            ContentScale.Crop
+    )
+}
+
+private fun formatRating(
+    rating: Double
 ): String {
     return String.format(
         Locale("tr", "TR"),
-        "%.2f TL",
-        price
+        "%.1f",
+        rating
     )
 }

@@ -2,33 +2,27 @@ package com.homemadefood.app.ui.customer
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.homemadefood.app.data.repository.CategoryRepository
 import com.homemadefood.app.data.repository.StorefrontRepository
 
-class CustomerHomeViewModelFactory :
-    ViewModelProvider.Factory {
+class StorefrontMenuViewModelFactory(
+    private val producerProfileId: Int
+) : ViewModelProvider.Factory {
 
     override fun <T : ViewModel> create(
         modelClass: Class<T>
     ): T {
         if (
             modelClass.isAssignableFrom(
-                CustomerHomeViewModel::class.java
+                StorefrontMenuViewModel::class.java
             )
         ) {
-            val categoryRepository =
-                CategoryRepository()
-
-            val storefrontRepository =
-                StorefrontRepository()
-
             @Suppress("UNCHECKED_CAST")
-            return CustomerHomeViewModel(
-                categoryRepository =
-                    categoryRepository,
+            return StorefrontMenuViewModel(
+                producerProfileId =
+                    producerProfileId,
 
                 storefrontRepository =
-                    storefrontRepository
+                    StorefrontRepository()
             ) as T
         }
 

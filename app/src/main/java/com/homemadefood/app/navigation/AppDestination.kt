@@ -41,6 +41,19 @@ sealed class AppDestination(
             "customer/food/$foodId"
     }
 
+    data object StorefrontMenu :
+        AppDestination(
+            "customer/storefront/{producerProfileId}"
+        ) {
+        const val PRODUCER_PROFILE_ID_ARGUMENT =
+            "producerProfileId"
+
+        fun createRoute(
+            producerProfileId: Int
+        ) =
+            "customer/storefront/$producerProfileId"
+    }
+
     data object Favorites :
         AppDestination("customer/favorites")
 

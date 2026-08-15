@@ -1,7 +1,7 @@
 package com.homemadefood.app.ui.customer
 
 import com.homemadefood.app.data.model.CategoryResponse
-import com.homemadefood.app.data.model.FoodResponse
+import com.homemadefood.app.data.model.ProducerStorefrontSummaryResponse
 
 data class CustomerHomeUiState(
     val isCategoriesLoading: Boolean = false,
@@ -11,12 +11,19 @@ data class CustomerHomeUiState(
 
     val selectedCategoryId: Int? = null,
 
+    /*
+     * AŞAMA 4 ile arama artık doğrudan ana sayfadaki
+     * işletme/vitrin kartlarını filtreler.
+     */
     val searchQuery: String = "",
 
-    val isFoodsLoading: Boolean = false,
+    val isStorefrontsLoading: Boolean = false,
 
-    val foods: List<FoodResponse> =
+    val storefronts:
+    List<ProducerStorefrontSummaryResponse> =
         emptyList(),
 
-    val errorMessage: String? = null
+    val categoryErrorMessage: String? = null,
+
+    val storefrontErrorMessage: String? = null
 )

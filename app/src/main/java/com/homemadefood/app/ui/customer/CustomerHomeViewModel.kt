@@ -2,8 +2,10 @@ package com.homemadefood.app.ui.customer
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.homemadefood.app.data.model.ProducerStorefrontSummaryResponse
 import com.homemadefood.app.data.repository.CategoryRepository
-import com.homemadefood.app.data.repository.FoodRepository
+import com.homemadefood.app.data.repository.StorefrontRepository
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,15 +17,30 @@ class CustomerHomeViewModel(
     private val categoryRepository:
     CategoryRepository,
 
-    private val foodRepository:
-    FoodRepository
+    private val storefrontRepository:
+    StorefrontRepository
 ) : ViewModel() {
+
+    private var storefrontLoadJob: Job? =
+        null
+
+    /*
+     * Backend kategori filtresini uygular.
+     * Arama metni ise o anda yüklenmiş işletmeler üzerinde
+     * yalnızca vitrin adı/açıklama/konum alanlarında uygulanır.
+     *
+     * AŞAMA 4'ün amacı yemek araması değil,
+     * işletme keşif ekranıdır.
+     */
+    private var loadedStorefronts:
+            List<ProducerStorefrontSummaryResponse> =
+        emptyList()
 
     private val _uiState =
         MutableStateFlow(
             CustomerHomeUiState(
                 isCategoriesLoading = true,
-                isFoodsLoading = true
+                isStorefrontsLoading = true
             )
         )
 
@@ -33,7 +50,7 @@ class CustomerHomeViewModel(
 
     init {
         loadCategories()
-        loadFoods()
+        loadStorefronts()
     }
 
     fun loadCategories() {
@@ -41,7 +58,7 @@ class CustomerHomeViewModel(
             _uiState.value =
                 _uiState.value.copy(
                     isCategoriesLoading = true,
-                    errorMessage = null
+                    categoryErrorMessage = null
                 )
 
             try {
@@ -69,7 +86,7 @@ class CustomerHomeViewModel(
                                     it.isActive != false
                                 },
 
-                            errorMessage = null
+                            categoryErrorMessage = null
                         )
                 } else {
                     showCategoryError(
@@ -91,74 +108,73 @@ class CustomerHomeViewModel(
         }
     }
 
-    fun loadFoods(
+    fun loadStorefronts(
         categoryId: Int? =
-            _uiState.value.selectedCategoryId,
-
-        search: String =
-            _uiState.value.searchQuery
+            _uiState.value.selectedCategoryId
     ) {
-        viewModelScope.launch {
-            _uiState.value =
-                _uiState.value.copy(
-                    isFoodsLoading = true,
-                    errorMessage = null
-                )
+        storefrontLoadJob?.cancel()
 
-            try {
-                val normalizedSearch =
-                    search
-                        .trim()
-                        .takeIf {
-                            it.isNotBlank()
-                        }
+        storefrontLoadJob =
+            viewModelScope.launch {
+                loadedStorefronts =
+                    emptyList()
 
-                val response =
-                    foodRepository.getFoods(
-                        categoryId = categoryId,
-                        search = normalizedSearch
+                _uiState.value =
+                    _uiState.value.copy(
+                        isStorefrontsLoading = true,
+                        storefronts = emptyList(),
+                        storefrontErrorMessage = null
                     )
 
-                val responseBody =
-                    response.body()
+                try {
+                    val response =
+                        storefrontRepository
+                            .getStorefronts(
+                                categoryId =
+                                    categoryId
+                            )
 
-                val foods =
-                    responseBody?.data
+                    val responseBody =
+                        response.body()
 
-                if (
-                    response.isSuccessful &&
-                    responseBody?.success == true &&
-                    foods != null
-                ) {
-                    _uiState.value =
-                        _uiState.value.copy(
-                            isFoodsLoading = false,
+                    val storefronts =
+                        responseBody?.data
 
-                            foods =
-                                foods.filter {
-                                    it.isAvailable
-                                },
+                    if (
+                        response.isSuccessful &&
+                        responseBody?.success == true &&
+                        storefronts != null
+                    ) {
+                        loadedStorefronts =
+                            storefronts
 
-                            errorMessage = null
+                        _uiState.value =
+                            _uiState.value.copy(
+                                isStorefrontsLoading = false,
+                                storefrontErrorMessage = null
+                            )
+
+                        applySearchFilter()
+                    } else {
+                        showStorefrontError(
+                            parseErrorMessage(
+                                response
+                                    .errorBody()
+                                    ?.string()
+                            )
+                                ?: "İşletmeler alınamadı."
                         )
-                } else {
-                    showFoodError(
-                        parseErrorMessage(
-                            response.errorBody()
-                                ?.string()
-                        ) ?: "Yemekler alınamadı."
+                    }
+                } catch (_: IOException) {
+                    showStorefrontError(
+                        "Sunucuya bağlanılamadı."
+                    )
+                } catch (_: Exception) {
+                    showStorefrontError(
+                        "İşletmeler yüklenirken bir hata oluştu."
                     )
                 }
-            } catch (_: IOException) {
-                showFoodError(
-                    "Sunucuya bağlanılamadı."
-                )
-            } catch (_: Exception) {
-                showFoodError(
-                    "Yemekler yüklenirken bir hata oluştu."
-                )
             }
-        }
     }
 
     fun updateSearchQuery(
@@ -170,8 +186,8 @@ class CustomerHomeViewModel(
             )
     }
 
-    fun searchFoods() {
-        loadFoods()
+    fun searchStorefronts() {
+        applySearchFilter()
     }
 
     fun selectCategory(
@@ -183,7 +199,7 @@ class CustomerHomeViewModel(
                     categoryId
             )
 
-        loadFoods(
+        loadStorefronts(
             categoryId = categoryId
         )
     }
@@ -195,10 +211,51 @@ class CustomerHomeViewModel(
                 searchQuery = ""
             )
 
-        loadFoods(
-            categoryId = null,
-            search = ""
+        loadStorefronts(
+            categoryId = null
         )
+    }
+
+    private fun applySearchFilter() {
+        val query =
+            _uiState.value
+                .searchQuery
+                .trim()
+
+        val filtered =
+            if (query.isBlank()) {
+                loadedStorefronts
+            } else {
+                loadedStorefronts.filter {
+                        storefront ->
+
+                    storefront.businessName
+                        .contains(
+                            query,
+                            ignoreCase = true
+                        ) ||
+                            storefront.description
+                                .contains(
+                                    query,
+                                    ignoreCase = true
+                                ) ||
+                            storefront.city
+                                .contains(
+                                    query,
+                                    ignoreCase = true
+                                ) ||
+                            storefront.district
+                                .contains(
+                                    query,
+                                    ignoreCase = true
+                                )
+                }
+            }
+
+        _uiState.value =
+            _uiState.value.copy(
+                storefronts = filtered
+            )
     }
 
     private fun showCategoryError(
@@ -207,17 +264,21 @@ class CustomerHomeViewModel(
         _uiState.value =
             _uiState.value.copy(
                 isCategoriesLoading = false,
-                errorMessage = message
+                categoryErrorMessage = message
             )
     }
 
-    private fun showFoodError(
+    private fun showStorefrontError(
         message: String
     ) {
+        loadedStorefronts =
+            emptyList()
+
         _uiState.value =
             _uiState.value.copy(
-                isFoodsLoading = false,
-                errorMessage = message
+                isStorefrontsLoading = false,
+                storefronts = emptyList(),
+                storefrontErrorMessage = message
             )
     }
 
