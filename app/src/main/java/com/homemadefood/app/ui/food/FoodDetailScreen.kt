@@ -30,12 +30,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import com.homemadefood.app.ui.components.CustomerCartButton
 import com.homemadefood.app.ui.components.FoodImage
 import java.util.Locale
 
 @Composable
 fun FoodDetailScreen(
     uiState: FoodDetailUiState,
+    cartTotalQuantity: Int,
     onBackClick: () -> Unit,
     onRetryClick: () -> Unit,
     onFavoriteClick: () -> Unit,
@@ -100,10 +102,29 @@ fun FoodDetailScreen(
                     .padding(innerPadding)
                     .padding(20.dp)
         ) {
-            TextButton(
-                onClick = onBackClick
+            Row(
+                modifier =
+                    Modifier.fillMaxWidth(),
+
+                horizontalArrangement =
+                    Arrangement.SpaceBetween,
+
+                verticalAlignment =
+                    Alignment.CenterVertically
             ) {
-                Text("← Geri")
+                TextButton(
+                    onClick = onBackClick
+                ) {
+                    Text("← Geri")
+                }
+
+                CustomerCartButton(
+                    totalQuantity =
+                        cartTotalQuantity,
+
+                    onClick =
+                        onGoToCartClick
+                )
             }
 
             Spacer(

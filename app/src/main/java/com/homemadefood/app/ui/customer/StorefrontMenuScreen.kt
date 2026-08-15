@@ -35,13 +35,16 @@ import coil3.compose.AsyncImage
 import com.homemadefood.app.data.model.ProducerStorefrontMenuCategoryResponse
 import com.homemadefood.app.data.model.ProducerStorefrontMenuFoodResponse
 import com.homemadefood.app.data.remote.ApiConfig
+import com.homemadefood.app.ui.components.CustomerCartButton
 import com.homemadefood.app.ui.components.FoodImage
 import java.util.Locale
 
 @Composable
 fun StorefrontMenuScreen(
     uiState: StorefrontMenuUiState,
+    cartTotalQuantity: Int,
     onBackClick: () -> Unit,
+    onCartClick: () -> Unit,
     onRetryClick: () -> Unit,
     onFoodClick: (Int) -> Unit,
     modifier: Modifier = Modifier
@@ -55,10 +58,29 @@ fun StorefrontMenuScreen(
                 )
                 .padding(20.dp)
     ) {
-        TextButton(
-            onClick = onBackClick
+        Row(
+            modifier =
+                Modifier.fillMaxWidth(),
+
+            horizontalArrangement =
+                Arrangement.SpaceBetween,
+
+            verticalAlignment =
+                Alignment.CenterVertically
         ) {
-            Text("← Geri")
+            TextButton(
+                onClick = onBackClick
+            ) {
+                Text("← Geri")
+            }
+
+            CustomerCartButton(
+                totalQuantity =
+                    cartTotalQuantity,
+
+                onClick =
+                    onCartClick
+            )
         }
 
         Spacer(

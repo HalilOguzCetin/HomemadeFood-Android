@@ -2,9 +2,14 @@ package com.homemadefood.app.navigation
 
 import android.content.Context
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraphBuilder
@@ -13,12 +18,15 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import androidx.navigation.navigation
+import com.homemadefood.app.ui.customer.CustomerAccountScreen
+import com.homemadefood.app.ui.customer.CustomerExploreScreen
 import com.homemadefood.app.ui.customer.CustomerHomeScreen
 import com.homemadefood.app.ui.customer.CustomerHomeViewModel
 import com.homemadefood.app.ui.customer.CustomerHomeViewModelFactory
 import com.homemadefood.app.ui.customer.StorefrontMenuScreen
 import com.homemadefood.app.ui.customer.StorefrontMenuViewModel
 import com.homemadefood.app.ui.customer.StorefrontMenuViewModelFactory
+import com.homemadefood.app.ui.customer.navigation.CustomerRootScaffold
 
 import com.homemadefood.app.ui.favorite.FavoritesScreen
 import com.homemadefood.app.ui.favorite.FavoritesViewModel
@@ -88,12 +96,22 @@ fun NavGraphBuilder.customerNavGraph(
 
         customerHomeDestination(
             navController = navController,
+            context = context
+        )
+
+        customerExploreDestination(
+            navController = navController
+        )
+
+        customerAccountDestination(
+            navController = navController,
             authViewModel = authViewModel,
             onLogoutClick = onLogoutClick
         )
 
         storefrontMenuDestination(
-            navController = navController
+            navController = navController,
+            context = context
         )
 
         foodDetailDestination(
@@ -157,13 +175,42 @@ fun NavGraphBuilder.customerNavGraph(
     }
 }
 
+private fun navigateToCustomerRoot(
+    navController: NavHostController,
+    route: String
+) {
+    val currentRoute =
+        navController
+            .currentDestination
+            ?.route
+
+    if (currentRoute == route) {
+        return
+    }
+
+    navController.navigate(route) {
+        popUpTo(
+            AppDestination
+                .CustomerHome
+                .route
+        ) {
+            saveState = true
+        }
+
+        launchSingleTop = true
+        restoreState = true
+    }
+}
+
 private fun NavGraphBuilder.customerHomeDestination(
     navController: NavHostController,
-    authViewModel: AuthViewModel,
-    onLogoutClick: () -> Unit
-){
+    context: Context
+) {
     composable(
-        route = AppDestination.CustomerHome.route
+        route =
+            AppDestination
+                .CustomerHome
+                .route
     ) {
         val customerHomeViewModel:
                 CustomerHomeViewModel =
@@ -173,120 +220,296 @@ private fun NavGraphBuilder.customerHomeDestination(
             )
 
         val customerHomeUiState by
-        customerHomeViewModel.uiState
+        customerHomeViewModel
+            .uiState
             .collectAsStateWithLifecycle()
+
+        val cartViewModel:
+                CartViewModel =
+            viewModel(
+                factory =
+                    CartViewModelFactory(
+                        context = context
+                    )
+            )
+
+        val cartUiState by
+        cartViewModel
+            .uiState
+            .collectAsStateWithLifecycle()
+
+        /*
+         * Home'a her geri dönüşte sepeti yeniler.
+         * Böylece FoodDetail/Cart ekranında miktar değiştiyse
+         * sağ üst badge eski sayıda kalmaz.
+         */
+        val lifecycleOwner =
+            LocalLifecycleOwner.current
+
+        DisposableEffect(
+            lifecycleOwner,
+            cartViewModel
+        ) {
+            val observer =
+                LifecycleEventObserver {
+                        _,
+                        event ->
+
+                    if (
+                        event ==
+                        Lifecycle.Event.ON_RESUME
+                    ) {
+                        cartViewModel
+                            .loadCart()
+                    }
+                }
+
+            lifecycleOwner.lifecycle
+                .addObserver(
+                    observer
+                )
+
+            onDispose {
+                lifecycleOwner.lifecycle
+                    .removeObserver(
+                        observer
+                    )
+            }
+        }
+
+        CustomerRootScaffold(
+            selectedRoute =
+                AppDestination
+                    .CustomerHome
+                    .route,
+
+            onBottomDestinationClick = { route ->
+                navigateToCustomerRoot(
+                    navController =
+                        navController,
+
+                    route =
+                        route
+                )
+            }
+        ) { innerPadding ->
+
+            CustomerHomeScreen(
+                uiState =
+                    customerHomeUiState,
+
+                onSearchQueryChange = { query ->
+                    customerHomeViewModel
+                        .updateSearchQuery(
+                            query
+                        )
+                },
+
+                onSearchClick = {
+                    customerHomeViewModel
+                        .searchStorefronts()
+                },
+
+                onCategoryClick = {
+                        categoryId ->
+
+                    customerHomeViewModel
+                        .selectCategory(
+                            categoryId
+                        )
+                },
+
+                onClearFiltersClick = {
+                    customerHomeViewModel
+                        .clearFilters()
+                },
+
+                onRetryCategoriesClick = {
+                    customerHomeViewModel
+                        .loadCategories()
+                },
+
+                onRetryStorefrontsClick = {
+                    customerHomeViewModel
+                        .loadStorefronts()
+                },
+
+                onStorefrontClick = {
+                        producerProfileId ->
+
+                    navController.navigate(
+                        AppDestination
+                            .StorefrontMenu
+                            .createRoute(
+                                producerProfileId
+                            )
+                    )
+                },
+
+                cartTotalQuantity =
+                    cartUiState
+                        .cart
+                        ?.totalQuantity
+                        ?: 0,
+
+                onCartClick = {
+                    navController.navigate(
+                        AppDestination
+                            .Cart
+                            .route
+                    )
+                },
+
+                onRecommendationClick = {
+                    navController.navigate(
+                        AppDestination
+                            .Recommendation
+                            .route
+                    )
+                },
+
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(
+                            innerPadding
+                        )
+            )
+        }
+    }
+}
+
+private fun NavGraphBuilder.customerExploreDestination(
+    navController: NavHostController
+) {
+    composable(
+        route =
+            AppDestination
+                .CustomerExplore
+                .route
+    ) {
+        CustomerRootScaffold(
+            selectedRoute =
+                AppDestination
+                    .CustomerExplore
+                    .route,
+
+            onBottomDestinationClick = { route ->
+                navigateToCustomerRoot(
+                    navController =
+                        navController,
+
+                    route =
+                        route
+                )
+            }
+        ) { innerPadding ->
+            CustomerExploreScreen(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(
+                            innerPadding
+                        )
+            )
+        }
+    }
+}
+
+private fun NavGraphBuilder.customerAccountDestination(
+    navController: NavHostController,
+    authViewModel: AuthViewModel,
+    onLogoutClick: () -> Unit
+) {
+    composable(
+        route =
+            AppDestination
+                .CustomerAccount
+                .route
+    ) {
         val authUiState by
         authViewModel.uiState
             .collectAsStateWithLifecycle()
 
-        CustomerHomeScreen(
-            uiState = customerHomeUiState,
+        CustomerRootScaffold(
+            selectedRoute =
+                AppDestination
+                    .CustomerAccount
+                    .route,
 
-            onSearchQueryChange = { query ->
-                customerHomeViewModel
-                    .updateSearchQuery(query)
-            },
+            onBottomDestinationClick = { route ->
+                navigateToCustomerRoot(
+                    navController =
+                        navController,
 
-            onSearchClick = {
-                customerHomeViewModel
-                    .searchStorefronts()
-            },
+                    route =
+                        route
+                )
+            }
+        ) { innerPadding ->
+            CustomerAccountScreen(
+                canUseProducerMode =
+                    authUiState
+                        .canUseProducerMode,
 
-            onCategoryClick = { categoryId ->
-                customerHomeViewModel
-                    .selectCategory(categoryId)
-            },
+                producerVerificationStatus =
+                    authUiState
+                        .producerVerificationStatus,
 
-            onClearFiltersClick = {
-                customerHomeViewModel
-                    .clearFilters()
-            },
+                onAddressesClick = {
+                    navController.navigate(
+                        AppDestination
+                            .Addresses
+                            .route
+                    )
+                },
 
-            onRetryCategoriesClick = {
-                customerHomeViewModel
-                    .loadCategories()
-            },
+                onFavoritesClick = {
+                    navController.navigate(
+                        AppDestination
+                            .Favorites
+                            .route
+                    )
+                },
 
-            onRetryStorefrontsClick = {
-                customerHomeViewModel
-                    .loadStorefronts()
-            },
+                onReviewsClick = {
+                    navController.navigate(
+                        AppDestination
+                            .CustomerReviews
+                            .route
+                    )
+                },
 
-            onStorefrontClick = {
-                    producerProfileId ->
+                onProducerApplicationClick = {
+                    navController.navigate(
+                        AppDestination
+                            .CustomerProducerApplication
+                            .route
+                    )
+                },
 
-                navController.navigate(
-                    AppDestination
-                        .StorefrontMenu
-                        .createRoute(
-                            producerProfileId
+                onProducerModeClick = {
+                    authViewModel
+                        .switchToProducerMode()
+                },
+
+                onLogoutClick =
+                    onLogoutClick,
+
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(
+                            innerPadding
                         )
-                )
-            },
-
-            onFavoritesClick = {
-                navController.navigate(
-                    AppDestination.Favorites.route
-                )
-            },
-
-            onAddressesClick = {
-                navController.navigate(
-                    AppDestination.Addresses.route
-                )
-            },
-
-            onLogoutClick = onLogoutClick,
-
-            onCartClick = {
-                navController.navigate(
-                    AppDestination.Cart.route
-                )
-            },
-
-            onOrdersClick = {
-                navController.navigate(
-                    AppDestination.Orders.route
-                )
-            },
-
-            onRecommendationClick = {
-                navController.navigate(
-                    AppDestination.Recommendation.route
-                )
-            },
-            onProducerApplicationClick = {
-                navController.navigate(
-                    AppDestination
-                        .CustomerProducerApplication
-                        .route
-                )
-            },
-            canUseProducerMode =
-                authUiState.canUseProducerMode,
-
-            producerVerificationStatus =
-                authUiState
-                    .producerVerificationStatus,
-
-            onProducerModeClick = {
-                authViewModel
-                    .switchToProducerMode()
-            },
-            onReviewsClick = {
-                navController.navigate(
-                    AppDestination.CustomerReviews.route
-                )
-            },
-
-
-            modifier = Modifier.fillMaxSize()
-        )
+            )
+        }
     }
 }
 
 private fun NavGraphBuilder.storefrontMenuDestination(
-    navController: NavHostController
+    navController: NavHostController,
+    context: Context
 ) {
     composable(
         route =
@@ -327,6 +550,54 @@ private fun NavGraphBuilder.storefrontMenuDestination(
             .uiState
             .collectAsStateWithLifecycle()
 
+        val cartViewModel:
+                CartViewModel =
+            viewModel(
+                factory =
+                    CartViewModelFactory(
+                        context = context
+                    )
+            )
+
+        val cartUiState by
+        cartViewModel
+            .uiState
+            .collectAsStateWithLifecycle()
+
+        val lifecycleOwner =
+            LocalLifecycleOwner.current
+
+        DisposableEffect(
+            lifecycleOwner,
+            cartViewModel
+        ) {
+            val observer =
+                LifecycleEventObserver {
+                        _,
+                        event ->
+
+                    if (
+                        event ==
+                        Lifecycle.Event.ON_RESUME
+                    ) {
+                        cartViewModel
+                            .loadCart()
+                    }
+                }
+
+            lifecycleOwner.lifecycle
+                .addObserver(
+                    observer
+                )
+
+            onDispose {
+                lifecycleOwner.lifecycle
+                    .removeObserver(
+                        observer
+                    )
+            }
+        }
+
         LaunchedEffect(
             producerProfileId
         ) {
@@ -338,9 +609,25 @@ private fun NavGraphBuilder.storefrontMenuDestination(
             uiState =
                 storefrontMenuUiState,
 
+            cartTotalQuantity =
+                cartUiState
+                    .cart
+                    ?.totalQuantity
+                    ?: 0,
+
             onBackClick = {
                 navController
                     .popBackStack()
+            },
+
+            onCartClick = {
+                navController.navigate(
+                    AppDestination
+                        .Cart
+                        .route
+                ) {
+                    launchSingleTop = true
+                }
             },
 
             onRetryClick = {
@@ -403,12 +690,54 @@ private fun NavGraphBuilder.foodDetailDestination(
         foodDetailViewModel.uiState
             .collectAsStateWithLifecycle()
 
+        val cartViewModel:
+                CartViewModel =
+            viewModel(
+                factory =
+                    CartViewModelFactory(
+                        context = context
+                    )
+            )
+
+        val cartUiState by
+        cartViewModel
+            .uiState
+            .collectAsStateWithLifecycle()
+
         LaunchedEffect(foodId) {
             foodDetailViewModel.loadFood()
+            cartViewModel.loadCart()
+        }
+
+        /*
+         * FoodDetail kendi FoodDetailViewModel'i ile sepete
+         * ekleme/miktar işlemlerini yapar.
+         *
+         * İşlem bittiğinde global CartResponse tekrar yüklenir;
+         * böylece sağ üst badge yalnız bu yemeğin miktarını değil,
+         * sepetteki TOPLAM adedi gösterir.
+         */
+        LaunchedEffect(
+            foodDetailUiState.cartQuantity,
+            foodDetailUiState.isCartActionLoading
+        ) {
+            if (
+                !foodDetailUiState
+                    .isCartActionLoading
+            ) {
+                cartViewModel
+                    .loadCart()
+            }
         }
 
         FoodDetailScreen(
             uiState = foodDetailUiState,
+
+            cartTotalQuantity =
+                cartUiState
+                    .cart
+                    ?.totalQuantity
+                    ?: 0,
 
             onBackClick = {
                 navController.popBackStack()
@@ -1300,32 +1629,76 @@ private fun NavGraphBuilder.ordersDestination(
             ordersViewModel.loadOrders()
         }
 
-        OrdersScreen(
-            uiState = ordersUiState,
+        CustomerRootScaffold(
+            selectedRoute =
+                AppDestination
+                    .Orders
+                    .route,
 
-            onBackClick = {
-                navController.popBackStack()
-            },
+            onBottomDestinationClick = { route ->
+                navigateToCustomerRoot(
+                    navController =
+                        navController,
 
-            onRetryClick = {
-                ordersViewModel.loadOrders()
-            },
-
-            onCancelOrderClick = { orderId ->
-                ordersViewModel.cancelOrder(
-                    orderId = orderId
+                    route =
+                        route
                 )
-            },
+            }
+        ) { innerPadding ->
 
-            onOrderClick = { orderId ->
-                navController.navigate(
-                    AppDestination.OrderDetail
-                        .createRoute(orderId)
-                )
-            },
+            OrdersScreen(
+                uiState =
+                    ordersUiState,
 
-            modifier = Modifier.fillMaxSize()
-        )
+                onBackClick = {
+                    navigateToCustomerRoot(
+                        navController =
+                            navController,
+
+                        route =
+                            AppDestination
+                                .CustomerHome
+                                .route
+                    )
+                },
+
+                onRetryClick = {
+                    ordersViewModel
+                        .loadOrders()
+                },
+
+                onCancelOrderClick = {
+                        orderId ->
+
+                    ordersViewModel
+                        .cancelOrder(
+                            orderId =
+                                orderId
+                        )
+                },
+
+                onOrderClick = {
+                        orderId ->
+
+                    navController.navigate(
+                        AppDestination
+                            .OrderDetail
+                            .createRoute(
+                                orderId
+                            )
+                    )
+                },
+
+                showBackButton = false,
+
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(
+                            innerPadding
+                        )
+            )
+        }
     }
 }
 private fun NavGraphBuilder.recommendationDestination(

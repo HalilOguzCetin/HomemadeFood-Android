@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.homemadefood.app.data.model.ProducerStorefrontSummaryResponse
 import com.homemadefood.app.data.remote.ApiConfig
+import com.homemadefood.app.ui.components.CustomerCartButton
 import java.util.Locale
 
 @Composable
@@ -49,17 +50,9 @@ fun CustomerHomeScreen(
     onRetryCategoriesClick: () -> Unit,
     onRetryStorefrontsClick: () -> Unit,
     onStorefrontClick: (Int) -> Unit,
-    onFavoritesClick: () -> Unit,
+    cartTotalQuantity: Int,
     onCartClick: () -> Unit,
-    onOrdersClick: () -> Unit,
     onRecommendationClick: () -> Unit,
-    onProducerApplicationClick: () -> Unit,
-    canUseProducerMode: Boolean,
-    producerVerificationStatus: String?,
-    onProducerModeClick: () -> Unit,
-    onReviewsClick: () -> Unit,
-    onLogoutClick: () -> Unit,
-    onAddressesClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -80,7 +73,10 @@ fun CustomerHomeScreen(
             verticalAlignment =
                 Alignment.CenterVertically
         ) {
-            Column {
+            Column(
+                modifier =
+                    Modifier.weight(1f)
+            ) {
                 Text(
                     text = "Hoş Geldiniz",
 
@@ -99,11 +95,13 @@ fun CustomerHomeScreen(
                 )
             }
 
-            TextButton(
-                onClick = onLogoutClick
-            ) {
-                Text("Çıkış")
-            }
+            CustomerCartButton(
+                totalQuantity =
+                    cartTotalQuantity,
+
+                onClick =
+                    onCartClick
+            )
         }
 
         Spacer(
@@ -469,118 +467,8 @@ fun CustomerHomeScreen(
 
         Spacer(
             modifier =
-                Modifier.height(12.dp)
+                Modifier.height(24.dp)
         )
-
-        Button(
-            onClick = onCartClick,
-
-            modifier =
-                Modifier.fillMaxWidth()
-        ) {
-            Text("Sepetim")
-        }
-
-        Spacer(
-            modifier =
-                Modifier.height(12.dp)
-        )
-
-        Button(
-            onClick = onOrdersClick,
-
-            modifier =
-                Modifier.fillMaxWidth()
-        ) {
-            Text("Siparişlerim")
-        }
-
-        Spacer(
-            modifier =
-                Modifier.height(12.dp)
-        )
-
-        Button(
-            onClick =
-                onAddressesClick,
-
-            modifier =
-                Modifier.fillMaxWidth()
-        ) {
-            Text("Adreslerim")
-        }
-
-        Spacer(
-            modifier =
-                Modifier.height(12.dp)
-        )
-
-        Button(
-            onClick =
-                onFavoritesClick,
-
-            modifier =
-                Modifier.fillMaxWidth()
-        ) {
-            Text("Favorilerim")
-        }
-
-        Spacer(
-            modifier =
-                Modifier.height(12.dp)
-        )
-
-        val producerButtonText =
-            when {
-                canUseProducerMode ->
-                    "Üretici Paneline Geç"
-
-                producerVerificationStatus
-                    .equals(
-                        "Pending",
-                        ignoreCase = true
-                    ) ->
-                    "Üretici Başvurum İnceleniyor"
-
-                producerVerificationStatus
-                    .equals(
-                        "Rejected",
-                        ignoreCase = true
-                    ) ->
-                    "Üretici Başvurumu Güncelle"
-
-                else ->
-                    "Üretici Ol"
-            }
-
-        Button(
-            onClick = {
-                if (canUseProducerMode) {
-                    onProducerModeClick()
-                } else {
-                    onProducerApplicationClick()
-                }
-            },
-
-            modifier =
-                Modifier.fillMaxWidth()
-        ) {
-            Text(producerButtonText)
-        }
-
-        Spacer(
-            modifier =
-                Modifier.height(12.dp)
-        )
-
-        Button(
-            onClick = onReviewsClick,
-
-            modifier =
-                Modifier.fillMaxWidth()
-        ) {
-            Text("Değerlendirmelerim")
-        }
     }
 }
 

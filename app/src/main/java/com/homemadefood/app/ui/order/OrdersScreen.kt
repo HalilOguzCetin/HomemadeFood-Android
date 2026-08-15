@@ -39,6 +39,7 @@ fun OrdersScreen(
     onRetryClick: () -> Unit,
     onCancelOrderClick: (Int) -> Unit,
     onOrderClick: (Int) -> Unit,
+    showBackButton: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     var orderIdWaitingForCancellation by
@@ -96,15 +97,17 @@ fun OrdersScreen(
             .fillMaxSize()
             .padding(20.dp)
     ) {
-        TextButton(
-            onClick = onBackClick
-        ) {
-            Text("← Ana Sayfaya Dön")
-        }
+        if (showBackButton) {
+            TextButton(
+                onClick = onBackClick
+            ) {
+                Text("← Ana Sayfaya Dön")
+            }
 
-        Spacer(
-            modifier = Modifier.height(8.dp)
-        )
+            Spacer(
+                modifier = Modifier.height(8.dp)
+            )
+        }
 
         Text(
             text = "Siparişlerim",

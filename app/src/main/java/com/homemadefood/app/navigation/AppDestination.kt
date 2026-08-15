@@ -31,6 +31,12 @@ sealed class AppDestination(
     data object CustomerHome :
         AppDestination("customer/home")
 
+    data object CustomerExplore :
+        AppDestination("customer/explore")
+
+    data object CustomerAccount :
+        AppDestination("customer/account")
+
     data object FoodDetail :
         AppDestination(
             "customer/food/{foodId}"
