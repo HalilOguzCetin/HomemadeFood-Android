@@ -4,6 +4,7 @@ data class ProducerApplicationStatusResponse(
     val producerProfileId: Int,
     val businessName: String,
     val description: String,
+    val businessImageUrl: String? = null,
     val address: String,
 
     val city: String = "",

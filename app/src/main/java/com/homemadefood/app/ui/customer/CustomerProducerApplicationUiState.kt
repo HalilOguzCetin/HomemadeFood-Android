@@ -15,6 +15,12 @@ data class CustomerProducerApplicationUiState(
     val businessName: String = "",
     val description: String = "",
 
+    val selectedBusinessImageUri:
+    String? = null,
+
+    val existingBusinessImageUrl:
+    String? = null,
+
     val city: String = "",
     val district: String = "",
     val neighborhood: String = "",
@@ -50,23 +56,18 @@ data class CustomerProducerApplicationUiState(
     val fullAddress: String
         get() = buildFullAddress()
 
+    val hasBusinessImage: Boolean
+        get() =
+            !selectedBusinessImageUri
+                .isNullOrBlank() ||
+                    !existingBusinessImageUrl
+                        .isNullOrBlank()
+
     val canSubmit: Boolean
         get() =
             !isLoading &&
                     !isSubmitting &&
-                    !isResolvingAddress &&
-                    businessName.trim().length in 2..150 &&
-                    description.trim().length in 10..1000 &&
-                    city.isNotBlank() &&
-                    district.isNotBlank() &&
-                    neighborhood.isNotBlank() &&
-                    street.isNotBlank() &&
-                    buildingNo.isNotBlank() &&
-                    selectedLocation
-                        ?.isValid() == true &&
-                    dailyCapacityText
-                        .toIntOrNull()
-                        ?.let { it in 1..1000 } == true
+                    !isResolvingAddress
 
     fun buildFullAddress(): String {
         val parts =

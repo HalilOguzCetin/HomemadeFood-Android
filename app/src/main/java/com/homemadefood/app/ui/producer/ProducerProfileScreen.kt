@@ -33,6 +33,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.homemadefood.app.data.model.ProducerApplicationStatusResponse
+import com.homemadefood.app.ui.customer.ProducerBusinessImagePicker
+import com.homemadefood.app.ui.customer.ProducerBusinessImagePreview
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
@@ -47,6 +49,8 @@ fun ProducerProfileScreen(
 
     onBusinessNameChange: (String) -> Unit,
     onDescriptionChange: (String) -> Unit,
+    onBusinessImageSelected: (String) -> Unit,
+    onRemoveSelectedBusinessImage: () -> Unit,
 
     onCityChange: (String) -> Unit,
     onDistrictChange: (String) -> Unit,
@@ -164,6 +168,12 @@ fun ProducerProfileScreen(
 
                     onDescriptionChange =
                         onDescriptionChange,
+
+                    onBusinessImageSelected =
+                        onBusinessImageSelected,
+
+                    onRemoveSelectedBusinessImage =
+                        onRemoveSelectedBusinessImage,
 
                     onCityChange =
                         onCityChange,
@@ -330,6 +340,8 @@ private fun ProducerProfileContent(
 
     onBusinessNameChange: (String) -> Unit,
     onDescriptionChange: (String) -> Unit,
+    onBusinessImageSelected: (String) -> Unit,
+    onRemoveSelectedBusinessImage: () -> Unit,
 
     onCityChange: (String) -> Unit,
     onDistrictChange: (String) -> Unit,
@@ -421,6 +433,12 @@ private fun ProducerProfileContent(
 
                 onDescriptionChange =
                     onDescriptionChange,
+
+                onBusinessImageSelected =
+                    onBusinessImageSelected,
+
+                onRemoveSelectedBusinessImage =
+                    onRemoveSelectedBusinessImage,
 
                 onCityChange =
                     onCityChange,
@@ -663,6 +681,28 @@ private fun ProducerProfileInformationCard(
                 modifier = Modifier.height(14.dp)
             )
 
+            ProducerBusinessImagePreview(
+                businessImageUrl =
+                    profile.businessImageUrl
+            )
+
+            if (
+                !profile.businessImageUrl
+                    .isNullOrBlank()
+            ) {
+                Spacer(
+                    modifier =
+                        Modifier.height(14.dp)
+                )
+
+                HorizontalDivider()
+
+                Spacer(
+                    modifier =
+                        Modifier.height(2.dp)
+                )
+            }
+
             ProducerProfileInformationSection(
                 title = "İşletme adı",
                 value = profile.businessName
@@ -755,6 +795,8 @@ private fun ProducerProfileEditForm(
     uiState: ProducerProfileUiState,
     onBusinessNameChange: (String) -> Unit,
     onDescriptionChange: (String) -> Unit,
+    onBusinessImageSelected: (String) -> Unit,
+    onRemoveSelectedBusinessImage: () -> Unit,
 
     onCityChange: (String) -> Unit,
     onDistrictChange: (String) -> Unit,
@@ -835,6 +877,30 @@ private fun ProducerProfileEditForm(
                 minLines = 4,
                 maxLines = 8,
                 enabled = !uiState.isSaving
+            )
+
+            Spacer(
+                modifier = Modifier.height(18.dp)
+            )
+
+            ProducerBusinessImagePicker(
+                selectedImageUri =
+                    uiState.selectedBusinessImageUri,
+
+                existingImageUrl =
+                    uiState.profile
+                        ?.businessImageUrl,
+
+                isSubmitting =
+                    uiState.isSaving,
+
+                onImageSelected =
+                    onBusinessImageSelected,
+
+                onRemoveSelectedImage =
+                    onRemoveSelectedBusinessImage,
+
+                isRequired = false
             )
 
             Spacer(

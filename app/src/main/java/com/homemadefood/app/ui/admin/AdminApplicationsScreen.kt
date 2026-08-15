@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
@@ -18,6 +19,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
@@ -29,8 +31,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import com.homemadefood.app.data.model.AdminProducerApplicationResponse
+import com.homemadefood.app.data.remote.ApiConfig
 import com.homemadefood.app.data.model.ProducerApplicationStatus
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
@@ -474,6 +479,19 @@ private fun AdminApplicationCard(
             modifier =
                 Modifier.padding(16.dp)
         ) {
+            AdminBusinessImage(
+                businessImageUrl =
+                    application.businessImageUrl,
+
+                businessName =
+                    application.businessName
+            )
+
+            Spacer(
+                modifier =
+                    Modifier.height(14.dp)
+            )
+
             Text(
                 text =
                     application.businessName
@@ -793,6 +811,62 @@ private fun AdminApplicationCard(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun AdminBusinessImage(
+    businessImageUrl: String?,
+    businessName: String
+) {
+    val resolvedImageUrl =
+        ApiConfig.resolveMediaUrl(
+            businessImageUrl
+        )
+
+    Surface(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(190.dp),
+
+        shape =
+            RoundedCornerShape(16.dp),
+
+        tonalElevation = 1.dp
+    ) {
+        if (resolvedImageUrl == null) {
+            Box(
+                modifier =
+                    Modifier.fillMaxSize(),
+
+                contentAlignment =
+                    Alignment.Center
+            ) {
+                Text(
+                    text =
+                        "İşletme görseli bulunmuyor",
+
+                    style =
+                        MaterialTheme.typography
+                            .bodyMedium
+                )
+            }
+        } else {
+            AsyncImage(
+                model =
+                    resolvedImageUrl,
+
+                contentDescription =
+                    "${businessName.ifBlank { "İşletme" }} vitrin görseli",
+
+                modifier =
+                    Modifier.fillMaxSize(),
+
+                contentScale =
+                    ContentScale.Crop
+            )
         }
     }
 }

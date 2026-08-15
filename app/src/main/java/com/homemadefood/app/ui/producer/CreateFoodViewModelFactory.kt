@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.homemadefood.app.data.local.SessionManager
+import com.homemadefood.app.data.repository.CategoryRepository
 import com.homemadefood.app.data.repository.ProducerFoodRepository
 import com.homemadefood.app.data.upload.FoodImageMultipartFactory
 
@@ -25,6 +26,9 @@ class CreateFoodViewModelFactory(
             val producerFoodRepository =
                 ProducerFoodRepository()
 
+            val categoryRepository =
+                CategoryRepository()
+
             val sessionManager =
                 SessionManager(
                     applicationContext
@@ -39,6 +43,9 @@ class CreateFoodViewModelFactory(
             return CreateFoodViewModel(
                 producerFoodRepository =
                     producerFoodRepository,
+
+                categoryRepository =
+                    categoryRepository,
 
                 sessionManager =
                     sessionManager,

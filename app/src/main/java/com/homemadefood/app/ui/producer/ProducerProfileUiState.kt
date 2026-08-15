@@ -15,6 +15,13 @@ data class ProducerProfileUiState(
     val businessName: String = "",
     val description: String = "",
 
+    /*
+     * Yalnızca kullanıcının yeni seçtiği yerel URI.
+     * Mevcut kayıtlı görsel profile.businessImageUrl içindedir.
+     */
+    val selectedBusinessImageUri:
+    String? = null,
+
     val city: String = "",
     val district: String = "",
     val neighborhood: String = "",

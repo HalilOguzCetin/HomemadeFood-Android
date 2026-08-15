@@ -6,6 +6,7 @@ import com.homemadefood.app.data.local.SessionManager
 import com.homemadefood.app.data.model.ProducerApplicationStatusResponse
 import com.homemadefood.app.data.repository.AddressRepository
 import com.homemadefood.app.data.repository.ProducerRepository
+import com.homemadefood.app.data.upload.ProducerBusinessImageMultipartFactory
 import com.homemadefood.app.ui.address.SelectedLocation
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,7 +25,10 @@ class ProducerProfileViewModel(
     AddressRepository,
 
     private val sessionManager:
-    SessionManager
+    SessionManager,
+
+    private val producerBusinessImageMultipartFactory:
+    ProducerBusinessImageMultipartFactory
 ) : ViewModel() {
 
     private var loadProfileJob: Job? = null
@@ -138,6 +142,9 @@ class ProducerProfileViewModel(
                 description =
                     profile.description,
 
+                selectedBusinessImageUri =
+                    null,
+
                 city =
                     profile.city,
 
@@ -236,6 +243,9 @@ class ProducerProfileViewModel(
                 description =
                     profile.description,
 
+                selectedBusinessImageUri =
+                    null,
+
                 city =
                     profile.city,
 
@@ -274,6 +284,41 @@ class ProducerProfileViewModel(
                 locationLookupMessage = null,
 
                 errorMessage = null
+            )
+    }
+
+    fun onBusinessImageSelected(
+        uri: String
+    ) {
+        if (
+            _uiState.value.isSaving ||
+            uri.isBlank()
+        ) {
+            return
+        }
+
+        _uiState.value =
+            _uiState.value.copy(
+                selectedBusinessImageUri =
+                    uri,
+
+                errorMessage = null,
+                successMessage = null
+            )
+    }
+
+    fun onRemoveSelectedBusinessImage() {
+        if (_uiState.value.isSaving) {
+            return
+        }
+
+        _uiState.value =
+            _uiState.value.copy(
+                selectedBusinessImageUri =
+                    null,
+
+                errorMessage = null,
+                successMessage = null
             )
     }
 
@@ -698,6 +743,17 @@ class ProducerProfileViewModel(
                     )
 
                 try {
+                    val businessImagePart =
+                        current
+                            .selectedBusinessImageUri
+                            ?.takeIf {
+                                it.isNotBlank()
+                            }
+                            ?.let { uri ->
+                                producerBusinessImageMultipartFactory
+                                    .createPart(uri)
+                            }
+
                     val response =
                         producerRepository
                             .updateMyProfile(
@@ -760,7 +816,10 @@ class ProducerProfileViewModel(
                                     dailyCapacity,
 
                                 isAvailable =
-                                    current.isAvailable
+                                    current.isAvailable,
+
+                                businessImage =
+                                    businessImagePart
                             )
 
                     val responseBody =
@@ -794,9 +853,21 @@ class ProducerProfileViewModel(
                                 ?: "Üretici profili güncellenemedi."
                         )
                     }
+                } catch (
+                    exception:
+                    IllegalArgumentException
+                ) {
+                    showSaveError(
+                        exception.message
+                            ?: "Seçilen işletme görseli geçersiz."
+                    )
+                } catch (_: SecurityException) {
+                    showSaveError(
+                        "Seçilen işletme görseline erişilemiyor. Görseli yeniden seçin."
+                    )
                 } catch (_: IOException) {
                     showSaveError(
-                        "Sunucuya bağlanılamadı."
+                        "Sunucuya bağlanılamadı veya seçilen görsel okunamadı."
                     )
                 } catch (_: Exception) {
                     showSaveError(
@@ -996,8 +1067,42 @@ class ProducerProfileViewModel(
         }
 
         return runCatching {
-            JSONObject(errorJson)
-                .optString("message")
+            val root =
+                JSONObject(errorJson)
+
+            val data =
+                root.optJSONObject("data")
+                    ?: root.optJSONObject("Data")
+
+            val errors =
+                data?.optJSONObject("errors")
+                    ?: data?.optJSONObject("Errors")
+
+            if (errors != null) {
+                val keys =
+                    errors.keys()
+
+                if (keys.hasNext()) {
+                    val field =
+                        keys.next()
+
+                    val fieldErrors =
+                        errors.optJSONArray(field)
+
+                    val firstError =
+                        fieldErrors
+                            ?.optString(0)
+                            ?.takeIf {
+                                it.isNotBlank()
+                            }
+
+                    if (firstError != null) {
+                        return@runCatching "$field: $firstError"
+                    }
+                }
+            }
+
+            root.optString("message")
                 .takeIf {
                     it.isNotBlank()
                 }

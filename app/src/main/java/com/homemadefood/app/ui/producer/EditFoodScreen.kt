@@ -29,7 +29,8 @@ import androidx.compose.ui.unit.dp
 fun EditFoodScreen(
     uiState: EditFoodUiState,
 
-    onCategoryIdChange: (String) -> Unit,
+    onCategorySelected: (Int) -> Unit,
+    onRetryCategoriesClick: () -> Unit,
     onNameChange: (String) -> Unit,
     onDescriptionChange: (String) -> Unit,
     onPriceChange: (String) -> Unit,
@@ -119,19 +120,23 @@ fun EditFoodScreen(
                         MaterialTheme.typography.bodySmall
                 )
 
-                OutlinedTextField(
-                    value = uiState.categoryId,
-                    onValueChange = onCategoryIdChange,
-                    label = {
-                        Text("Kategori ID")
-                    },
-                    keyboardOptions =
-                        KeyboardOptions(
-                            keyboardType =
-                                KeyboardType.Number
-                        ),
-                    singleLine = true,
-                    enabled = !uiState.isSaving,
+                FoodCategorySelector(
+                    categories = uiState.categories,
+                    selectedCategoryId =
+                        uiState.selectedCategoryId,
+                    selectedCategoryName =
+                        uiState.selectedCategoryName,
+                    isLoading =
+                        uiState.isCategoriesLoading,
+                    errorMessage =
+                        uiState.categoryErrorMessage,
+                    onCategorySelected =
+                        onCategorySelected,
+                    onRetryClick =
+                        onRetryCategoriesClick,
+                    enabled =
+                        !uiState.isSaving &&
+                                !uiState.isLoading,
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -266,7 +271,7 @@ fun EditFoodScreen(
 
                 Button(
                     onClick = onSaveClick,
-                    enabled = !uiState.isSaving,
+                    enabled = uiState.canSave,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     if (uiState.isSaving) {

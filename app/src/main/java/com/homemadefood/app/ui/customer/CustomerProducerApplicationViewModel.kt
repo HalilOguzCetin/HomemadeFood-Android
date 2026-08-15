@@ -6,6 +6,7 @@ import com.homemadefood.app.data.local.SessionManager
 import com.homemadefood.app.data.model.ProducerApplicationRequest
 import com.homemadefood.app.data.repository.AddressRepository
 import com.homemadefood.app.data.repository.ProducerRepository
+import com.homemadefood.app.data.upload.ProducerBusinessImageMultipartFactory
 import com.homemadefood.app.ui.address.SelectedLocation
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,7 +25,10 @@ class CustomerProducerApplicationViewModel(
     AddressRepository,
 
     private val sessionManager:
-    SessionManager
+    SessionManager,
+
+    private val producerBusinessImageMultipartFactory:
+    ProducerBusinessImageMultipartFactory
 ) : ViewModel() {
 
     private var loadApplicationJob: Job? =
@@ -157,6 +161,34 @@ class CustomerProducerApplicationViewModel(
             _uiState.value.copy(
                 description = value,
                 errorMessage = null
+            )
+    }
+
+    fun updateBusinessImage(
+        uriString: String
+    ) {
+        if (uriString.isBlank()) {
+            return
+        }
+
+        _uiState.value =
+            _uiState.value.copy(
+                selectedBusinessImageUri =
+                    uriString,
+
+                errorMessage = null,
+                successMessage = null
+            )
+    }
+
+    fun removeSelectedBusinessImage() {
+        _uiState.value =
+            _uiState.value.copy(
+                selectedBusinessImageUri =
+                    null,
+
+                errorMessage = null,
+                successMessage = null
             )
     }
 
@@ -424,6 +456,12 @@ class CustomerProducerApplicationViewModel(
                 description =
                     application.description,
 
+                selectedBusinessImageUri =
+                    null,
+
+                existingBusinessImageUrl =
+                    application.businessImageUrl,
+
                 city =
                     application.city,
 
@@ -544,6 +582,13 @@ class CustomerProducerApplicationViewModel(
                 return
             }
 
+            !current.hasBusinessImage -> {
+                showError(
+                    "İşletme vitrin görseli seçmelisiniz."
+                )
+                return
+            }
+
             location == null ||
                     !location.isValid() -> {
                 showError(
@@ -631,6 +676,47 @@ class CustomerProducerApplicationViewModel(
                         successMessage = null
                     )
 
+                val businessImagePart =
+                    if (
+                        current
+                            .selectedBusinessImageUri
+                            .isNullOrBlank()
+                    ) {
+                        null
+                    } else {
+                        try {
+                            producerBusinessImageMultipartFactory
+                                .createPart(
+                                    current
+                                        .selectedBusinessImageUri!!
+                                )
+                        } catch (
+                            exception:
+                            IllegalArgumentException
+                        ) {
+                            showError(
+                                exception.message
+                                    ?: "İşletme görseli hazırlanamadı."
+                            )
+                            return@launch
+                        } catch (_: SecurityException) {
+                            showError(
+                                "Seçilen işletme görseline erişilemiyor. Görseli yeniden seçin."
+                            )
+                            return@launch
+                        } catch (_: IOException) {
+                            showError(
+                                "Seçilen işletme görseli okunamadı. Başka bir görsel deneyin."
+                            )
+                            return@launch
+                        } catch (_: Exception) {
+                            showError(
+                                "İşletme görseli hazırlanırken bir hata oluştu."
+                            )
+                            return@launch
+                        }
+                    }
+
                 try {
                     val response =
                         producerRepository.apply(
@@ -693,7 +779,10 @@ class CustomerProducerApplicationViewModel(
 
                                     dailyCapacity =
                                         dailyCapacity
-                                )
+                                ),
+
+                            businessImage =
+                                businessImagePart
                         )
 
                     val body =

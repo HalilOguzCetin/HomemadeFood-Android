@@ -10,6 +10,16 @@ data class AdminProducerApplicationResponse(
 
     val businessName: String,
     val description: String,
+
+    /*
+     * Üreticinin işletme/vitrin görselidir.
+     * Food.ImageUrl ile aynı kavram değildir.
+     *
+     * Nullable/default tutulması eski başvuruların
+     * görselsiz kalabilmesini güvenli şekilde destekler.
+     */
+    val businessImageUrl: String? = null,
+
     val address: String,
 
     val latitude: Double,

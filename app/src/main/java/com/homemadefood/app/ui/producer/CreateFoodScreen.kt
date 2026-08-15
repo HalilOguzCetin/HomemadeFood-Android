@@ -38,7 +38,8 @@ import coil3.compose.AsyncImage
 fun CreateFoodScreen(
     uiState: CreateFoodUiState,
 
-    onCategoryIdChange: (String) -> Unit,
+    onCategorySelected: (Int) -> Unit,
+    onRetryCategoriesClick: () -> Unit,
     onNameChange: (String) -> Unit,
     onDescriptionChange: (String) -> Unit,
     onPriceChange: (String) -> Unit,
@@ -191,23 +192,20 @@ fun CreateFoodScreen(
             }
         }
 
-        OutlinedTextField(
-            value = uiState.categoryId,
-            onValueChange = onCategoryIdChange,
-            label = {
-                Text("Kategori ID")
-            },
-            supportingText = {
-                Text(
-                    "Veritabanındaki geçerli kategori numarasını girin."
-                )
-            },
-            keyboardOptions =
-                KeyboardOptions(
-                    keyboardType =
-                        KeyboardType.Number
-                ),
-            singleLine = true,
+        FoodCategorySelector(
+            categories = uiState.categories,
+            selectedCategoryId =
+                uiState.selectedCategoryId,
+            selectedCategoryName =
+                uiState.selectedCategoryName,
+            isLoading =
+                uiState.isCategoriesLoading,
+            errorMessage =
+                uiState.categoryErrorMessage,
+            onCategorySelected =
+                onCategorySelected,
+            onRetryClick =
+                onRetryCategoriesClick,
             enabled = !uiState.isSaving,
             modifier = Modifier.fillMaxWidth()
         )
@@ -301,10 +299,7 @@ fun CreateFoodScreen(
 
         Button(
             onClick = onSaveClick,
-            enabled =
-                !uiState.isSaving &&
-                        !uiState.selectedImageUri
-                            .isNullOrBlank(),
+            enabled = uiState.canSave,
             modifier = Modifier.fillMaxWidth()
         ) {
             if (uiState.isSaving) {

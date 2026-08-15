@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.homemadefood.app.data.local.SessionManager
 import com.homemadefood.app.data.repository.AddressRepository
 import com.homemadefood.app.data.repository.ProducerRepository
+import com.homemadefood.app.data.upload.ProducerBusinessImageMultipartFactory
 
 class ProducerProfileViewModelFactory(
     private val context: Context
@@ -33,6 +34,11 @@ class ProducerProfileViewModelFactory(
                     applicationContext
                 )
 
+            val producerBusinessImageMultipartFactory =
+                ProducerBusinessImageMultipartFactory(
+                    applicationContext
+                )
+
             @Suppress("UNCHECKED_CAST")
             return ProducerProfileViewModel(
                 producerRepository =
@@ -42,7 +48,10 @@ class ProducerProfileViewModelFactory(
                     addressRepository,
 
                 sessionManager =
-                    sessionManager
+                    sessionManager,
+
+                producerBusinessImageMultipartFactory =
+                    producerBusinessImageMultipartFactory
             ) as T
         }
 

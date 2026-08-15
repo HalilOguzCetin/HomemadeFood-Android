@@ -4,9 +4,11 @@ import com.homemadefood.app.data.model.ApiResponse
 import com.homemadefood.app.data.model.ProducerApplicationRequest
 import com.homemadefood.app.data.model.ProducerApplicationStatusResponse
 import com.homemadefood.app.data.model.ProducerApplicationSubmitResponse
-import com.homemadefood.app.data.model.UpdateProducerProfileRequest
 import com.homemadefood.app.data.remote.ProducerApiService
 import com.homemadefood.app.data.remote.RetrofitClient
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.Response
 
 class ProducerRepository(
@@ -15,8 +17,12 @@ class ProducerRepository(
         RetrofitClient.producerApiService
 ) {
 
+    private val plainTextMediaType =
+        "text/plain".toMediaType()
+
     suspend fun apply(
-        request: ProducerApplicationRequest
+        request: ProducerApplicationRequest,
+        businessImage: MultipartBody.Part?
     ): Response<
             ApiResponse<
                     ProducerApplicationSubmitResponse
@@ -24,7 +30,98 @@ class ProducerRepository(
             > {
 
         return producerApiService.apply(
-            request = request
+            businessName =
+                request.businessName
+                    .toRequestBody(
+                        plainTextMediaType
+                    ),
+
+            description =
+                request.description
+                    .toRequestBody(
+                        plainTextMediaType
+                    ),
+
+            address =
+                request.address
+                    .toRequestBody(
+                        plainTextMediaType
+                    ),
+
+            city =
+                request.city
+                    .toRequestBody(
+                        plainTextMediaType
+                    ),
+
+            district =
+                request.district
+                    .toRequestBody(
+                        plainTextMediaType
+                    ),
+
+            neighborhood =
+                request.neighborhood
+                    .toRequestBody(
+                        plainTextMediaType
+                    ),
+
+            street =
+                request.street
+                    .toRequestBody(
+                        plainTextMediaType
+                    ),
+
+            buildingNo =
+                request.buildingNo
+                    .toRequestBody(
+                        plainTextMediaType
+                    ),
+
+            floor =
+                request.floor
+                    .orEmpty()
+                    .toRequestBody(
+                        plainTextMediaType
+                    ),
+
+            apartmentNo =
+                request.apartmentNo
+                    .orEmpty()
+                    .toRequestBody(
+                        plainTextMediaType
+                    ),
+
+            addressNote =
+                request.addressNote
+                    .orEmpty()
+                    .toRequestBody(
+                        plainTextMediaType
+                    ),
+
+            latitude =
+                request.latitude
+                    .toString()
+                    .toRequestBody(
+                        plainTextMediaType
+                    ),
+
+            longitude =
+                request.longitude
+                    .toString()
+                    .toRequestBody(
+                        plainTextMediaType
+                    ),
+
+            dailyCapacity =
+                request.dailyCapacity
+                    .toString()
+                    .toRequestBody(
+                        plainTextMediaType
+                    ),
+
+            businessImage =
+                businessImage
         )
     }
 
@@ -69,7 +166,9 @@ class ProducerRepository(
         longitude: Double,
 
         dailyCapacity: Int,
-        isAvailable: Boolean
+        isAvailable: Boolean,
+
+        businessImage: MultipartBody.Part?
     ): Response<
             ApiResponse<
                     ProducerApplicationStatusResponse
@@ -78,53 +177,90 @@ class ProducerRepository(
 
         return producerApiService
             .updateMyProfile(
-                request =
-                    UpdateProducerProfileRequest(
-                        businessName =
-                            businessName,
+                businessName =
+                    businessName.toRequestBody(
+                        plainTextMediaType
+                    ),
 
-                        description =
-                            description,
+                description =
+                    description.toRequestBody(
+                        plainTextMediaType
+                    ),
 
-                        address =
-                            address,
+                address =
+                    address.toRequestBody(
+                        plainTextMediaType
+                    ),
 
-                        city =
-                            city,
+                city =
+                    city.toRequestBody(
+                        plainTextMediaType
+                    ),
 
-                        district =
-                            district,
+                district =
+                    district.toRequestBody(
+                        plainTextMediaType
+                    ),
 
-                        neighborhood =
-                            neighborhood,
+                neighborhood =
+                    neighborhood.toRequestBody(
+                        plainTextMediaType
+                    ),
 
-                        street =
-                            street,
+                street =
+                    street.toRequestBody(
+                        plainTextMediaType
+                    ),
 
-                        buildingNo =
-                            buildingNo,
+                buildingNo =
+                    buildingNo.toRequestBody(
+                        plainTextMediaType
+                    ),
 
-                        floor =
-                            floor,
+                floor =
+                    floor.orEmpty()
+                        .toRequestBody(
+                            plainTextMediaType
+                        ),
 
-                        apartmentNo =
-                            apartmentNo,
+                apartmentNo =
+                    apartmentNo.orEmpty()
+                        .toRequestBody(
+                            plainTextMediaType
+                        ),
 
-                        addressNote =
-                            addressNote,
+                addressNote =
+                    addressNote.orEmpty()
+                        .toRequestBody(
+                            plainTextMediaType
+                        ),
 
-                        latitude =
-                            latitude,
+                latitude =
+                    latitude.toString()
+                        .toRequestBody(
+                            plainTextMediaType
+                        ),
 
-                        longitude =
-                            longitude,
+                longitude =
+                    longitude.toString()
+                        .toRequestBody(
+                            plainTextMediaType
+                        ),
 
-                        dailyCapacity =
-                            dailyCapacity,
+                dailyCapacity =
+                    dailyCapacity.toString()
+                        .toRequestBody(
+                            plainTextMediaType
+                        ),
 
-                        isAvailable =
-                            isAvailable
-                    )
+                isAvailable =
+                    isAvailable.toString()
+                        .toRequestBody(
+                            plainTextMediaType
+                        ),
+
+                businessImage =
+                    businessImage
             )
     }
 }

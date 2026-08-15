@@ -1466,6 +1466,16 @@ private fun NavGraphBuilder
                     .updateDescription(value)
             },
 
+            onBusinessImageSelected = { uri ->
+                applicationViewModel
+                    .updateBusinessImage(uri)
+            },
+
+            onRemoveBusinessImage = {
+                applicationViewModel
+                    .removeSelectedBusinessImage()
+            },
+
             onCityChange = { value ->
                 applicationViewModel
                     .updateCity(value)

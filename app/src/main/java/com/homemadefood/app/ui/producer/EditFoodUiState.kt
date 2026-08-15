@@ -1,11 +1,17 @@
 package com.homemadefood.app.ui.producer
 
+import com.homemadefood.app.data.model.CategoryResponse
 import com.homemadefood.app.data.model.FoodResponse
 
 data class EditFoodUiState(
     val foodId: Int? = null,
 
-    val categoryId: String = "",
+    val categories: List<CategoryResponse> = emptyList(),
+    val selectedCategoryId: Int? = null,
+    val selectedCategoryName: String = "",
+    val isCategoriesLoading: Boolean = true,
+    val categoryErrorMessage: String? = null,
+
     val name: String = "",
     val description: String = "",
     val price: String = "",
@@ -20,4 +26,12 @@ data class EditFoodUiState(
 
     val successMessage: String? = null,
     val errorMessage: String? = null
-)
+) {
+    val canSave: Boolean
+        get() =
+            !isLoading &&
+                    !isSaving &&
+                    !isCategoriesLoading &&
+                    categoryErrorMessage == null &&
+                    selectedCategoryId != null
+}

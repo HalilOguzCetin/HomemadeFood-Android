@@ -297,9 +297,14 @@ private fun NavGraphBuilder.createFoodDestination(
         CreateFoodScreen(
             uiState = createFoodUiState,
 
-            onCategoryIdChange = { value ->
+            onCategorySelected = { categoryId ->
                 createFoodViewModel
-                    .onCategoryIdChange(value)
+                    .onCategorySelected(categoryId)
+            },
+
+            onRetryCategoriesClick = {
+                createFoodViewModel
+                    .loadCategories()
             },
 
             onNameChange = { value ->
@@ -401,9 +406,14 @@ private fun NavGraphBuilder.editFoodDestination(
         EditFoodScreen(
             uiState = editFoodUiState,
 
-            onCategoryIdChange = { value ->
+            onCategorySelected = { categoryId ->
                 editFoodViewModel
-                    .onCategoryIdChange(value)
+                    .onCategorySelected(categoryId)
+            },
+
+            onRetryCategoriesClick = {
+                editFoodViewModel
+                    .loadCategories()
             },
 
             onNameChange = { value ->
@@ -698,6 +708,16 @@ private fun NavGraphBuilder.producerProfileDestination(
             onDescriptionChange = { value ->
                 producerProfileViewModel
                     .updateDescription(value)
+            },
+
+            onBusinessImageSelected = { uri ->
+                producerProfileViewModel
+                    .onBusinessImageSelected(uri)
+            },
+
+            onRemoveSelectedBusinessImage = {
+                producerProfileViewModel
+                    .onRemoveSelectedBusinessImage()
             },
 
             onCityChange = { value ->

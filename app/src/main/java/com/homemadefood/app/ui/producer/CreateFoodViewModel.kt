@@ -3,8 +3,10 @@ package com.homemadefood.app.ui.producer
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.homemadefood.app.data.local.SessionManager
+import com.homemadefood.app.data.repository.CategoryRepository
 import com.homemadefood.app.data.repository.ProducerFoodRepository
 import com.homemadefood.app.data.upload.FoodImageMultipartFactory
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,11 +16,20 @@ import org.json.JSONObject
 import java.io.IOException
 
 class CreateFoodViewModel(
-    private val producerFoodRepository: ProducerFoodRepository,
-    private val sessionManager: SessionManager,
+    private val producerFoodRepository:
+    ProducerFoodRepository,
+
+    private val categoryRepository:
+    CategoryRepository,
+
+    private val sessionManager:
+    SessionManager,
+
     private val foodImageMultipartFactory:
     FoodImageMultipartFactory
 ) : ViewModel() {
+
+    private var categoryLoadJob: Job? = null
 
     private val _uiState =
         MutableStateFlow(CreateFoodUiState())
@@ -26,12 +37,113 @@ class CreateFoodViewModel(
     val uiState: StateFlow<CreateFoodUiState> =
         _uiState.asStateFlow()
 
-    fun onCategoryIdChange(value: String) {
+    init {
+        loadCategories()
+    }
+
+    fun loadCategories() {
+        categoryLoadJob?.cancel()
+
+        categoryLoadJob =
+            viewModelScope.launch {
+                _uiState.value =
+                    _uiState.value.copy(
+                        isCategoriesLoading = true,
+                        categoryErrorMessage = null
+                    )
+
+                try {
+                    val response =
+                        categoryRepository
+                            .getCategories()
+
+                    val responseBody =
+                        response.body()
+
+                    if (
+                        response.isSuccessful &&
+                        responseBody?.success == true
+                    ) {
+                        val categories =
+                            responseBody.data
+                                .orEmpty()
+                                .filter {
+                                    it.isActive != false
+                                }
+                                .sortedBy {
+                                    it.name.lowercase()
+                                }
+
+                        val current =
+                            _uiState.value
+
+                        val selectedCategory =
+                            categories
+                                .firstOrNull {
+                                    it.id ==
+                                            current
+                                                .selectedCategoryId
+                                }
+
+                        _uiState.value =
+                            current.copy(
+                                categories = categories,
+                                selectedCategoryId =
+                                    selectedCategory?.id,
+                                selectedCategoryName =
+                                    selectedCategory
+                                        ?.name
+                                        .orEmpty(),
+                                isCategoriesLoading = false,
+                                categoryErrorMessage =
+                                    if (categories.isEmpty()) {
+                                        "Aktif kategori bulunamadı."
+                                    } else {
+                                        null
+                                    }
+                            )
+                    } else {
+                        showCategoryError(
+                            parseErrorMessage(
+                                response
+                                    .errorBody()
+                                    ?.string()
+                            )
+                                ?: "Kategoriler alınamadı."
+                        )
+                    }
+                } catch (_: IOException) {
+                    showCategoryError(
+                        "Sunucuya bağlanılamadı."
+                    )
+                } catch (_: Exception) {
+                    showCategoryError(
+                        "Kategoriler yüklenirken bir hata oluştu."
+                    )
+                }
+            }
+    }
+
+    fun onCategorySelected(
+        categoryId: Int
+    ) {
+        if (_uiState.value.isSaving) {
+            return
+        }
+
+        val category =
+            _uiState.value
+                .categories
+                .firstOrNull {
+                    it.id == categoryId
+                }
+                ?: return
+
         _uiState.value =
             _uiState.value.copy(
-                categoryId = value.filter {
-                    it.isDigit()
-                },
+                selectedCategoryId = category.id,
+                selectedCategoryName = category.name,
+                categoryErrorMessage = null,
                 successMessage = null,
                 errorMessage = null
             )
@@ -71,7 +183,9 @@ class CreateFoodViewModel(
             )
     }
 
-    fun onPreparationTimeChange(value: String) {
+    fun onPreparationTimeChange(
+        value: String
+    ) {
         _uiState.value =
             _uiState.value.copy(
                 preparationTimeMinutes =
@@ -106,14 +220,15 @@ class CreateFoodViewModel(
     }
 
     fun createFood() {
-        val currentState = _uiState.value
+        val currentState =
+            _uiState.value
 
         if (currentState.isSaving) {
             return
         }
 
         val categoryId =
-            currentState.categoryId.toIntOrNull()
+            currentState.selectedCategoryId
 
         val price =
             currentState.price
@@ -121,16 +236,32 @@ class CreateFoodViewModel(
                 .toDoubleOrNull()
 
         val preparationTime =
-            currentState.preparationTimeMinutes
+            currentState
+                .preparationTimeMinutes
                 .toIntOrNull()
 
         val imageUri =
             currentState.selectedImageUri
 
         when {
-            categoryId == null || categoryId <= 0 -> {
+            currentState.isCategoriesLoading -> {
                 showError(
-                    "Geçerli bir kategori seçmelisiniz."
+                    "Kategoriler yüklenirken bekleyin."
+                )
+                return
+            }
+
+            currentState.categoryErrorMessage != null -> {
+                showError(
+                    "Kategori listesi hazır değil. Kategorileri tekrar yükleyin."
+                )
+                return
+            }
+
+            categoryId == null ||
+                    categoryId <= 0 -> {
+                showError(
+                    "Bir kategori seçmelisiniz."
                 )
                 return
             }
@@ -158,7 +289,6 @@ class CreateFoodViewModel(
 
             preparationTime == null ||
                     preparationTime <= 0 -> {
-
                 showError(
                     "Geçerli bir hazırlama süresi girmelisiniz."
                 )
@@ -231,7 +361,9 @@ class CreateFoodViewModel(
                             name =
                                 currentState.name.trim(),
                             description =
-                                currentState.description.trim(),
+                                currentState
+                                    .description
+                                    .trim(),
                             price = price,
                             preparationTimeMinutes =
                                 preparationTime,
@@ -260,15 +392,17 @@ class CreateFoodViewModel(
                 } else {
                     showError(
                         parseErrorMessage(
-                            response.errorBody()
+                            response
+                                .errorBody()
                                 ?.string()
-                        ) ?: when (response.code()) {
-                            413 ->
-                                "Yemek fotoğrafı sunucunun izin verdiği boyuttan büyük."
+                        )
+                            ?: when (response.code()) {
+                                413 ->
+                                    "Yemek fotoğrafı sunucunun izin verdiği boyuttan büyük."
 
-                            else ->
-                                "Yemek eklenemedi."
-                        }
+                                else ->
+                                    "Yemek eklenemedi."
+                            }
                     )
                 }
             } catch (_: IOException) {
@@ -293,7 +427,18 @@ class CreateFoodViewModel(
     }
 
     fun resetForm() {
+        categoryLoadJob?.cancel()
         _uiState.value = CreateFoodUiState()
+    }
+
+    private fun showCategoryError(
+        message: String
+    ) {
+        _uiState.value =
+            _uiState.value.copy(
+                isCategoriesLoading = false,
+                categoryErrorMessage = message
+            )
     }
 
     private fun showError(

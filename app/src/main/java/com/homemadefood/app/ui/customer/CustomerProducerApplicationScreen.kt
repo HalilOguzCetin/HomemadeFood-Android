@@ -38,6 +38,8 @@ fun CustomerProducerApplicationScreen(
     onRetryClick: () -> Unit,
     onBusinessNameChange: (String) -> Unit,
     onDescriptionChange: (String) -> Unit,
+    onBusinessImageSelected: (String) -> Unit,
+    onRemoveBusinessImage: () -> Unit,
     onCityChange: (String) -> Unit,
     onDistrictChange: (String) -> Unit,
     onNeighborhoodChange: (String) -> Unit,
@@ -191,6 +193,12 @@ fun CustomerProducerApplicationScreen(
                         onDescriptionChange =
                             onDescriptionChange,
 
+                        onBusinessImageSelected =
+                            onBusinessImageSelected,
+
+                        onRemoveBusinessImage =
+                            onRemoveBusinessImage,
+
                         onCityChange =
                             onCityChange,
 
@@ -258,6 +266,8 @@ private fun ProducerApplicationForm(
     uiState: CustomerProducerApplicationUiState,
     onBusinessNameChange: (String) -> Unit,
     onDescriptionChange: (String) -> Unit,
+    onBusinessImageSelected: (String) -> Unit,
+    onRemoveBusinessImage: () -> Unit,
     onCityChange: (String) -> Unit,
     onDistrictChange: (String) -> Unit,
     onNeighborhoodChange: (String) -> Unit,
@@ -329,6 +339,30 @@ private fun ProducerApplicationForm(
         minLines = 4,
         maxLines = 7,
         enabled = !uiState.isSubmitting
+    )
+
+    Spacer(
+        modifier = Modifier.height(18.dp)
+    )
+
+    ProducerBusinessImagePicker(
+        selectedImageUri =
+            uiState.selectedBusinessImageUri,
+
+        existingImageUrl =
+            uiState.existingBusinessImageUrl,
+
+        isSubmitting =
+            uiState.isSubmitting,
+
+        onImageSelected =
+            onBusinessImageSelected,
+
+        onRemoveSelectedImage =
+            onRemoveBusinessImage,
+
+        modifier =
+            Modifier.fillMaxWidth()
     )
 
     Spacer(
@@ -698,6 +732,20 @@ private fun ProducerApplicationStatusContent(
                     MaterialTheme.typography
                         .headlineSmall
             )
+
+            if (
+                !application.businessImageUrl
+                    .isNullOrBlank()
+            ) {
+                Spacer(
+                    modifier = Modifier.height(12.dp)
+                )
+
+                ProducerBusinessImagePreview(
+                    businessImageUrl =
+                        application.businessImageUrl
+                )
+            }
 
             Spacer(
                 modifier = Modifier.height(8.dp)

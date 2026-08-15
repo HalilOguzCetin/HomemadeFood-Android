@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.homemadefood.app.data.local.SessionManager
 import com.homemadefood.app.data.model.UpdateFoodRequest
+import com.homemadefood.app.data.repository.CategoryRepository
 import com.homemadefood.app.data.repository.ProducerFoodRepository
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,9 +19,14 @@ class EditFoodViewModel(
     private val producerFoodRepository:
     ProducerFoodRepository,
 
+    private val categoryRepository:
+    CategoryRepository,
+
     private val sessionManager:
     SessionManager
 ) : ViewModel() {
+
+    private var categoryLoadJob: Job? = null
 
     private val _uiState =
         MutableStateFlow(EditFoodUiState())
@@ -39,7 +46,8 @@ class EditFoodViewModel(
             _uiState.value =
                 EditFoodUiState(
                     foodId = foodId,
-                    isLoading = true
+                    isLoading = true,
+                    isCategoriesLoading = true
                 )
 
             val isLoggedIn =
@@ -51,12 +59,14 @@ class EditFoodViewModel(
                 _uiState.value =
                     _uiState.value.copy(
                         isLoading = false,
+                        isCategoriesLoading = false,
                         errorMessage =
                             "Oturum bilgisi bulunamadı."
                     )
-
                 return@launch
             }
+
+            loadCategoriesInternal()
 
             try {
                 val response =
@@ -76,20 +86,34 @@ class EditFoodViewModel(
                     responseBody?.success == true &&
                     food != null
                 ) {
+                    val current =
+                        _uiState.value
+
+                    val category =
+                        current.categories
+                            .firstOrNull {
+                                it.id == food.categoryId
+                            }
+
                     _uiState.value =
-                        EditFoodUiState(
+                        current.copy(
                             foodId = food.id,
-                            categoryId =
-                                food.categoryId.toString(),
+                            selectedCategoryId =
+                                food.categoryId,
+                            selectedCategoryName =
+                                category?.name
+                                    ?: food.categoryName,
                             name = food.name,
                             description = food.description,
                             price = food.price.toString(),
                             preparationTimeMinutes =
-                                food.preparationTimeMinutes
+                                food
+                                    .preparationTimeMinutes
                                     .toString(),
                             imageUrl = food.imageUrl,
                             isAvailable = food.isAvailable,
-                            isLoading = false
+                            isLoading = false,
+                            errorMessage = null
                         )
                 } else {
                     _uiState.value =
@@ -97,9 +121,11 @@ class EditFoodViewModel(
                             isLoading = false,
                             errorMessage =
                                 parseErrorMessage(
-                                    response.errorBody()
+                                    response
+                                        .errorBody()
                                         ?.string()
-                                ) ?: "Yemek bilgisi alınamadı."
+                                )
+                                    ?: "Yemek bilgisi alınamadı."
                         )
                 }
             } catch (_: IOException) {
@@ -120,13 +146,114 @@ class EditFoodViewModel(
         }
     }
 
-    fun onCategoryIdChange(value: String) {
+    fun loadCategories() {
+        categoryLoadJob?.cancel()
+
+        categoryLoadJob =
+            viewModelScope.launch {
+                loadCategoriesInternal()
+            }
+    }
+
+    private suspend fun loadCategoriesInternal() {
         _uiState.value =
             _uiState.value.copy(
-                categoryId =
-                    value.filter {
-                        it.isDigit()
-                    },
+                isCategoriesLoading = true,
+                categoryErrorMessage = null
+            )
+
+        try {
+            val response =
+                categoryRepository
+                    .getCategories()
+
+            val responseBody =
+                response.body()
+
+            if (
+                response.isSuccessful &&
+                responseBody?.success == true
+            ) {
+                val categories =
+                    responseBody.data
+                        .orEmpty()
+                        .filter {
+                            it.isActive != false
+                        }
+                        .sortedBy {
+                            it.name.lowercase()
+                        }
+
+                val current =
+                    _uiState.value
+
+                val selectedCategory =
+                    categories
+                        .firstOrNull {
+                            it.id ==
+                                    current
+                                        .selectedCategoryId
+                        }
+
+                _uiState.value =
+                    current.copy(
+                        categories = categories,
+                        selectedCategoryName =
+                            selectedCategory?.name
+                                ?: current
+                                    .selectedCategoryName,
+                        isCategoriesLoading = false,
+                        categoryErrorMessage =
+                            if (categories.isEmpty()) {
+                                "Aktif kategori bulunamadı."
+                            } else {
+                                null
+                            }
+                    )
+            } else {
+                showCategoryError(
+                    parseErrorMessage(
+                        response
+                            .errorBody()
+                            ?.string()
+                    )
+                        ?: "Kategoriler alınamadı."
+                )
+            }
+        } catch (_: IOException) {
+            showCategoryError(
+                "Sunucuya bağlanılamadı."
+            )
+        } catch (_: Exception) {
+            showCategoryError(
+                "Kategoriler yüklenirken bir hata oluştu."
+            )
+        }
+    }
+
+    fun onCategorySelected(
+        categoryId: Int
+    ) {
+        if (
+            _uiState.value.isSaving ||
+            _uiState.value.isLoading
+        ) {
+            return
+        }
+
+        val category =
+            _uiState.value
+                .categories
+                .firstOrNull {
+                    it.id == categoryId
+                }
+                ?: return
+
+        _uiState.value =
+            _uiState.value.copy(
+                selectedCategoryId = category.id,
+                selectedCategoryName = category.name,
+                categoryErrorMessage = null,
                 errorMessage = null
             )
     }
@@ -162,7 +289,9 @@ class EditFoodViewModel(
             )
     }
 
-    fun onPreparationTimeChange(value: String) {
+    fun onPreparationTimeChange(
+        value: String
+    ) {
         _uiState.value =
             _uiState.value.copy(
                 preparationTimeMinutes =
@@ -195,7 +324,8 @@ class EditFoodViewModel(
 
         if (
             currentState.isSaving ||
-            currentState.isLoading
+            currentState.isLoading ||
+            currentState.isCategoriesLoading
         ) {
             return
         }
@@ -204,7 +334,7 @@ class EditFoodViewModel(
             currentState.foodId
 
         val categoryId =
-            currentState.categoryId.toIntOrNull()
+            currentState.selectedCategoryId
 
         val price =
             currentState.price
@@ -212,7 +342,8 @@ class EditFoodViewModel(
                 .toDoubleOrNull()
 
         val preparationTime =
-            currentState.preparationTimeMinutes
+            currentState
+                .preparationTimeMinutes
                 .toIntOrNull()
 
         when {
@@ -223,11 +354,16 @@ class EditFoodViewModel(
                 return
             }
 
-            categoryId == null ||
-                    categoryId <= 0 -> {
-
+            currentState.categoryErrorMessage != null -> {
                 showError(
-                    "Geçerli bir kategori seçmelisiniz."
+                    "Kategori listesi hazır değil. Kategorileri tekrar yükleyin."
+                )
+                return
+            }
+
+            categoryId == null || categoryId <= 0 -> {
+                showError(
+                    "Bir kategori seçmelisiniz."
                 )
                 return
             }
@@ -255,7 +391,6 @@ class EditFoodViewModel(
 
             preparationTime == null ||
                     preparationTime <= 0 -> {
-
                 showError(
                     "Geçerli bir hazırlama süresi girmelisiniz."
                 )
@@ -283,7 +418,6 @@ class EditFoodViewModel(
                         errorMessage =
                             "Oturum bilgisi bulunamadı."
                     )
-
                 return@launch
             }
 
@@ -293,7 +427,9 @@ class EditFoodViewModel(
                     name =
                         currentState.name.trim(),
                     description =
-                        currentState.description.trim(),
+                        currentState
+                            .description
+                            .trim(),
                     price = price,
                     preparationTimeMinutes =
                         preparationTime,
@@ -326,6 +462,10 @@ class EditFoodViewModel(
                         _uiState.value.copy(
                             isSaving = false,
                             updatedFood = updatedFood,
+                            selectedCategoryId =
+                                updatedFood.categoryId,
+                            selectedCategoryName =
+                                updatedFood.categoryName,
                             successMessage =
                                 "Yemek başarıyla güncellendi.",
                             errorMessage = null
@@ -336,9 +476,11 @@ class EditFoodViewModel(
                             isSaving = false,
                             errorMessage =
                                 parseErrorMessage(
-                                    response.errorBody()
+                                    response
+                                        .errorBody()
                                         ?.string()
-                                ) ?: "Yemek güncellenemedi."
+                                )
+                                    ?: "Yemek güncellenemedi."
                         )
                 }
             } catch (_: IOException) {
@@ -360,8 +502,18 @@ class EditFoodViewModel(
     }
 
     fun resetState() {
+        categoryLoadJob?.cancel()
+        _uiState.value = EditFoodUiState()
+    }
+
+    private fun showCategoryError(
+        message: String
+    ) {
         _uiState.value =
-            EditFoodUiState()
+            _uiState.value.copy(
+                isCategoriesLoading = false,
+                categoryErrorMessage = message
+            )
     }
 
     private fun showError(message: String) {
