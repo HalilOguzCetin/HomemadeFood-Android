@@ -33,5 +33,29 @@ enum class ProducerApplicationStatus(
                 )
             }
         }
+
+
+        fun detailDisplayNameFor(
+            value: String?
+        ): String {
+            return when (
+                fromBackendValue(value)
+            ) {
+                PENDING ->
+                    "Onay Bekliyor"
+
+                APPROVED ->
+                    "Onaylandı"
+
+                REJECTED ->
+                    "Reddedildi"
+
+                null ->
+                    value
+                        ?.trim()
+                        ?.takeIf { it.isNotBlank() }
+                        ?: "Bilinmeyen Durum"
+            }
+        }
     }
 }

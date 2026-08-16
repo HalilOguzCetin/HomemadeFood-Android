@@ -1,13 +1,12 @@
-package com.homemadefood.app.ui.address
+package com.homemadefood.app.ui.customer
 
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.homemadefood.app.data.local.DeliveryAddressSelectionManager
 import com.homemadefood.app.data.local.SessionManager
-import com.homemadefood.app.data.repository.AddressRepository
+import com.homemadefood.app.data.repository.AuthRepository
 
-class AddressesViewModelFactory(
+class CustomerProfileViewModelFactory(
     private val context: Context
 ) : ViewModelProvider.Factory {
 
@@ -16,33 +15,24 @@ class AddressesViewModelFactory(
     ): T {
         if (
             modelClass.isAssignableFrom(
-                AddressesViewModel::class.java
+                CustomerProfileViewModel::class.java
             )
         ) {
-            val addressRepository =
-                AddressRepository()
+            val authRepository =
+                AuthRepository()
 
             val sessionManager =
                 SessionManager(
                     context.applicationContext
                 )
 
-            val deliveryAddressSelectionManager =
-                DeliveryAddressSelectionManager(
-                    sessionManager =
-                        sessionManager
-                )
-
             @Suppress("UNCHECKED_CAST")
-            return AddressesViewModel(
-                addressRepository =
-                    addressRepository,
+            return CustomerProfileViewModel(
+                authRepository =
+                    authRepository,
 
                 sessionManager =
-                    sessionManager,
-
-                deliveryAddressSelectionManager =
-                    deliveryAddressSelectionManager
+                    sessionManager
             ) as T
         }
 

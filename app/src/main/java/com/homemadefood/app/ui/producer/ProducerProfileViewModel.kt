@@ -8,13 +8,13 @@ import com.homemadefood.app.data.repository.AddressRepository
 import com.homemadefood.app.data.repository.ProducerRepository
 import com.homemadefood.app.data.upload.ProducerBusinessImageMultipartFactory
 import com.homemadefood.app.ui.address.SelectedLocation
+import com.homemadefood.app.data.remote.ApiErrorParser
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import org.json.JSONObject
 import java.io.IOException
 
 class ProducerProfileViewModel(
@@ -1062,50 +1062,10 @@ class ProducerProfileViewModel(
     private fun parseErrorMessage(
         errorJson: String?
     ): String? {
-        if (errorJson.isNullOrBlank()) {
-            return null
-        }
-
-        return runCatching {
-            val root =
-                JSONObject(errorJson)
-
-            val data =
-                root.optJSONObject("data")
-                    ?: root.optJSONObject("Data")
-
-            val errors =
-                data?.optJSONObject("errors")
-                    ?: data?.optJSONObject("Errors")
-
-            if (errors != null) {
-                val keys =
-                    errors.keys()
-
-                if (keys.hasNext()) {
-                    val field =
-                        keys.next()
-
-                    val fieldErrors =
-                        errors.optJSONArray(field)
-
-                    val firstError =
-                        fieldErrors
-                            ?.optString(0)
-                            ?.takeIf {
-                                it.isNotBlank()
-                            }
-
-                    if (firstError != null) {
-                        return@runCatching "$field: $firstError"
-                    }
-                }
-            }
-
-            root.optString("message")
-                .takeIf {
-                    it.isNotBlank()
-                }
-        }.getOrNull()
+        return ApiErrorParser
+            .parse(
+                errorJson
+            )
+            .message
     }
 }

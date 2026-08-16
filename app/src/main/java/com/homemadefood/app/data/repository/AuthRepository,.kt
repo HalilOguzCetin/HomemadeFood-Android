@@ -6,12 +6,16 @@ import com.homemadefood.app.data.model.ForgotPasswordRequest
 import com.homemadefood.app.data.model.LoginRequest
 import com.homemadefood.app.data.model.LoginResponse
 import com.homemadefood.app.data.model.PasswordResetResponse
+import com.homemadefood.app.data.model.PhoneVerificationRequestResponse
+import com.homemadefood.app.data.model.RequestPhoneVerificationRequest
 import com.homemadefood.app.data.model.RegisterRequest
 import com.homemadefood.app.data.model.RegisterResponse
 import com.homemadefood.app.data.model.ResendEmailVerificationRequest
 import com.homemadefood.app.data.model.ResetPasswordRequest
+import com.homemadefood.app.data.model.UpdateUserProfileRequest
 import com.homemadefood.app.data.model.UserProfileResponse
 import com.homemadefood.app.data.model.VerifyEmailRequest
+import com.homemadefood.app.data.model.VerifyPhoneRequest
 import com.homemadefood.app.data.remote.AuthApiService
 import com.homemadefood.app.data.remote.RetrofitClient
 import retrofit2.Response
@@ -169,5 +173,59 @@ class AuthRepository(
 
         return authApiService
             .getProfile()
+    }
+
+    suspend fun updateProfile(
+        fullName: String
+    ): Response<
+            ApiResponse<UserProfileResponse>
+            > {
+
+        val request =
+            UpdateUserProfileRequest(
+                fullName =
+                    fullName.trim()
+            )
+
+        return authApiService
+            .updateProfile(
+                request = request
+            )
+    }
+
+    suspend fun requestPhoneVerification(
+        phone: String
+    ): Response<
+            ApiResponse<PhoneVerificationRequestResponse>
+            > {
+
+        return authApiService
+            .requestPhoneVerification(
+                request =
+                    RequestPhoneVerificationRequest(
+                        phone =
+                            phone.trim()
+                    )
+            )
+    }
+
+    suspend fun verifyPhone(
+        phone: String,
+        code: String
+    ): Response<
+            ApiResponse<UserProfileResponse>
+            > {
+
+        return authApiService
+            .verifyPhone(
+                request =
+                    VerifyPhoneRequest(
+                        phone =
+                            phone.trim(),
+
+                        code =
+                            code.trim()
+                    )
+            )
     }
 }

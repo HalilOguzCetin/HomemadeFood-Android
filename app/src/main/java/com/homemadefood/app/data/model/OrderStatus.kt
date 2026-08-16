@@ -65,5 +65,21 @@ enum class OrderStatus(
                 )
             } ?: UNKNOWN
         }
+
+        fun displayNameFor(
+            value: String?
+        ): String {
+            val status =
+                fromBackendValue(value)
+
+            return if (status == UNKNOWN) {
+                value
+                    ?.trim()
+                    ?.takeIf { it.isNotBlank() }
+                    ?: UNKNOWN.displayName
+            } else {
+                status.displayName
+            }
+        }
     }
 }

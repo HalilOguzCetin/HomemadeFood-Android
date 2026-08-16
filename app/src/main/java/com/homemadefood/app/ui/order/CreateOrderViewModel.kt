@@ -2,11 +2,13 @@ package com.homemadefood.app.ui.order
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.homemadefood.app.data.local.DeliveryAddressSelectionManager
 import com.homemadefood.app.data.local.SessionManager
 import com.homemadefood.app.data.model.PaymentMethods
 import com.homemadefood.app.data.repository.AddressRepository
 import com.homemadefood.app.data.repository.CartRepository
 import com.homemadefood.app.data.repository.OrderRepository
+import com.homemadefood.app.data.remote.ApiErrorParser
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,14 +16,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import org.json.JSONObject
 import java.io.IOException
 
 class CreateOrderViewModel(
     private val cartRepository: CartRepository,
     private val addressRepository: AddressRepository,
     private val orderRepository: OrderRepository,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val deliveryAddressSelectionManager:
+    DeliveryAddressSelectionManager
 ) : ViewModel() {
 
     private var loadDataJob: Job? = null
@@ -129,14 +132,29 @@ class CreateOrderViewModel(
                     val addresses =
                         addressesBody.data
 
-                    val defaultAddress =
-                        addresses.firstOrNull {
-                            it.isDefault
-                        }
-
-                    val selectedAddressId =
-                        defaultAddress?.id
-                            ?: addresses.firstOrNull()?.id
+                    /*
+                     * C4E:
+                     * Checkout artık kendi başına default adres
+                     * seçmiyor.
+                     *
+                     * Home ile aynı DeliveryAddressSelectionManager
+                     * kullanılır:
+                     *
+                     * 1) DataStore'daki aktif teslimat adresi hâlâ
+                     *    listede ise onu seç.
+                     * 2) Yoksa backend default adres.
+                     * 3) O da yoksa ilk adres.
+                     * 4) Liste boşsa null + DataStore temizliği.
+                     *
+                     * Böylece:
+                     * Home → İş seç
+                     * → Checkout → İş seçili gelir.
+                     */
+                    val selectedAddress =
+                        deliveryAddressSelectionManager
+                            .resolve(
+                                addresses
+                            )
 
                     _uiState.value =
                         _uiState.value.copy(
@@ -144,7 +162,7 @@ class CreateOrderViewModel(
                             cart = cartBody.data,
                             addresses = addresses,
                             selectedAddressId =
-                                selectedAddressId,
+                                selectedAddress?.id,
                             errorMessage = null
                         )
                 } catch (_: IOException) {
@@ -168,20 +186,45 @@ class CreateOrderViewModel(
     fun selectAddress(
         addressId: Int
     ) {
-        val addressExists =
-            _uiState.value.addresses.any {
-                it.id == addressId
-            }
-
-        if (!addressExists) {
+        if (
+            _uiState.value.isCreatingOrder ||
+            _uiState.value.isLoading
+        ) {
             return
         }
 
-        _uiState.value =
-            _uiState.value.copy(
-                selectedAddressId = addressId,
-                errorMessage = null
-            )
+        viewModelScope.launch {
+            /*
+             * C4E çift yönlü senkronizasyon:
+             *
+             * Checkout'ta seçilen adres yalnız local radio
+             * state değildir; aynı anda uygulamanın aktif
+             * teslimat adresi olur.
+             *
+             * Bu nedenle Home'a dönüldüğünde aynı adres
+             * DeliveryAddressSelectionManager.resolve()
+             * tarafından yeniden seçilir.
+             */
+            val selectedAddress =
+                deliveryAddressSelectionManager
+                    .select(
+                        addressId =
+                            addressId,
+
+                        addresses =
+                            _uiState.value.addresses
+                    )
+                    ?: return@launch
+
+            _uiState.value =
+                _uiState.value.copy(
+                    selectedAddressId =
+                        selectedAddress.id,
+
+                    errorMessage =
+                        null
+                )
+        }
     }
 
     fun selectPaymentMethod(
@@ -356,16 +399,10 @@ class CreateOrderViewModel(
     private fun parseErrorMessage(
         errorJson: String?
     ): String? {
-        if (errorJson.isNullOrBlank()) {
-            return null
-        }
-
-        return runCatching {
-            JSONObject(errorJson)
-                .optString("message")
-                .takeIf {
-                    it.isNotBlank()
-                }
-        }.getOrNull()
+        return ApiErrorParser
+            .parse(
+                errorJson
+            )
+            .message
     }
 }

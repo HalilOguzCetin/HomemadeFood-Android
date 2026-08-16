@@ -21,11 +21,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.homemadefood.app.data.model.ProducerApplicationStatus
 
 @Composable
 fun CustomerAccountScreen(
     canUseProducerMode: Boolean,
     producerVerificationStatus: String?,
+    onProfileClick: () -> Unit,
     onAddressesClick: () -> Unit,
     onFavoritesClick: () -> Unit,
     onReviewsClick: () -> Unit,
@@ -88,6 +90,15 @@ fun CustomerAccountScreen(
         )
 
         AccountActionRow(
+            title = "Profil Bilgilerim",
+            description =
+                "Ad, e-posta ve telefon bilgilerinizi görüntüleyin",
+
+            onClick =
+                onProfileClick
+        )
+
+        AccountActionRow(
             title = "Adreslerim",
             description =
                 "Kayıtlı teslimat adreslerini yönet",
@@ -123,23 +134,23 @@ fun CustomerAccountScreen(
             text = "Üretici İşlemleri"
         )
 
+        val producerStatus =
+            ProducerApplicationStatus
+                .fromBackendValue(
+                    producerVerificationStatus
+                )
+
         val producerActionTitle =
             when {
                 canUseProducerMode ->
                     "Üretici Moduna Geç"
 
-                producerVerificationStatus
-                    .equals(
-                        "Pending",
-                        ignoreCase = true
-                    ) ->
+                producerStatus ==
+                        ProducerApplicationStatus.PENDING ->
                     "Üretici Başvurum"
 
-                producerVerificationStatus
-                    .equals(
-                        "Rejected",
-                        ignoreCase = true
-                    ) ->
+                producerStatus ==
+                        ProducerApplicationStatus.REJECTED ->
                     "Üretici Başvurumu Güncelle"
 
                 else ->
@@ -151,18 +162,12 @@ fun CustomerAccountScreen(
                 canUseProducerMode ->
                     "Onaylı işletmenizin üretici panelini aç"
 
-                producerVerificationStatus
-                    .equals(
-                        "Pending",
-                        ignoreCase = true
-                    ) ->
+                producerStatus ==
+                        ProducerApplicationStatus.PENDING ->
                     "Başvurunuzun mevcut durumunu görüntüle"
 
-                producerVerificationStatus
-                    .equals(
-                        "Rejected",
-                        ignoreCase = true
-                    ) ->
+                producerStatus ==
+                        ProducerApplicationStatus.REJECTED ->
                     "Başvurunuzu inceleyip yeniden düzenle"
 
                 else ->

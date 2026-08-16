@@ -1,5 +1,6 @@
 package com.homemadefood.app.ui.customer
 
+import com.homemadefood.app.data.model.ProducerApplicationStatus
 import com.homemadefood.app.data.model.ProducerApplicationStatusResponse
 import com.homemadefood.app.ui.address.SelectedLocation
 
@@ -45,13 +46,12 @@ data class CustomerProducerApplicationUiState(
 ) {
     val isRejected: Boolean
         get() =
-            application
-                ?.verificationStatus
-                ?.trim()
-                ?.equals(
-                    "Rejected",
-                    ignoreCase = true
-                ) == true
+            ProducerApplicationStatus
+                .fromBackendValue(
+                    application
+                        ?.verificationStatus
+                ) ==
+                    ProducerApplicationStatus.REJECTED
 
     val fullAddress: String
         get() = buildFullAddress()

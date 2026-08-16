@@ -1,7 +1,6 @@
 package com.homemadefood.app.ui.order
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -31,6 +30,11 @@ import com.homemadefood.app.data.model.OrderResponse
 import java.util.Locale
 import androidx.compose.foundation.clickable
 import com.homemadefood.app.data.model.OrderStatus
+import com.homemadefood.app.ui.components.AppEmptyState
+import com.homemadefood.app.ui.components.AppErrorState
+import com.homemadefood.app.ui.components.AppInlineMessage
+import com.homemadefood.app.ui.components.AppLoadingState
+import com.homemadefood.app.ui.components.AppMessageType
 
 @Composable
 fun OrdersScreen(
@@ -120,52 +124,32 @@ fun OrdersScreen(
 
         when {
             uiState.isLoading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
+                AppLoadingState(
+                    message = "Siparişler yükleniyor..."
+                )
             }
 
             uiState.errorMessage != null &&
                     uiState.orders.isEmpty() -> {
 
-                Text(
-                    text = uiState.errorMessage,
-                    color = MaterialTheme.colorScheme.error
+                AppErrorState(
+                    message = uiState.errorMessage,
+                    onRetryClick = onRetryClick
                 )
-
-                Spacer(
-                    modifier = Modifier.height(16.dp)
-                )
-
-                Button(
-                    onClick = onRetryClick,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Tekrar Dene")
-                }
             }
 
             uiState.orders.isEmpty() -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Henüz oluşturulmuş bir siparişiniz yok.",
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                }
+                AppEmptyState(
+                    title = "Sipariş bulunmuyor",
+                    message = "Henüz oluşturulmuş bir siparişiniz yok."
+                )
             }
 
             else -> {
                 if (!uiState.actionMessage.isNullOrBlank()) {
-                    Text(
-                        text = uiState.actionMessage,
-                        color = MaterialTheme.colorScheme.primary,
-                        style = MaterialTheme.typography.bodyMedium
+                    AppInlineMessage(
+                        message = uiState.actionMessage,
+                        type = AppMessageType.Success
                     )
 
                     Spacer(
@@ -174,10 +158,9 @@ fun OrdersScreen(
                 }
 
                 if (!uiState.errorMessage.isNullOrBlank()) {
-                    Text(
-                        text = uiState.errorMessage,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyMedium
+                    AppInlineMessage(
+                        message = uiState.errorMessage,
+                        type = AppMessageType.Error
                     )
 
                     Spacer(

@@ -3,15 +3,16 @@ package com.homemadefood.app.ui.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.homemadefood.app.data.local.SessionManager
+import com.homemadefood.app.data.remote.ApiErrorParser
 import com.homemadefood.app.data.model.AppMode
 import com.homemadefood.app.data.model.UserProfileResponse
+import com.homemadefood.app.data.model.UserRole
 import com.homemadefood.app.data.repository.AuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import org.json.JSONObject
 import java.io.IOException
 
 class AuthViewModel(
@@ -78,8 +79,7 @@ class AuthViewModel(
                         message = "Oturumunuz açık."
                     )
                 } else if (
-                    response.code() == 401 ||
-                    response.code() == 403
+                    response.code() == 401
                 ) {
                     /*
                      * Token geçersizse, süresi dolmuşsa
@@ -1199,8 +1199,7 @@ class AuthViewModel(
                             "Hesap bilgileriniz güncellendi."
                     )
                 } else if (
-                    response.code() == 401 ||
-                    response.code() == 403
+                    response.code() == 401
                 ) {
                     clearInvalidSession()
                 } else {
@@ -1244,10 +1243,9 @@ class AuthViewModel(
 
         if (
             !currentState.isLoggedIn ||
-            !currentState.userRole.equals(
-                "Customer",
-                ignoreCase = true
-            )
+            UserRole.fromBackendValue(
+                currentState.userRole
+            ) != UserRole.CUSTOMER
         ) {
             showStateError(
                 "Bu hesap müşteri modunu kullanamaz."
@@ -1280,10 +1278,9 @@ class AuthViewModel(
 
         if (
             !currentState.isLoggedIn ||
-            !currentState.userRole.equals(
-                "Customer",
-                ignoreCase = true
-            ) ||
+            UserRole.fromBackendValue(
+                currentState.userRole
+            ) != UserRole.CUSTOMER ||
             !currentState.canUseProducerMode
         ) {
             showStateError(
@@ -1464,132 +1461,21 @@ class AuthViewModel(
     private fun parseErrorCode(
         errorJson: String?
     ): String? {
-        if (errorJson.isNullOrBlank()) {
-            return null
-        }
-
-        return runCatching {
-            JSONObject(errorJson)
-                .optString("code")
-                .takeIf {
-                    it.isNotBlank()
-                }
-        }.getOrNull()
+        return ApiErrorParser
+            .parse(
+                errorJson
+            )
+            .code
     }
 
     private fun parseErrorMessage(
         errorJson: String?
     ): String? {
-        if (errorJson.isNullOrBlank()) {
-            return null
-        }
-
-        return runCatching {
-            val root =
-                JSONObject(errorJson)
-
-            /*
-             * Bizim ApiResponse yapımızdan gelen
-             * normal hata mesajı.
-             */
-            val message =
-                root
-                    .optString("message")
-                    .takeIf {
-                        it.isNotBlank()
-                    }
-
-            if (message != null) {
-                return@runCatching message
-            }
-
-            /*
-             * ASP.NET Core [ApiController]
-             * model validation hataları:
-             *
-             * {
-             *   "errors": {
-             *      "Email": [...]
-             *   }
-             * }
-             */
-            val errors =
-                root.optJSONObject(
-                    "errors"
-                )
-
-            if (errors != null) {
-
-                /*
-                 * Kullanıcı formundaki alan sırasına
-                 * göre anlamlı ilk hata gösterilir.
-                 */
-                val preferredFields =
-                    listOf(
-                        "FullName",
-                        "fullName",
-                        "Email",
-                        "email",
-                        "Password",
-                        "password",
-                        "Code",
-                        "code",
-                        "NewPassword",
-                        "newPassword"
-                    )
-
-                for (field in preferredFields) {
-                    val messages =
-                        errors.optJSONArray(
-                            field
-                        )
-
-                    val firstMessage =
-                        messages
-                            ?.optString(0)
-                            ?.takeIf {
-                                it.isNotBlank()
-                            }
-
-                    if (firstMessage != null) {
-                        return@runCatching firstMessage
-                    }
-                }
-
-                /*
-                 * Beklenmeyen başka bir alan hatası
-                 * geldiyse ilk mevcut mesajı al.
-                 */
-                val keys =
-                    errors.keys()
-
-                while (keys.hasNext()) {
-                    val key =
-                        keys.next()
-
-                    val messages =
-                        errors.optJSONArray(
-                            key
-                        )
-
-                    val firstMessage =
-                        messages
-                            ?.optString(0)
-                            ?.takeIf {
-                                it.isNotBlank()
-                            }
-
-                    if (firstMessage != null) {
-                        return@runCatching firstMessage
-                    }
-                }
-            }
-
-            root
-                .optString("title")
-                .takeIf {
-                    it.isNotBlank()
-                }
-        }.getOrNull()
+        return ApiErrorParser
+            .parse(
+                errorJson
+            )
+            .message
     }
+
 }

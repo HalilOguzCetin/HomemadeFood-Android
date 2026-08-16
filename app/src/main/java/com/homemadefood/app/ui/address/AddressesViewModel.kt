@@ -2,20 +2,23 @@ package com.homemadefood.app.ui.address
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.homemadefood.app.data.local.DeliveryAddressSelectionManager
 import com.homemadefood.app.data.local.SessionManager
 import com.homemadefood.app.data.repository.AddressRepository
+import com.homemadefood.app.data.remote.ApiErrorParser
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import org.json.JSONObject
 import java.io.IOException
 
 class AddressesViewModel(
     private val addressRepository: AddressRepository,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val deliveryAddressSelectionManager:
+    DeliveryAddressSelectionManager
 ) : ViewModel() {
 
     private var loadAddressesJob: Job? = null
@@ -76,6 +79,17 @@ class AddressesViewModel(
                         responseBody?.success == true &&
                         addresses != null
                     ) {
+                        /*
+                         * C4D:
+                         * Addresses ekranına doğrudan Account'tan
+                         * gelinmiş olsa bile stale selected id
+                         * temizlenir / fallback çözülür.
+                         */
+                        deliveryAddressSelectionManager
+                            .resolve(
+                                addresses
+                            )
+
                         _uiState.value =
                             AddressesUiState(
                                 isLoading = false,
@@ -155,19 +169,24 @@ class AddressesViewModel(
                     response.isSuccessful &&
                     responseBody?.success == true
                 ) {
-                    _uiState.value =
-                        _uiState.value.copy(
-                            addresses =
-                                _uiState.value.addresses
-                                    .filterNot {
-                                        it.id == addressId
-                                    },
+                    /*
+                     * Backend default adresi yeniden atayabilir.
+                     * Bu yüzden yalnız local listeden silmek yerine
+                     * server listesini tekrar çekiyoruz.
+                     *
+                     * Böylece:
+                     * - aktif adres silindiyse yeni default/ilk adres
+                     *   anında selectedDeliveryAddress olur,
+                     * - son adres silindiyse selection temizlenir,
+                     * - yeni backend IsDefault bilgisi UI'a gelir.
+                     */
+                    refreshAfterDelete(
+                        deletedAddressId =
+                            addressId,
 
-                            deletingAddressId = null,
-
-                            actionMessage =
-                                responseBody.message
-                        )
+                        actionMessage =
+                            responseBody.message
+                    )
                 } else {
                     _uiState.value =
                         _uiState.value.copy(
@@ -198,6 +217,102 @@ class AddressesViewModel(
         }
     }
 
+    private suspend fun refreshAfterDelete(
+        deletedAddressId: Int,
+        actionMessage: String?
+    ) {
+        val localRemainingAddresses =
+            _uiState.value
+                .addresses
+                .filterNot {
+                    it.id ==
+                            deletedAddressId
+                }
+
+        try {
+            val refreshResponse =
+                addressRepository
+                    .getAddresses()
+
+            val refreshBody =
+                refreshResponse.body()
+
+            val serverAddresses =
+                refreshBody?.data
+
+            if (
+                refreshResponse.isSuccessful &&
+                refreshBody?.success == true &&
+                serverAddresses != null
+            ) {
+                deliveryAddressSelectionManager
+                    .resolve(
+                        serverAddresses
+                    )
+
+                _uiState.value =
+                    _uiState.value.copy(
+                        isLoading = false,
+                        addresses =
+                            serverAddresses,
+                        deletingAddressId =
+                            null,
+                        errorMessage = null,
+                        actionMessage =
+                            actionMessage
+                    )
+
+                return
+            }
+
+            /*
+             * Delete başarılı, yalnız refresh başarısız.
+             * Kullanıcıya silme işlemini geri alınmış gibi
+             * göstermeyelim. Local listeyi koruyup selection'ı
+             * güvenli biçimde reconcile ederiz.
+             */
+            deliveryAddressSelectionManager
+                .resolve(
+                    localRemainingAddresses
+                )
+
+            _uiState.value =
+                _uiState.value.copy(
+                    addresses =
+                        localRemainingAddresses,
+
+                    deletingAddressId =
+                        null,
+
+                    errorMessage =
+                        "Adres silindi ancak güncel adres listesi alınamadı. Ana sayfaya döndüğünüzde tekrar yenilenecek.",
+
+                    actionMessage =
+                        actionMessage
+                )
+        } catch (_: Exception) {
+            deliveryAddressSelectionManager
+                .resolve(
+                    localRemainingAddresses
+                )
+
+            _uiState.value =
+                _uiState.value.copy(
+                    addresses =
+                        localRemainingAddresses,
+
+                    deletingAddressId =
+                        null,
+
+                    errorMessage =
+                        "Adres silindi ancak güncel adres listesi alınamadı. Ana sayfaya döndüğünüzde tekrar yenilenecek.",
+
+                    actionMessage =
+                        actionMessage
+                )
+        }
+    }
+
     fun clearMessages() {
         _uiState.value =
             _uiState.value.copy(
@@ -209,16 +324,10 @@ class AddressesViewModel(
     private fun parseErrorMessage(
         errorJson: String?
     ): String? {
-        if (errorJson.isNullOrBlank()) {
-            return null
-        }
-
-        return runCatching {
-            JSONObject(errorJson)
-                .optString("message")
-                .takeIf {
-                    it.isNotBlank()
-                }
-        }.getOrNull()
+        return ApiErrorParser
+            .parse(
+                errorJson
+            )
+            .message
     }
 }

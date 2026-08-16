@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.homemadefood.app.data.model.ProducerApplicationStatus
 import com.homemadefood.app.data.model.ProducerApplicationStatusResponse
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
@@ -798,11 +799,14 @@ private fun ProducerApplicationStatusContent(
         modifier = Modifier.height(16.dp)
     )
 
-    when {
-        application.verificationStatus.equals(
-            "Pending",
-            ignoreCase = true
-        ) -> {
+    val verificationStatus =
+        ProducerApplicationStatus
+            .fromBackendValue(
+                application.verificationStatus
+            )
+
+    when (verificationStatus) {
+        ProducerApplicationStatus.PENDING -> {
             Card(
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -820,10 +824,7 @@ private fun ProducerApplicationStatusContent(
             }
         }
 
-        application.verificationStatus.equals(
-            "Approved",
-            ignoreCase = true
-        ) -> {
+        ProducerApplicationStatus.APPROVED -> {
             Card(
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -845,10 +846,7 @@ private fun ProducerApplicationStatusContent(
             }
         }
 
-        application.verificationStatus.equals(
-            "Rejected",
-            ignoreCase = true
-        ) -> {
+        ProducerApplicationStatus.REJECTED -> {
             Card(
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -903,6 +901,10 @@ private fun ProducerApplicationStatusContent(
                 )
             }
         }
+
+        null -> {
+            // Bilinmeyen backend durumu için ek aksiyon gösterilmez.
+        }
     }
 }
 
@@ -935,55 +937,28 @@ private fun ApplicationInformationRow(
 @Composable
 private fun getVerificationStatusColor(
     status: String
-) = when {
-    status.equals(
-        "Pending",
-        ignoreCase = true
-    ) ->
+) = when (
+    ProducerApplicationStatus
+        .fromBackendValue(status)
+) {
+    ProducerApplicationStatus.PENDING ->
         MaterialTheme.colorScheme.tertiary
 
-    status.equals(
-        "Approved",
-        ignoreCase = true
-    ) ->
+    ProducerApplicationStatus.APPROVED ->
         MaterialTheme.colorScheme.primary
 
-    status.equals(
-        "Rejected",
-        ignoreCase = true
-    ) ->
+    ProducerApplicationStatus.REJECTED ->
         MaterialTheme.colorScheme.error
 
-    else ->
+    null ->
         MaterialTheme.colorScheme.onSurface
 }
 
 private fun translateVerificationStatus(
     status: String
-): String {
-    return when {
-        status.equals(
-            "Pending",
-            ignoreCase = true
-        ) ->
-            "Onay Bekliyor"
-
-        status.equals(
-            "Approved",
-            ignoreCase = true
-        ) ->
-            "Onaylandı"
-
-        status.equals(
-            "Rejected",
-            ignoreCase = true
-        ) ->
-            "Reddedildi"
-
-        else ->
-            status
-    }
-}
+): String =
+    ProducerApplicationStatus
+        .detailDisplayNameFor(status)
 
 private fun formatApplicationDate(
     value: String

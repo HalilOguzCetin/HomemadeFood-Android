@@ -6,13 +6,13 @@ import com.homemadefood.app.data.local.SessionManager
 import com.homemadefood.app.data.model.ApiResponse
 import com.homemadefood.app.data.model.ProducerOrderResponse
 import com.homemadefood.app.data.repository.ProducerOrderRepository
+import com.homemadefood.app.data.remote.ApiErrorParser
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import org.json.JSONObject
 import retrofit2.Response
 import java.io.IOException
 
@@ -358,16 +358,10 @@ class ProducerOrdersViewModel(
     private fun parseErrorMessage(
         errorJson: String?
     ): String? {
-        if (errorJson.isNullOrBlank()) {
-            return null
-        }
-
-        return runCatching {
-            JSONObject(errorJson)
-                .optString("message")
-                .takeIf {
-                    it.isNotBlank()
-                }
-        }.getOrNull()
+        return ApiErrorParser
+            .parse(
+                errorJson
+            )
+            .message
     }
 }

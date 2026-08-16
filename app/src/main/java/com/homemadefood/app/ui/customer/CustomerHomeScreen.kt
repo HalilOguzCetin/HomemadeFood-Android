@@ -47,6 +47,10 @@ fun CustomerHomeScreen(
     onSearchClick: () -> Unit,
     onCategoryClick: (Int?) -> Unit,
     onClearFiltersClick: () -> Unit,
+    onRetryDeliveryAddressesClick: () -> Unit,
+    onDeliveryAddressSelected: (Int) -> Unit,
+    onAddAddressClick: () -> Unit,
+    onManageAddressesClick: () -> Unit,
     onRetryCategoriesClick: () -> Unit,
     onRetryStorefrontsClick: () -> Unit,
     onStorefrontClick: (Int) -> Unit,
@@ -103,6 +107,44 @@ fun CustomerHomeScreen(
                     onCartClick
             )
         }
+
+        Spacer(
+            modifier =
+                Modifier.height(18.dp)
+        )
+
+        CustomerDeliveryAddressPicker(
+            isLoading =
+                uiState
+                    .isDeliveryAddressLoading,
+
+            addresses =
+                uiState
+                    .deliveryAddresses,
+
+            selectedAddress =
+                uiState
+                    .selectedDeliveryAddress,
+
+            errorMessage =
+                uiState
+                    .deliveryAddressErrorMessage,
+
+            onRetryClick =
+                onRetryDeliveryAddressesClick,
+
+            onAddressSelected =
+                onDeliveryAddressSelected,
+
+            onAddAddressClick =
+                onAddAddressClick,
+
+            onManageAddressesClick =
+                onManageAddressesClick,
+
+            modifier =
+                Modifier.fillMaxWidth()
+        )
 
         Spacer(
             modifier =

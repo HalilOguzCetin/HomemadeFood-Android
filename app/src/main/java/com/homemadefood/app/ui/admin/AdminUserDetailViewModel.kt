@@ -4,13 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.homemadefood.app.data.local.SessionManager
 import com.homemadefood.app.data.repository.AdminRepository
+import com.homemadefood.app.data.remote.ApiErrorParser
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import org.json.JSONObject
 import java.io.IOException
 
 class AdminUserDetailViewModel(
@@ -180,90 +180,84 @@ class AdminUserDetailViewModel(
 
 
 
-                    val fallbackMessage =
-                        if (isActive) {
-                            "Kullanıcı hesabı aktifleştirildi."
-                        } else {
-                            "Kullanıcı hesabı pasifleştirildi."
-                        }
+                        val fallbackMessage =
+                            if (isActive) {
+                                "Kullanıcı hesabı aktifleştirildi."
+                            } else {
+                                "Kullanıcı hesabı pasifleştirildi."
+                            }
 
-                    _uiState.value =
-                        _uiState.value.copy(
-                            user = updatedUser,
-                            isUpdatingStatus = false,
+                        _uiState.value =
+                            _uiState.value.copy(
+                                user = updatedUser,
+                                isUpdatingStatus = false,
 
-                            successMessage =
-                                responseBody.message
-                                    .ifBlank {
-                                        fallbackMessage
-                                    },
+                                successMessage =
+                                    responseBody.message
+                                        .ifBlank {
+                                            fallbackMessage
+                                        },
 
-                            errorMessage = null
+                                errorMessage = null
+                            )
+                    } else {
+                        showUpdateError(
+                            parseErrorMessage(
+                                response.errorBody()
+                                    ?.string()
+                            ) ?: "Hesap durumu güncellenemedi."
                         )
-                } else {
-                showUpdateError(
-                    parseErrorMessage(
-                        response.errorBody()
-                            ?.string()
-                    ) ?: "Hesap durumu güncellenemedi."
-                )
+                    }
+                } catch (_: IOException) {
+                    showUpdateError(
+                        "Sunucuya bağlanılamadı."
+                    )
+                } catch (_: Exception) {
+                    showUpdateError(
+                        "Hesap durumu güncellenirken bir hata oluştu."
+                    )
+                }
             }
-            } catch (_: IOException) {
-            showUpdateError(
-                "Sunucuya bağlanılamadı."
-            )
-        } catch (_: Exception) {
-            showUpdateError(
-                "Hesap durumu güncellenirken bir hata oluştu."
-            )
-        }
-    }
-}
-
-fun clearMessage() {
-    _uiState.value =
-        _uiState.value.copy(
-            successMessage = null,
-            errorMessage = null
-        )
-}
-
-private fun showLoadError(
-    message: String
-) {
-    _uiState.value =
-        _uiState.value.copy(
-            isLoading = false,
-            user = null,
-            errorMessage = message,
-            successMessage = null
-        )
-}
-
-private fun showUpdateError(
-    message: String
-) {
-    _uiState.value =
-        _uiState.value.copy(
-            isUpdatingStatus = false,
-            errorMessage = message,
-            successMessage = null
-        )
-}
-
-private fun parseErrorMessage(
-    errorJson: String?
-): String? {
-    if (errorJson.isNullOrBlank()) {
-        return null
     }
 
-    return runCatching {
-        JSONObject(errorJson)
-            .optString("message")
-            .takeIf { message ->
-                message.isNotBlank()
-            }
-    }.getOrNull()
-}
+    fun clearMessage() {
+        _uiState.value =
+            _uiState.value.copy(
+                successMessage = null,
+                errorMessage = null
+            )
+    }
+
+    private fun showLoadError(
+        message: String
+    ) {
+        _uiState.value =
+            _uiState.value.copy(
+                isLoading = false,
+                user = null,
+                errorMessage = message,
+                successMessage = null
+            )
+    }
+
+    private fun showUpdateError(
+        message: String
+    ) {
+        _uiState.value =
+            _uiState.value.copy(
+                isUpdatingStatus = false,
+                errorMessage = message,
+                successMessage = null
+            )
+    }
+
+    private fun parseErrorMessage(
+        errorJson: String?
+    ): String? {
+        return ApiErrorParser
+            .parse(
+                errorJson
+            )
+            .message
+    }
 }

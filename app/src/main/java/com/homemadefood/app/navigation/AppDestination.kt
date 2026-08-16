@@ -37,6 +37,14 @@ sealed class AppDestination(
     data object CustomerAccount :
         AppDestination("customer/account")
 
+    data object CustomerProfile :
+        AppDestination("customer/profile")
+
+    data object CustomerPhoneVerification :
+        AppDestination(
+            "customer/profile/phone-verification"
+        )
+
     data object FoodDetail :
         AppDestination(
             "customer/food/{foodId}"

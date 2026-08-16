@@ -6,13 +6,13 @@ import com.homemadefood.app.data.local.SessionManager
 import com.homemadefood.app.data.repository.CartRepository
 import com.homemadefood.app.data.repository.FavoriteRepository
 import com.homemadefood.app.data.repository.FoodRepository
+import com.homemadefood.app.data.remote.ApiErrorParser
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import org.json.JSONObject
 import java.io.IOException
 
 class FoodDetailViewModel(
@@ -712,16 +712,10 @@ class FoodDetailViewModel(
     private fun parseErrorMessage(
         errorJson: String?
     ): String? {
-        if (errorJson.isNullOrBlank()) {
-            return null
-        }
-
-        return runCatching {
-            JSONObject(errorJson)
-                .optString("message")
-                .takeIf {
-                    it.isNotBlank()
-                }
-        }.getOrNull()
+        return ApiErrorParser
+            .parse(
+                errorJson
+            )
+            .message
     }
 }

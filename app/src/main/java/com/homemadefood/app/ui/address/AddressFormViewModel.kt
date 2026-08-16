@@ -2,21 +2,24 @@ package com.homemadefood.app.ui.address
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.homemadefood.app.data.local.DeliveryAddressSelectionManager
 import com.homemadefood.app.data.local.SessionManager
 import com.homemadefood.app.data.model.CreateAddressRequest
 import com.homemadefood.app.data.repository.AddressRepository
+import com.homemadefood.app.data.remote.ApiErrorParser
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import org.json.JSONObject
 import java.io.IOException
 
 class AddressFormViewModel(
     private val addressRepository: AddressRepository,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val deliveryAddressSelectionManager:
+    DeliveryAddressSelectionManager
 ) : ViewModel() {
 
     private var reverseGeocodeJob: Job? = null
@@ -336,6 +339,17 @@ class AddressFormViewModel(
                     body?.success == true &&
                     body.data != null
                 ) {
+                    /*
+                     * C4D yeni adres kuralı:
+                     * mevcut aktif adres varsa değiştirme.
+                     * Aktif seçim hiç yoksa (ilk adres)
+                     * oluşturulan adresi aktif yap.
+                     */
+                    deliveryAddressSelectionManager
+                        .activateIfNone(
+                            body.data.id
+                        )
+
                     _uiState.value =
                         _uiState.value.copy(
                             isSaving = false,
@@ -390,14 +404,10 @@ class AddressFormViewModel(
     private fun parseErrorMessage(
         errorJson: String?
     ): String? {
-        if (errorJson.isNullOrBlank()) {
-            return null
-        }
-
-        return runCatching {
-            JSONObject(errorJson)
-                .optString("message")
-                .takeIf { it.isNotBlank() }
-        }.getOrNull()
+        return ApiErrorParser
+            .parse(
+                errorJson
+            )
+            .message
     }
 }

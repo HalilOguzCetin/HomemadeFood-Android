@@ -1,7 +1,6 @@
 package com.homemadefood.app.ui.address
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -22,6 +21,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.homemadefood.app.data.model.AddressResponse
+import com.homemadefood.app.ui.components.AppEmptyState
+import com.homemadefood.app.ui.components.AppErrorState
+import com.homemadefood.app.ui.components.AppInlineMessage
+import com.homemadefood.app.ui.components.AppLoadingState
+import com.homemadefood.app.ui.components.AppMessageType
 
 @Composable
 fun AddressesScreen(
@@ -70,50 +74,30 @@ fun AddressesScreen(
 
         when {
             uiState.isLoading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
+                AppLoadingState(
+                    message = "Adresler yükleniyor..."
+                )
             }
 
             uiState.errorMessage != null -> {
-                Text(
-                    text = uiState.errorMessage,
-                    color = MaterialTheme.colorScheme.error
+                AppErrorState(
+                    message = uiState.errorMessage,
+                    onRetryClick = onRetryClick
                 )
-
-                Spacer(
-                    modifier = Modifier.height(16.dp)
-                )
-
-                Button(
-                    onClick = onRetryClick,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Tekrar Dene")
-                }
             }
 
             uiState.addresses.isEmpty() -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Henüz kayıtlı adresiniz bulunmuyor.",
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                }
+                AppEmptyState(
+                    title = "Kayıtlı adres yok",
+                    message = "Henüz kayıtlı adresiniz bulunmuyor."
+                )
             }
 
             else -> {
                 if (!uiState.actionMessage.isNullOrBlank()) {
-                    Text(
-                        text = uiState.actionMessage,
-                        color = MaterialTheme.colorScheme.primary,
-                        style = MaterialTheme.typography.bodyMedium
+                    AppInlineMessage(
+                        message = uiState.actionMessage,
+                        type = AppMessageType.Success
                     )
 
                     Spacer(

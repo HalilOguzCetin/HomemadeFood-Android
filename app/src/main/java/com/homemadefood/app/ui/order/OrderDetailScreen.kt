@@ -30,6 +30,7 @@ import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import com.homemadefood.app.data.model.OrderStatus
+import com.homemadefood.app.data.model.PaymentMethods
 import androidx.compose.material3.OutlinedTextField
 import com.homemadefood.app.data.model.ReviewResponse
 @Composable
@@ -555,18 +556,10 @@ private fun getOrderStatusColor(
 
 private fun translatePaymentMethod(
     paymentMethod: String
-): String {
-    return when (paymentMethod) {
-        "CashOnDelivery" ->
-            "Kapıda Nakit"
-
-        "CardOnDelivery" ->
-            "Kapıda Kart"
-
-        else ->
-            paymentMethod
-    }
-}
+): String =
+    PaymentMethods.displayName(
+        paymentMethod
+    )
 
 private fun formatOrderPrice(
     price: Double

@@ -3,6 +3,7 @@ package com.homemadefood.app.ui.address
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.homemadefood.app.data.local.DeliveryAddressSelectionManager
 import com.homemadefood.app.data.local.SessionManager
 import com.homemadefood.app.data.repository.AddressRepository
 
@@ -29,13 +30,22 @@ class AddressFormViewModelFactory(
                     applicationContext
                 )
 
+            val deliveryAddressSelectionManager =
+                DeliveryAddressSelectionManager(
+                    sessionManager =
+                        sessionManager
+                )
+
             @Suppress("UNCHECKED_CAST")
             return AddressFormViewModel(
                 addressRepository =
                     addressRepository,
 
                 sessionManager =
-                    sessionManager
+                    sessionManager,
+
+                deliveryAddressSelectionManager =
+                    deliveryAddressSelectionManager
             ) as T
         }
 

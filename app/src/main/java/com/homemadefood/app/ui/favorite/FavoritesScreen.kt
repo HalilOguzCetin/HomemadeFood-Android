@@ -30,6 +30,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.text.style.TextOverflow
 import com.homemadefood.app.data.model.FavoriteResponse
+import com.homemadefood.app.ui.components.AppEmptyState
+import com.homemadefood.app.ui.components.AppErrorState
+import com.homemadefood.app.ui.components.AppInlineMessage
+import com.homemadefood.app.ui.components.AppLoadingState
+import com.homemadefood.app.ui.components.AppMessageType
 import com.homemadefood.app.ui.components.FoodImage
 import java.util.Locale
 
@@ -67,50 +72,30 @@ fun FavoritesScreen(
 
         when {
             uiState.isLoading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
+                AppLoadingState(
+                    message = "Favoriler yükleniyor..."
+                )
             }
 
             uiState.errorMessage != null -> {
-                Text(
-                    text = uiState.errorMessage,
-                    color = MaterialTheme.colorScheme.error
+                AppErrorState(
+                    message = uiState.errorMessage,
+                    onRetryClick = onRetryClick
                 )
-
-                Spacer(
-                    modifier = Modifier.height(16.dp)
-                )
-
-                Button(
-                    onClick = onRetryClick,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Tekrar Dene")
-                }
             }
 
             uiState.favorites.isEmpty() -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Henüz favoriye eklediğiniz bir yemek bulunmuyor.",
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                }
+                AppEmptyState(
+                    title = "Favori bulunmuyor",
+                    message = "Henüz favoriye eklediğiniz bir yemek bulunmuyor."
+                )
             }
 
             else -> {
                 if (!uiState.actionMessage.isNullOrBlank()) {
-                    Text(
-                        text = uiState.actionMessage,
-                        color = MaterialTheme.colorScheme.primary,
-                        style = MaterialTheme.typography.bodyMedium
+                    AppInlineMessage(
+                        message = uiState.actionMessage,
+                        type = AppMessageType.Success
                     )
 
                     Spacer(

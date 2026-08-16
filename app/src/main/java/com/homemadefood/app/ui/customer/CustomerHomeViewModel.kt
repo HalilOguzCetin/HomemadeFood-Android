@@ -2,15 +2,18 @@ package com.homemadefood.app.ui.customer
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.homemadefood.app.data.local.DeliveryAddressSelectionManager
+import com.homemadefood.app.data.model.AddressResponse
 import com.homemadefood.app.data.model.ProducerStorefrontSummaryResponse
+import com.homemadefood.app.data.repository.AddressRepository
 import com.homemadefood.app.data.repository.CategoryRepository
 import com.homemadefood.app.data.repository.StorefrontRepository
+import com.homemadefood.app.data.remote.ApiErrorParser
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.json.JSONObject
 import java.io.IOException
 
 class CustomerHomeViewModel(
@@ -18,7 +21,13 @@ class CustomerHomeViewModel(
     CategoryRepository,
 
     private val storefrontRepository:
-    StorefrontRepository
+    StorefrontRepository,
+
+    private val addressRepository:
+    AddressRepository,
+
+    private val deliveryAddressSelectionManager:
+    DeliveryAddressSelectionManager
 ) : ViewModel() {
 
     private var storefrontLoadJob: Job? =
@@ -39,6 +48,7 @@ class CustomerHomeViewModel(
     private val _uiState =
         MutableStateFlow(
             CustomerHomeUiState(
+                isDeliveryAddressLoading = true,
                 isCategoriesLoading = true,
                 isStorefrontsLoading = true
             )
@@ -49,8 +59,149 @@ class CustomerHomeViewModel(
         _uiState.asStateFlow()
 
     init {
+        loadDeliveryAddresses()
         loadCategories()
         loadStorefronts()
+    }
+
+    /*
+     * C4B aktif teslimat adresi çözümleme algoritması:
+     *
+     * 1) DataStore'daki selectedDeliveryAddressId hâlâ
+     *    kullanıcı adresleri arasında ise onu kullan.
+     *
+     * 2) Yoksa backend IsDefault adresini kullan.
+     *
+     * 3) O da yoksa listenin ilk adresini kullan.
+     *
+     * 4) Adres hiç yoksa seçimi temizle.
+     *
+     * Böylece backend'deki "varsayılan adres" ile
+     * uygulamadaki "şu an seçili teslimat adresi"
+     * birbirinden ayrılmış olur.
+     */
+    fun loadDeliveryAddresses() {
+        viewModelScope.launch {
+            _uiState.value =
+                _uiState.value.copy(
+                    isDeliveryAddressLoading = true,
+                    deliveryAddressErrorMessage = null
+                )
+
+            try {
+                val response =
+                    addressRepository
+                        .getAddresses()
+
+                val responseBody =
+                    response.body()
+
+                val addresses =
+                    responseBody?.data
+
+                if (
+                    response.isSuccessful &&
+                    responseBody?.success == true &&
+                    addresses != null
+                ) {
+                    resolveAndApplyDeliveryAddress(
+                        addresses = addresses
+                    )
+                } else {
+                    showDeliveryAddressError(
+                        parseErrorMessage(
+                            response.errorBody()
+                                ?.string()
+                        ) ?: "Teslimat adresleri alınamadı."
+                    )
+                }
+            } catch (_: IOException) {
+                showDeliveryAddressError(
+                    "Teslimat adresleri için sunucuya bağlanılamadı."
+                )
+            } catch (_: Exception) {
+                showDeliveryAddressError(
+                    "Teslimat adresleri yüklenirken bir hata oluştu."
+                )
+            }
+        }
+    }
+
+    /*
+     * C4C hızlı seçim ekranı bu metodu kullanacak.
+     * Şimdiden altyapıya ekliyoruz.
+     *
+     * Yalnız gerçekten bu kullanıcıya ait ve o anda
+     * yüklenmiş adresler seçilebilir.
+     */
+    fun selectDeliveryAddress(
+        addressId: Int
+    ) {
+        viewModelScope.launch {
+            val selectedAddress =
+                deliveryAddressSelectionManager
+                    .select(
+                        addressId =
+                            addressId,
+
+                        addresses =
+                            _uiState.value
+                                .deliveryAddresses
+                    )
+                    ?: return@launch
+
+            _uiState.value =
+                _uiState.value.copy(
+                    selectedDeliveryAddress =
+                        selectedAddress,
+
+                    deliveryAddressErrorMessage =
+                        null
+                )
+        }
+    }
+
+    private suspend fun resolveAndApplyDeliveryAddress(
+        addresses: List<AddressResponse>
+    ) {
+        val resolvedAddress =
+            deliveryAddressSelectionManager
+                .resolve(
+                    addresses
+                )
+
+        _uiState.value =
+            _uiState.value.copy(
+                isDeliveryAddressLoading =
+                    false,
+
+                deliveryAddresses =
+                    addresses,
+
+                selectedDeliveryAddress =
+                    resolvedAddress,
+
+                deliveryAddressErrorMessage =
+                    null
+            )
+    }
+
+    private fun showDeliveryAddressError(
+        message: String
+    ) {
+        /*
+         * Geçici ağ hatasında son başarılı seçimi ekrandan
+         * silmiyoruz. C4C'de kullanıcı mevcut address label'ını
+         * görmeye devam edebilir ve Retry kullanabilir.
+         */
+        _uiState.value =
+            _uiState.value.copy(
+                isDeliveryAddressLoading =
+                    false,
+
+                deliveryAddressErrorMessage =
+                    message
+            )
     }
 
     fun loadCategories() {
@@ -285,16 +436,10 @@ class CustomerHomeViewModel(
     private fun parseErrorMessage(
         errorJson: String?
     ): String? {
-        if (errorJson.isNullOrBlank()) {
-            return null
-        }
-
-        return runCatching {
-            JSONObject(errorJson)
-                .optString("message")
-                .takeIf {
-                    it.isNotBlank()
-                }
-        }.getOrNull()
+        return ApiErrorParser
+            .parse(
+                errorJson
+            )
+            .message
     }
 }

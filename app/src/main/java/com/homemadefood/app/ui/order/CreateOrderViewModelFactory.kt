@@ -3,6 +3,7 @@ package com.homemadefood.app.ui.order
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.homemadefood.app.data.local.DeliveryAddressSelectionManager
 import com.homemadefood.app.data.local.SessionManager
 import com.homemadefood.app.data.repository.AddressRepository
 import com.homemadefood.app.data.repository.CartRepository
@@ -34,6 +35,12 @@ class CreateOrderViewModelFactory(
                     context.applicationContext
                 )
 
+            val deliveryAddressSelectionManager =
+                DeliveryAddressSelectionManager(
+                    sessionManager =
+                        sessionManager
+                )
+
             @Suppress("UNCHECKED_CAST")
             return CreateOrderViewModel(
                 cartRepository =
@@ -46,7 +53,10 @@ class CreateOrderViewModelFactory(
                     orderRepository,
 
                 sessionManager =
-                    sessionManager
+                    sessionManager,
+
+                deliveryAddressSelectionManager =
+                    deliveryAddressSelectionManager
             ) as T
         }
 

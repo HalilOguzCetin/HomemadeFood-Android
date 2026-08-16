@@ -21,6 +21,12 @@ import androidx.navigation.navigation
 import com.homemadefood.app.ui.customer.CustomerAccountScreen
 import com.homemadefood.app.ui.customer.CustomerExploreScreen
 import com.homemadefood.app.ui.customer.CustomerHomeScreen
+import com.homemadefood.app.ui.customer.CustomerProfileScreen
+import com.homemadefood.app.ui.customer.CustomerPhoneVerificationScreen
+import com.homemadefood.app.ui.customer.CustomerPhoneVerificationViewModel
+import com.homemadefood.app.ui.customer.CustomerPhoneVerificationViewModelFactory
+import com.homemadefood.app.ui.customer.CustomerProfileViewModel
+import com.homemadefood.app.ui.customer.CustomerProfileViewModelFactory
 import com.homemadefood.app.ui.customer.CustomerHomeViewModel
 import com.homemadefood.app.ui.customer.CustomerHomeViewModelFactory
 import com.homemadefood.app.ui.customer.StorefrontMenuScreen
@@ -68,6 +74,7 @@ import com.homemadefood.app.ui.customer.CustomerReviewsViewModelFactory
 import com.homemadefood.app.ui.auth.AuthViewModel
 import com.homemadefood.app.ui.location.LocationMapScreen
 import com.homemadefood.app.ui.address.SelectedLocation
+import com.homemadefood.app.data.model.ProducerApplicationStatus
 
 private const val ADDRESS_MAP_RESULT_LATITUDE =
     "address_map_result_latitude"
@@ -80,6 +87,9 @@ private const val ADDRESS_MAP_INITIAL_LATITUDE =
 
 private const val ADDRESS_MAP_INITIAL_LONGITUDE =
     "address_map_initial_longitude"
+
+private const val PHONE_VERIFICATION_RESULT =
+    "phone_verification_result"
 
 
 fun NavGraphBuilder.customerNavGraph(
@@ -107,6 +117,16 @@ fun NavGraphBuilder.customerNavGraph(
             navController = navController,
             authViewModel = authViewModel,
             onLogoutClick = onLogoutClick
+        )
+
+        customerProfileDestination(
+            navController = navController,
+            context = context
+        )
+
+        customerPhoneVerificationDestination(
+            navController = navController,
+            context = context
         )
 
         storefrontMenuDestination(
@@ -216,7 +236,9 @@ private fun NavGraphBuilder.customerHomeDestination(
                 CustomerHomeViewModel =
             viewModel(
                 factory =
-                    CustomerHomeViewModelFactory()
+                    CustomerHomeViewModelFactory(
+                        context = context
+                    )
             )
 
         val customerHomeUiState by
@@ -248,8 +270,32 @@ private fun NavGraphBuilder.customerHomeDestination(
 
         DisposableEffect(
             lifecycleOwner,
-            cartViewModel
+            cartViewModel,
+            customerHomeViewModel
         ) {
+            /*
+             * C4D FIX:
+             *
+             * Home composable'ı başka bir destination'a gidince
+             * composition'dan çıkabilir. Önceki
+             * hasPassedInitialResume local değişkeni bu durumda
+             * yeniden false oluyordu.
+             *
+             * Sonuç:
+             * Adreslerim / Yeni Adres / Adres Düzenle ekranından
+             * Home'a dönüldüğünde ilk ON_RESUME tekrar "ilk açılış"
+             * sanılıyor ve loadDeliveryAddresses() atlanıyordu.
+             *
+             * Çözüm:
+             * Home her ON_RESUME olduğunda cart ve delivery address
+             * verilerini server'dan yeniler.
+             *
+             * HomeViewModel.init{} ilk açılışta da adresleri yüklediği
+             * için ilk girişte fazladan bir GET /api/Address olabilir.
+             * Bu küçük maliyet, stale adres göstermemekten daha güvenli.
+             * C13'te request dedup/loading standardizasyonu sırasında
+             * istersek optimize ederiz.
+             */
             val observer =
                 LifecycleEventObserver {
                         _,
@@ -261,6 +307,9 @@ private fun NavGraphBuilder.customerHomeDestination(
                     ) {
                         cartViewModel
                             .loadCart()
+
+                        customerHomeViewModel
+                            .loadDeliveryAddresses()
                     }
                 }
 
@@ -322,6 +371,36 @@ private fun NavGraphBuilder.customerHomeDestination(
                 onClearFiltersClick = {
                     customerHomeViewModel
                         .clearFilters()
+                },
+
+                onRetryDeliveryAddressesClick = {
+                    customerHomeViewModel
+                        .loadDeliveryAddresses()
+                },
+
+                onDeliveryAddressSelected = {
+                        addressId ->
+
+                    customerHomeViewModel
+                        .selectDeliveryAddress(
+                            addressId
+                        )
+                },
+
+                onAddAddressClick = {
+                    navController.navigate(
+                        AppDestination
+                            .AddAddress
+                            .route
+                    )
+                },
+
+                onManageAddressesClick = {
+                    navController.navigate(
+                        AppDestination
+                            .Addresses
+                            .route
+                    )
                 },
 
                 onRetryCategoriesClick = {
@@ -456,6 +535,14 @@ private fun NavGraphBuilder.customerAccountDestination(
                     authUiState
                         .producerVerificationStatus,
 
+                onProfileClick = {
+                    navController.navigate(
+                        AppDestination
+                            .CustomerProfile
+                            .route
+                    )
+                },
+
                 onAddressesClick = {
                     navController.navigate(
                         AppDestination
@@ -504,6 +591,217 @@ private fun NavGraphBuilder.customerAccountDestination(
                         )
             )
         }
+    }
+}
+
+private fun NavGraphBuilder.customerProfileDestination(
+    navController: NavHostController,
+    context: Context
+) {
+    composable(
+        route =
+            AppDestination
+                .CustomerProfile
+                .route
+    ) { backStackEntry ->
+
+        val customerProfileViewModel:
+                CustomerProfileViewModel =
+            viewModel(
+                factory =
+                    CustomerProfileViewModelFactory(
+                        context = context
+                    )
+            )
+
+        val customerProfileUiState by
+        customerProfileViewModel
+            .uiState
+            .collectAsStateWithLifecycle()
+
+        val phoneVerificationResult by
+        backStackEntry
+            .savedStateHandle
+            .getStateFlow(
+                PHONE_VERIFICATION_RESULT,
+                false
+            )
+            .collectAsStateWithLifecycle()
+
+        LaunchedEffect(Unit) {
+            if (
+                customerProfileUiState
+                    .isLoading
+            ) {
+                customerProfileViewModel
+                    .loadProfile()
+            }
+        }
+
+        /*
+         * Telefon doğrulama/değiştirme ekranı başarılı
+         * olduğunda Profil ekranına result bırakır.
+         * Böylece Profile ViewModel yeniden backend'den
+         * güncel phone/isPhoneVerified değerlerini alır.
+         */
+        LaunchedEffect(
+            phoneVerificationResult
+        ) {
+            if (phoneVerificationResult) {
+                customerProfileViewModel
+                    .loadProfile()
+
+                backStackEntry
+                    .savedStateHandle[
+                    PHONE_VERIFICATION_RESULT
+                ] = false
+            }
+        }
+
+        CustomerProfileScreen(
+            uiState =
+                customerProfileUiState,
+
+            onBackClick = {
+                navController
+                    .popBackStack()
+            },
+
+            onRetryClick = {
+                customerProfileViewModel
+                    .loadProfile()
+            },
+
+            onStartEditingClick = {
+                customerProfileViewModel
+                    .startEditing()
+            },
+
+            onCancelEditingClick = {
+                customerProfileViewModel
+                    .cancelEditing()
+            },
+
+            onFullNameChange = { value ->
+                customerProfileViewModel
+                    .updateFullName(
+                        value
+                    )
+            },
+
+            onSaveClick = {
+                customerProfileViewModel
+                    .saveProfile()
+            },
+
+            onPhoneVerificationClick = {
+                navController.navigate(
+                    AppDestination
+                        .CustomerPhoneVerification
+                        .route
+                )
+            },
+
+            modifier =
+                Modifier.fillMaxSize()
+        )
+    }
+}
+
+private fun NavGraphBuilder.customerPhoneVerificationDestination(
+    navController: NavHostController,
+    context: Context
+) {
+    composable(
+        route =
+            AppDestination
+                .CustomerPhoneVerification
+                .route
+    ) {
+        val customerPhoneVerificationViewModel:
+                CustomerPhoneVerificationViewModel =
+            viewModel(
+                factory =
+                    CustomerPhoneVerificationViewModelFactory(
+                        context = context
+                    )
+            )
+
+        val phoneUiState by
+        customerPhoneVerificationViewModel
+            .uiState
+            .collectAsStateWithLifecycle()
+
+        LaunchedEffect(
+            phoneUiState
+                .isVerificationCompleted
+        ) {
+            if (
+                phoneUiState
+                    .isVerificationCompleted
+            ) {
+                /*
+                 * Başarı mesajının kullanıcı tarafından
+                 * fark edilmesi için çok kısa bekleme.
+                 */
+                kotlinx.coroutines.delay(
+                    650
+                )
+
+                navController
+                    .previousBackStackEntry
+                    ?.savedStateHandle
+                    ?.set(
+                        PHONE_VERIFICATION_RESULT,
+                        true
+                    )
+
+                navController
+                    .popBackStack()
+            }
+        }
+
+        CustomerPhoneVerificationScreen(
+            uiState =
+                phoneUiState,
+
+            onBackClick = {
+                navController
+                    .popBackStack()
+            },
+
+            onPhoneChange = { value ->
+                customerPhoneVerificationViewModel
+                    .updatePhone(
+                        value
+                    )
+            },
+
+            onCodeChange = { value ->
+                customerPhoneVerificationViewModel
+                    .updateCode(
+                        value
+                    )
+            },
+
+            onRequestCodeClick = {
+                customerPhoneVerificationViewModel
+                    .requestCode()
+            },
+
+            onVerifyClick = {
+                customerPhoneVerificationViewModel
+                    .verifyCode()
+            },
+
+            onEditPhoneClick = {
+                customerPhoneVerificationViewModel
+                    .editPhoneNumber()
+            },
+
+            modifier =
+                Modifier.fillMaxSize()
+        )
     }
 }
 
@@ -1444,7 +1742,7 @@ private fun NavGraphBuilder.createOrderDestination(
 ) {
     composable(
         route = AppDestination.CreateOrder.route
-    ) {
+    ) { backStackEntry ->
         val createOrderViewModel:
                 CreateOrderViewModel =
             viewModel(
@@ -1458,12 +1756,117 @@ private fun NavGraphBuilder.createOrderDestination(
         createOrderViewModel.uiState
             .collectAsStateWithLifecycle()
 
+        /*
+         * C3C.2:
+         * Checkout için ayrı ve paralel bir auth modeli
+         * üretmek yerine mevcut CustomerProfileViewModel'i
+         * reuse ediyoruz.
+         *
+         * Böylece GET /api/Auth/profile tek kaynak olarak:
+         * phone
+         * isPhoneVerified
+         * phoneVerifiedAt
+         * bilgilerini sağlar.
+         */
+        val checkoutProfileViewModel:
+                CustomerProfileViewModel =
+            viewModel(
+                factory =
+                    CustomerProfileViewModelFactory(
+                        context = context
+                    )
+            )
+
+        val checkoutProfileUiState by
+        checkoutProfileViewModel
+            .uiState
+            .collectAsStateWithLifecycle()
+
+        val phoneVerificationResult by
+        backStackEntry
+            .savedStateHandle
+            .getStateFlow(
+                PHONE_VERIFICATION_RESULT,
+                false
+            )
+            .collectAsStateWithLifecycle()
+
+        /*
+         * Checkout ilk kez açıldığında order verilerini yükle.
+         *
+         * OTP ekranına gidip geri dönüldüğünde bu back stack
+         * entry'nin ViewModel'i korunur. O sırada loadData()
+         * tekrar çağrılmaz; seçilmiş adres, ödeme yöntemi ve
+         * sipariş notu kaybolmaz.
+         */
         LaunchedEffect(Unit) {
-            createOrderViewModel.loadData()
+            if (
+                createOrderUiState.isLoading &&
+                createOrderUiState.cart == null
+            ) {
+                createOrderViewModel
+                    .loadData()
+            }
+
+            if (
+                checkoutProfileUiState
+                    .isLoading
+            ) {
+                checkoutProfileViewModel
+                    .loadProfile()
+            }
         }
 
+        /*
+         * Mevcut OTP ekranı doğrulama başarılı olduğunda
+         * sonucu bir önceki destination'ın SavedStateHandle'ına
+         * bırakır.
+         *
+         * Checkout bu sonucu yakalar ve SADECE profile bilgisini
+         * yeniler. CreateOrderViewModel yeniden oluşturulmaz,
+         * form state korunur.
+         */
+        LaunchedEffect(
+            phoneVerificationResult
+        ) {
+            if (phoneVerificationResult) {
+                checkoutProfileViewModel
+                    .loadProfile()
+
+                backStackEntry
+                    .savedStateHandle[
+                    PHONE_VERIFICATION_RESULT
+                ] = false
+            }
+        }
+
+        val checkoutProfile =
+            checkoutProfileUiState
+                .profile
+
+        val isPhoneVerifiedForOrder =
+            checkoutProfile
+                ?.isPhoneVerified == true &&
+                    checkoutProfile
+                        .phoneVerifiedAt != null &&
+                    checkoutProfile
+                        .phone
+                        .isNotBlank()
+
         CreateOrderScreen(
-            uiState = createOrderUiState,
+            uiState =
+                createOrderUiState,
+
+            isPhoneVerificationLoading =
+                checkoutProfileUiState
+                    .isLoading,
+
+            isPhoneVerifiedForOrder =
+                isPhoneVerifiedForOrder,
+
+            phoneVerificationErrorMessage =
+                checkoutProfileUiState
+                    .errorMessage,
 
             onBackClick = {
                 navController.popBackStack()
@@ -1471,6 +1874,19 @@ private fun NavGraphBuilder.createOrderDestination(
 
             onRetryClick = {
                 createOrderViewModel.loadData()
+            },
+
+            onRetryPhoneVerificationStatusClick = {
+                checkoutProfileViewModel
+                    .loadProfile()
+            },
+
+            onPhoneVerificationClick = {
+                navController.navigate(
+                    AppDestination
+                        .CustomerPhoneVerification
+                        .route
+                )
             },
 
             onAddressSelected = { addressId ->
@@ -1494,6 +1910,13 @@ private fun NavGraphBuilder.createOrderDestination(
             },
 
             onCreateOrderClick = {
+                /*
+                 * UI yalnız profile guard geçtiğinde bu
+                 * callback'i sunar.
+                 *
+                 * Backend C3C.1 ayrıca tekrar kontrol eder;
+                 * Android tek güvenlik katmanı değildir.
+                 */
                 createOrderViewModel
                     .createOrder()
             },
@@ -1899,10 +2322,11 @@ private fun NavGraphBuilder
                     ?.verificationStatus
 
             if (
-                verificationStatus.equals(
-                    "Approved",
-                    ignoreCase = true
-                )
+                ProducerApplicationStatus
+                    .fromBackendValue(
+                        verificationStatus
+                    ) ==
+                ProducerApplicationStatus.APPROVED
             ) {
                 authViewModel.refreshProfile()
             }

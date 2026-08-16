@@ -27,14 +27,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.homemadefood.app.data.model.AddressResponse
 import com.homemadefood.app.data.model.PaymentMethods
-import java.util.Locale
 import com.homemadefood.app.data.model.OrderStatus
+import java.util.Locale
 
 @Composable
 fun CreateOrderScreen(
     uiState: CreateOrderUiState,
+    isPhoneVerificationLoading: Boolean,
+    isPhoneVerifiedForOrder: Boolean,
+    phoneVerificationErrorMessage: String?,
     onBackClick: () -> Unit,
     onRetryClick: () -> Unit,
+    onRetryPhoneVerificationStatusClick: () -> Unit,
+    onPhoneVerificationClick: () -> Unit,
     onAddressSelected: (Int) -> Unit,
     onPaymentMethodSelected: (String) -> Unit,
     onCustomerNoteChange: (String) -> Unit,
@@ -47,10 +52,7 @@ fun CreateOrderScreen(
             OrderSuccessContent(
                 orderId = uiState.createdOrder.orderId,
                 totalPrice = uiState.createdOrder.totalPrice,
-                status =
-                    OrderStatus.fromBackendValue(
-                        uiState.createdOrder.status
-                    ),
+                status = uiState.createdOrder.status,
                 onReturnHomeClick = onReturnHomeClick,
                 modifier = modifier
             )
@@ -103,6 +105,30 @@ fun CreateOrderScreen(
 
         else -> {
             val cart = uiState.cart
+
+            /*
+             * C3C backend guard'ının mesajını da tanıyoruz.
+             * Normal durumda bu noktaya gelmeden profile
+             * kontrolü kullanıcıyı OTP akışına yönlendirir.
+             *
+             * Buna rağmen backend ikinci güvenlik katmanı
+             * olarak PHONE_VERIFICATION_REQUIRED döndürürse,
+             * genel order hatası yerine aynı doğrulama CTA'sı
+             * gösterilir.
+             */
+            val serverRequiresPhoneVerification =
+                uiState.errorMessage
+                    ?.contains(
+                        "telefon numaranızı doğrulamanız gerekir",
+                        ignoreCase = true
+                    ) == true
+
+            val phoneVerificationRequired =
+                !isPhoneVerificationLoading &&
+                        (
+                                !isPhoneVerifiedForOrder ||
+                                        serverRequiresPhoneVerification
+                                )
 
             Column(
                 modifier = modifier
@@ -336,7 +362,16 @@ fun CreateOrderScreen(
                     enabled = !uiState.isCreatingOrder
                 )
 
-                if (!uiState.errorMessage.isNullOrBlank()) {
+                /*
+                 * PHONE_VERIFICATION_REQUIRED backend mesajını
+                 * normal order error gibi iki kez göstermiyoruz.
+                 * Aşağıdaki telefon doğrulama kartı bu durumu
+                 * kullanıcıya daha anlaşılır biçimde sunar.
+                 */
+                if (
+                    !uiState.errorMessage.isNullOrBlank() &&
+                    !serverRequiresPhoneVerification
+                ) {
                     Spacer(
                         modifier = Modifier.height(14.dp)
                     )
@@ -353,26 +388,194 @@ fun CreateOrderScreen(
                     modifier = Modifier.height(24.dp)
                 )
 
-                Button(
-                    onClick = onCreateOrderClick,
-
-                    modifier =
-                        Modifier.fillMaxWidth(),
-
-                    enabled =
-                        !uiState.isCreatingOrder &&
-                                cart != null &&
-                                cart.items.isNotEmpty() &&
-                                uiState.selectedAddressId != null
-                ) {
-                    if (uiState.isCreatingOrder) {
-                        CircularProgressIndicator(
+                when {
+                    isPhoneVerificationLoading -> {
+                        Card(
                             modifier =
-                                Modifier.height(22.dp),
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Text("Siparişi Onayla")
+                                Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+
+                                verticalAlignment =
+                                    Alignment.CenterVertically
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier =
+                                        Modifier.height(22.dp),
+                                    strokeWidth = 2.dp
+                                )
+
+                                Text(
+                                    text =
+                                        "Telefon doğrulama durumu kontrol ediliyor...",
+
+                                    modifier =
+                                        Modifier.padding(
+                                            start = 12.dp
+                                        ),
+
+                                    style =
+                                        MaterialTheme
+                                            .typography
+                                            .bodyMedium
+                                )
+                            }
+                        }
+                    }
+
+                    !phoneVerificationErrorMessage
+                        .isNullOrBlank() -> {
+
+                        Card(
+                            modifier =
+                                Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier =
+                                    Modifier.padding(16.dp)
+                            ) {
+                                Text(
+                                    text =
+                                        "Telefon doğrulama durumu alınamadı.",
+
+                                    style =
+                                        MaterialTheme
+                                            .typography
+                                            .titleMedium
+                                )
+
+                                Spacer(
+                                    modifier =
+                                        Modifier.height(6.dp)
+                                )
+
+                                Text(
+                                    text =
+                                        phoneVerificationErrorMessage,
+
+                                    color =
+                                        MaterialTheme
+                                            .colorScheme
+                                            .error,
+
+                                    style =
+                                        MaterialTheme
+                                            .typography
+                                            .bodyMedium
+                                )
+
+                                Spacer(
+                                    modifier =
+                                        Modifier.height(12.dp)
+                                )
+
+                                Button(
+                                    onClick =
+                                        onRetryPhoneVerificationStatusClick,
+
+                                    modifier =
+                                        Modifier.fillMaxWidth(),
+
+                                    enabled =
+                                        !uiState.isCreatingOrder
+                                ) {
+                                    Text(
+                                        "Telefon Durumunu Tekrar Kontrol Et"
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    phoneVerificationRequired -> {
+                        Card(
+                            modifier =
+                                Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier =
+                                    Modifier.padding(16.dp)
+                            ) {
+                                Text(
+                                    text =
+                                        "Telefon doğrulaması gerekli",
+
+                                    style =
+                                        MaterialTheme
+                                            .typography
+                                            .titleMedium,
+
+                                    color =
+                                        MaterialTheme
+                                            .colorScheme
+                                            .primary
+                                )
+
+                                Spacer(
+                                    modifier =
+                                        Modifier.height(6.dp)
+                                )
+
+                                Text(
+                                    text =
+                                        "Sipariş verebilmek için telefon numaranızı doğrulamanız gerekir. Sepetiniz, seçtiğiniz adres, ödeme yöntemi ve sipariş notunuz doğrulama sırasında korunur.",
+
+                                    style =
+                                        MaterialTheme
+                                            .typography
+                                            .bodyMedium
+                                )
+
+                                Spacer(
+                                    modifier =
+                                        Modifier.height(14.dp)
+                                )
+
+                                Button(
+                                    onClick =
+                                        onPhoneVerificationClick,
+
+                                    modifier =
+                                        Modifier.fillMaxWidth(),
+
+                                    enabled =
+                                        !uiState.isCreatingOrder
+                                ) {
+                                    Text(
+                                        "Telefonumu Doğrula"
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    else -> {
+                        Button(
+                            onClick = onCreateOrderClick,
+
+                            modifier =
+                                Modifier.fillMaxWidth(),
+
+                            enabled =
+                                !uiState.isCreatingOrder &&
+                                        cart != null &&
+                                        cart.items.isNotEmpty() &&
+                                        uiState.selectedAddressId != null
+                        ) {
+                            if (uiState.isCreatingOrder) {
+                                CircularProgressIndicator(
+                                    modifier =
+                                        Modifier.height(22.dp),
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Text("Siparişi Onayla")
+                            }
+                        }
                     }
                 }
 
@@ -515,7 +718,7 @@ private fun OrderInformationRow(
 private fun OrderSuccessContent(
     orderId: Int,
     totalPrice: Double,
-    status: OrderStatus,
+    status: String,
     onReturnHomeClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -555,7 +758,7 @@ private fun OrderSuccessContent(
         )
 
         Text(
-            text = "Durum: ${status.displayName}"
+            text = "Durum: ${translateOrderStatus(status)}"
         )
 
         Spacer(
@@ -581,3 +784,9 @@ private fun formatPrice(
     )
 }
 
+private fun translateOrderStatus(
+    status: String
+): String =
+    OrderStatus.displayNameFor(
+        status
+    )

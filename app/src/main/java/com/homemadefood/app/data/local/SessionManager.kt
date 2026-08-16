@@ -10,6 +10,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.homemadefood.app.data.model.AppMode
 import com.homemadefood.app.data.model.LoginResponse
 import com.homemadefood.app.data.model.UserProfileResponse
+import com.homemadefood.app.data.model.UserRole
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -75,6 +76,18 @@ class SessionManager(
         val ACTIVE_MODE_KEY =
             stringPreferencesKey(
                 "active_app_mode"
+            )
+
+        /*
+         * C4:
+         * Backend'deki IsDefault adresinden farklıdır.
+         *
+         * Bu alan, kullanıcının uygulamada o anda
+         * "teslimat için aktif" olarak seçtiği adresi tutar.
+         */
+        val SELECTED_DELIVERY_ADDRESS_ID_KEY =
+            intPreferencesKey(
+                "selected_delivery_address_id"
             )
     }
 
@@ -151,6 +164,20 @@ class SessionManager(
             )
         }
 
+    /*
+     * C4:
+     * Home ve Checkout aynı aktif teslimat adresini
+     * bu Flow üzerinden paylaşır.
+     */
+    val selectedDeliveryAddressId:
+            Flow<Int?> =
+        context.sessionDataStore.data.map {
+                preferences ->
+            preferences[
+                SELECTED_DELIVERY_ADDRESS_ID_KEY
+            ]
+        }
+
     val isLoggedIn: Flow<Boolean> =
         context.sessionDataStore.data.map {
                 preferences ->
@@ -182,6 +209,26 @@ class SessionManager(
 
         context.sessionDataStore.edit {
                 preferences ->
+
+            val previousUserId =
+                preferences[
+                    USER_ID_KEY
+                ]
+
+            /*
+             * Normal akışta logout clearSession() çağırır.
+             * Yine de farklı kullanıcı doğrudan yeni session
+             * açarsa önceki kullanıcının address id'si
+             * yeni hesaba taşınmasın.
+             */
+            if (
+                previousUserId != null &&
+                previousUserId != loginResponse.userId
+            ) {
+                preferences.remove(
+                    SELECTED_DELIVERY_ADDRESS_ID_KEY
+                )
+            }
 
             preferences.remove(
                 LEGACY_TOKEN_KEY
@@ -234,10 +281,9 @@ class SessionManager(
             )
 
             if (
-                loginResponse.role.equals(
-                    "Customer",
-                    ignoreCase = true
-                )
+                UserRole.fromBackendValue(
+                    loginResponse.role
+                ) == UserRole.CUSTOMER
             ) {
                 preferences[
                     ACTIVE_MODE_KEY
@@ -303,10 +349,9 @@ class SessionManager(
                 )
 
             if (
-                profile.role.equals(
-                    "Admin",
-                    ignoreCase = true
-                )
+                UserRole.fromBackendValue(
+                    profile.role
+                ) == UserRole.ADMIN
             ) {
                 preferences.remove(
                     ACTIVE_MODE_KEY
@@ -343,10 +388,9 @@ class SessionManager(
                 ]
 
             if (
-                storedRole.equals(
-                    "Admin",
-                    ignoreCase = true
-                )
+                UserRole.fromBackendValue(
+                    storedRole
+                ) == UserRole.ADMIN
             ) {
                 preferences.remove(
                     ACTIVE_MODE_KEY
@@ -375,6 +419,33 @@ class SessionManager(
                 ACTIVE_MODE_KEY
             ] =
                 safeMode.name
+        }
+    }
+
+    suspend fun setSelectedDeliveryAddressId(
+        addressId: Int
+    ) {
+        if (addressId <= 0) {
+            return
+        }
+
+        context.sessionDataStore.edit {
+                preferences ->
+
+            preferences[
+                SELECTED_DELIVERY_ADDRESS_ID_KEY
+            ] =
+                addressId
+        }
+    }
+
+    suspend fun clearSelectedDeliveryAddress() {
+        context.sessionDataStore.edit {
+                preferences ->
+
+            preferences.remove(
+                SELECTED_DELIVERY_ADDRESS_ID_KEY
+            )
         }
     }
 
