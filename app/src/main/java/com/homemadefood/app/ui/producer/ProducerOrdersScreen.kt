@@ -1,7 +1,6 @@
 package com.homemadefood.app.ui.producer
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -31,6 +30,11 @@ import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import com.homemadefood.app.data.model.OrderStatus
+import com.homemadefood.app.ui.components.AppEmptyState
+import com.homemadefood.app.ui.components.AppErrorState
+import com.homemadefood.app.ui.components.AppInlineMessage
+import com.homemadefood.app.ui.components.AppLoadingState
+import com.homemadefood.app.ui.components.AppMessageType
 
 @Composable
 fun ProducerOrdersScreen(
@@ -75,10 +79,9 @@ fun ProducerOrdersScreen(
         )
 
         if (uiState.successMessage != null) {
-            Text(
-                text = uiState.successMessage,
-                color = MaterialTheme.colorScheme.primary,
-                style = MaterialTheme.typography.bodyMedium
+            AppInlineMessage(
+                message = uiState.successMessage,
+                type = AppMessageType.Success
             )
 
             Spacer(
@@ -90,10 +93,9 @@ fun ProducerOrdersScreen(
             uiState.errorMessage != null &&
             uiState.orders.isNotEmpty()
         ) {
-            Text(
-                text = uiState.errorMessage,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodyMedium
+            AppInlineMessage(
+                message = uiState.errorMessage,
+                type = AppMessageType.Error
             )
 
             Spacer(
@@ -103,44 +105,29 @@ fun ProducerOrdersScreen(
 
         when {
             uiState.isLoading -> {
-                Box(
+                AppLoadingState(
                     modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
+                    message = "Siparişler yükleniyor..."
+                )
             }
 
             uiState.errorMessage != null &&
                     uiState.orders.isEmpty() -> {
 
-                Text(
-                    text = uiState.errorMessage,
-                    color = MaterialTheme.colorScheme.error
+                AppErrorState(
+                    message = uiState.errorMessage,
+                    onRetryClick = onRetryClick,
+                    modifier = Modifier.fillMaxSize()
                 )
-
-                Spacer(
-                    modifier = Modifier.height(14.dp)
-                )
-
-                Button(
-                    onClick = onRetryClick,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Tekrar Dene")
-                }
             }
 
             uiState.orders.isEmpty() -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Henüz gelen bir sipariş bulunmuyor.",
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                }
+                AppEmptyState(
+                    title = "Henüz gelen sipariş yok",
+                    message =
+                        "Müşteriler işletmenizden sipariş verdiğinde siparişler burada görünecek.",
+                    modifier = Modifier.fillMaxSize()
+                )
             }
 
             else -> {

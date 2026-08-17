@@ -29,6 +29,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.homemadefood.app.data.model.AdminOrderListItemResponse
+import com.homemadefood.app.ui.components.AppEmptyState
+import com.homemadefood.app.ui.components.AppErrorState
+import com.homemadefood.app.ui.components.AppInlineMessage
+import com.homemadefood.app.ui.components.AppLoadingState
+import com.homemadefood.app.ui.components.AppMessageType
 import java.text.NumberFormat
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
@@ -164,17 +169,14 @@ fun AdminOrdersScreen(
             )
         }
 
-        if (uiState.errorMessage != null) {
+        if (
+            uiState.errorMessage != null &&
+            uiState.orders.isNotEmpty()
+        ) {
             item {
-                AdminOrderErrorCard(
-                    message =
-                        uiState.errorMessage,
-
-                    showRetryButton =
-                        uiState.orders.isEmpty(),
-
-                    onRetryClick =
-                        onRetryClick
+                AppInlineMessage(
+                    message = uiState.errorMessage,
+                    type = AppMessageType.Error
                 )
             }
         }
@@ -182,15 +184,36 @@ fun AdminOrdersScreen(
         when {
             uiState.isLoading -> {
                 item {
-                    AdminOrdersLoadingContent()
+                    AppLoadingState(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(240.dp),
+                        message = "Siparişler yükleniyor..."
+                    )
+                }
+            }
+
+            uiState.errorMessage != null &&
+                    uiState.orders.isEmpty() -> {
+                item {
+                    AppErrorState(
+                        message = uiState.errorMessage,
+                        onRetryClick = onRetryClick,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(240.dp)
+                    )
                 }
             }
 
             uiState.orders.isEmpty() -> {
                 item {
-                    AdminOrdersEmptyContent(
-                        message =
-                            uiState.emptyMessage
+                    AppEmptyState(
+                        title = "Sipariş bulunamadı",
+                        message = uiState.emptyMessage,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(240.dp)
                     )
                 }
             }
@@ -755,103 +778,8 @@ private fun AdminOrderInformation(
     }
 }
 
-@Composable
-private fun AdminOrderErrorCard(
-    message: String,
-    showRetryButton: Boolean,
-    onRetryClick: () -> Unit
-) {
-    Card(
-        modifier =
-            Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier =
-                Modifier.padding(14.dp)
-        ) {
-            Text(
-                text = message,
 
-                color =
-                    MaterialTheme.colorScheme
-                        .error,
 
-                style =
-                    MaterialTheme.typography
-                        .bodyMedium
-            )
-
-            if (showRetryButton) {
-                Spacer(
-                    modifier =
-                        Modifier.height(10.dp)
-                )
-
-                Button(
-                    onClick =
-                        onRetryClick,
-
-                    modifier =
-                        Modifier.fillMaxWidth()
-                ) {
-                    Text("Tekrar Dene")
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun AdminOrdersLoadingContent() {
-    Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(vertical = 48.dp),
-
-        contentAlignment =
-            Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment =
-                Alignment.CenterHorizontally
-        ) {
-            CircularProgressIndicator()
-
-            Spacer(
-                modifier =
-                    Modifier.height(12.dp)
-            )
-
-            Text(
-                text =
-                    "Siparişler yükleniyor..."
-            )
-        }
-    }
-}
-
-@Composable
-private fun AdminOrdersEmptyContent(
-    message: String
-) {
-    Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(vertical = 48.dp),
-
-        contentAlignment =
-            Alignment.Center
-    ) {
-        Text(
-            text = message,
-            style =
-                MaterialTheme.typography
-                    .bodyLarge
-        )
-    }
-}
 
 private fun translateAdminOrderStatus(
     status: String

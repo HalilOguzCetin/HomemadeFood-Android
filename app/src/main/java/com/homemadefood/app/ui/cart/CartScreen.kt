@@ -26,7 +26,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -294,8 +293,7 @@ private fun CartItemCard(
                         .aspectRatio(1f)
                         .clip(
                             RoundedCornerShape(14.dp)
-                        ),
-                    contentScale = ContentScale.Fit
+                        )
                 )
 
                 Spacer(

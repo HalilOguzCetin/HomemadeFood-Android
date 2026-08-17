@@ -1,7 +1,6 @@
 package com.homemadefood.app.ui.admin
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -9,18 +8,18 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.homemadefood.app.data.model.RecommendationPerformanceResponse
+import com.homemadefood.app.ui.components.AppEmptyState
+import com.homemadefood.app.ui.components.AppErrorState
+import com.homemadefood.app.ui.components.AppLoadingState
 import java.util.Locale
 
 @Composable
@@ -71,54 +70,24 @@ fun RecommendationAnalyticsScreen(
         when {
             uiState.isLoading -> {
                 item {
-                    Box(
+                    AppLoadingState(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(240.dp),
-
-                        contentAlignment =
-                            Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
+                        message = "Analiz bilgileri yükleniyor..."
+                    )
                 }
             }
 
             uiState.errorMessage != null -> {
                 item {
-                    Card(
-                        modifier =
-                            Modifier.fillMaxWidth()
-                    ) {
-                        Column(
-                            modifier =
-                                Modifier.padding(16.dp)
-                        ) {
-                            Text(
-                                text =
-                                    uiState.errorMessage,
-
-                                color =
-                                    MaterialTheme
-                                        .colorScheme
-                                        .error
-                            )
-
-                            Spacer(
-                                modifier =
-                                    Modifier.height(14.dp)
-                            )
-
-                            Button(
-                                onClick = onRetryClick,
-
-                                modifier =
-                                    Modifier.fillMaxWidth()
-                            ) {
-                                Text("Tekrar Dene")
-                            }
-                        }
-                    }
+                    AppErrorState(
+                        message = uiState.errorMessage,
+                        onRetryClick = onRetryClick,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(240.dp)
+                    )
                 }
             }
 
@@ -260,9 +229,13 @@ fun RecommendationAnalyticsScreen(
 
             else -> {
                 item {
-                    Text(
-                        text =
-                            "Gösterilecek analiz bilgisi bulunamadı."
+                    AppEmptyState(
+                        title = "Analiz bilgisi bulunamadı",
+                        message =
+                            "Öneri sistemi kullanıldıkça analiz sonuçları burada görüntülenecek.",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(240.dp)
                     )
                 }
             }

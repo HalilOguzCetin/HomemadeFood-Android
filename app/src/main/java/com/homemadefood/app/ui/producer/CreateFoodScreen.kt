@@ -32,6 +32,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.homemadefood.app.ui.components.AppInlineMessage
+import com.homemadefood.app.ui.components.AppMessageType
 import coil3.compose.AsyncImage
 
 @Composable
@@ -273,23 +275,17 @@ fun CreateFoodScreen(
             modifier = Modifier.fillMaxWidth()
         )
 
-        if (uiState.errorMessage != null) {
-            Text(
-                text = uiState.errorMessage,
-                color =
-                    MaterialTheme.colorScheme.error,
-                style =
-                    MaterialTheme.typography.bodyMedium
+        if (!uiState.errorMessage.isNullOrBlank()) {
+            AppInlineMessage(
+                message = uiState.errorMessage,
+                type = AppMessageType.Error
             )
         }
 
-        if (uiState.successMessage != null) {
-            Text(
-                text = uiState.successMessage,
-                color =
-                    MaterialTheme.colorScheme.primary,
-                style =
-                    MaterialTheme.typography.bodyMedium
+        if (!uiState.successMessage.isNullOrBlank()) {
+            AppInlineMessage(
+                message = uiState.successMessage,
+                type = AppMessageType.Success
             )
         }
 

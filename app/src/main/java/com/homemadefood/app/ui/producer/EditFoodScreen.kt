@@ -1,5 +1,8 @@
 package com.homemadefood.app.ui.producer
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,11 +13,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -22,8 +27,17 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
+import com.homemadefood.app.ui.components.AppErrorState
+import com.homemadefood.app.ui.components.AppInlineMessage
+import com.homemadefood.app.ui.components.AppLoadingState
+import com.homemadefood.app.ui.components.AppMessageType
+import com.homemadefood.app.ui.components.FoodImage
 
 @Composable
 fun EditFoodScreen(
@@ -35,7 +49,10 @@ fun EditFoodScreen(
     onDescriptionChange: (String) -> Unit,
     onPriceChange: (String) -> Unit,
     onPreparationTimeChange: (String) -> Unit,
-    onImageUrlChange: (String) -> Unit,
+
+    onImageSelected: (String) -> Unit,
+    onCancelImageSelection: () -> Unit,
+
     onAvailabilityChange: (Boolean) -> Unit,
 
     onSaveClick: () -> Unit,
@@ -44,47 +61,55 @@ fun EditFoodScreen(
 
     modifier: Modifier = Modifier
 ) {
-    when {
-        uiState.isLoading -> {
-            Box(
-                modifier = modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
+    val photoPickerLauncher =
+        rememberLauncherForActivityResult(
+            contract =
+                ActivityResultContracts.PickVisualMedia()
+        ) { uri ->
+            if (uri != null) {
+                onImageSelected(
+                    uri.toString()
+                )
             }
         }
 
+    fun openPhotoPicker() {
+        photoPickerLauncher.launch(
+            PickVisualMediaRequest(
+                ActivityResultContracts
+                    .PickVisualMedia
+                    .ImageOnly
+            )
+        )
+    }
+
+    when {
+        uiState.isLoading -> {
+            AppLoadingState(
+                modifier = modifier.fillMaxSize(),
+                message = "Yemek bilgileri yükleniyor..."
+            )
+        }
+
         uiState.foodId == null -> {
-            Column(
-                modifier = modifier
-                    .fillMaxSize()
-                    .padding(20.dp)
+            Box(
+                modifier = modifier.fillMaxSize()
             ) {
+                AppErrorState(
+                    message =
+                        uiState.errorMessage
+                            ?: "Yemek bilgisi bulunamadı.",
+                    onRetryClick = onRetryClick,
+                    modifier = Modifier.fillMaxSize()
+                )
+
                 TextButton(
-                    onClick = onBackClick
+                    onClick = onBackClick,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(12.dp)
                 ) {
                     Text("← Yemeklerime Dön")
-                }
-
-                Spacer(
-                    modifier = Modifier.height(18.dp)
-                )
-
-                Text(
-                    text = uiState.errorMessage
-                        ?: "Yemek bilgisi bulunamadı.",
-                    color = MaterialTheme.colorScheme.error
-                )
-
-                Spacer(
-                    modifier = Modifier.height(16.dp)
-                )
-
-                Button(
-                    onClick = onRetryClick,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Tekrar Dene")
                 }
             }
         }
@@ -120,6 +145,114 @@ fun EditFoodScreen(
                         MaterialTheme.typography.bodySmall
                 )
 
+                Text(
+                    text = "Yemek Fotoğrafı *",
+                    style =
+                        MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                Text(
+                    text =
+                        if (
+                            uiState.selectedImageUri
+                                .isNullOrBlank()
+                        ) {
+                            "Mevcut fotoğraf korunacak. Değiştirmek isterseniz galerinizden yeni bir fotoğraf seçin."
+                        } else {
+                            "Yeni seçilen fotoğraf kaydettiğinizde mevcut fotoğrafın yerini alacak."
+                        },
+                    style =
+                        MaterialTheme.typography.bodySmall
+                )
+
+                if (
+                    !uiState.selectedImageUri
+                        .isNullOrBlank()
+                ) {
+                    AsyncImage(
+                        model =
+                            uiState.selectedImageUri,
+                        contentDescription =
+                            "Yeni seçilen yemek fotoğrafı",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(220.dp)
+                            .clip(
+                                RoundedCornerShape(
+                                    16.dp
+                                )
+                            ),
+                        contentScale =
+                            ContentScale.Crop
+                    )
+
+                    Row(
+                        modifier =
+                            Modifier.fillMaxWidth(),
+                        horizontalArrangement =
+                            Arrangement.spacedBy(
+                                10.dp
+                            )
+                    ) {
+                        OutlinedButton(
+                            onClick =
+                                ::openPhotoPicker,
+                            enabled =
+                                !uiState.isSaving,
+                            modifier =
+                                Modifier.weight(1f)
+                        ) {
+                            Text(
+                                "Başka Fotoğraf Seç"
+                            )
+                        }
+
+                        TextButton(
+                            onClick =
+                                onCancelImageSelection,
+                            enabled =
+                                !uiState.isSaving,
+                            modifier =
+                                Modifier.weight(1f)
+                        ) {
+                            Text(
+                                "Seçimi İptal Et"
+                            )
+                        }
+                    }
+                } else {
+                    FoodImage(
+                        imageUrl =
+                            uiState.imageUrl,
+                        contentDescription =
+                            "Mevcut yemek fotoğrafı",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(220.dp)
+                            .clip(
+                                RoundedCornerShape(
+                                    16.dp
+                                )
+                            ),
+                        contentScale =
+                            ContentScale.Crop
+                    )
+
+                    OutlinedButton(
+                        onClick =
+                            ::openPhotoPicker,
+                        enabled =
+                            !uiState.isSaving,
+                        modifier =
+                            Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            "Fotoğrafı Değiştir"
+                        )
+                    }
+                }
+
                 FoodCategorySelector(
                     categories = uiState.categories,
                     selectedCategoryId =
@@ -137,7 +270,8 @@ fun EditFoodScreen(
                     enabled =
                         !uiState.isSaving &&
                                 !uiState.isLoading,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier =
+                        Modifier.fillMaxWidth()
                 )
 
                 OutlinedTextField(
@@ -148,19 +282,22 @@ fun EditFoodScreen(
                     },
                     singleLine = true,
                     enabled = !uiState.isSaving,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier =
+                        Modifier.fillMaxWidth()
                 )
 
                 OutlinedTextField(
                     value = uiState.description,
-                    onValueChange = onDescriptionChange,
+                    onValueChange =
+                        onDescriptionChange,
                     label = {
                         Text("Yemek Açıklaması")
                     },
                     minLines = 3,
                     maxLines = 5,
                     enabled = !uiState.isSaving,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier =
+                        Modifier.fillMaxWidth()
                 )
 
                 OutlinedTextField(
@@ -179,12 +316,14 @@ fun EditFoodScreen(
                         ),
                     singleLine = true,
                     enabled = !uiState.isSaving,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier =
+                        Modifier.fillMaxWidth()
                 )
 
                 OutlinedTextField(
                     value =
-                        uiState.preparationTimeMinutes,
+                        uiState
+                            .preparationTimeMinutes,
                     onValueChange =
                         onPreparationTimeChange,
                     label = {
@@ -200,24 +339,16 @@ fun EditFoodScreen(
                         ),
                     singleLine = true,
                     enabled = !uiState.isSaving,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                OutlinedTextField(
-                    value = uiState.imageUrl,
-                    onValueChange = onImageUrlChange,
-                    label = {
-                        Text("Görsel URL Adresi")
-                    },
-                    singleLine = true,
-                    enabled = !uiState.isSaving,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier =
+                        Modifier.fillMaxWidth()
                 )
 
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 8.dp),
+                        .padding(
+                            vertical = 8.dp
+                        ),
 
                     horizontalArrangement =
                         Arrangement.SpaceBetween,
@@ -229,77 +360,104 @@ fun EditFoodScreen(
                         Text(
                             text = "Satış Durumu",
                             style =
-                                MaterialTheme.typography.titleMedium
+                                MaterialTheme
+                                    .typography
+                                    .titleMedium
                         )
 
                         Text(
                             text =
-                                if (uiState.isAvailable) {
+                                if (
+                                    uiState
+                                        .isAvailable
+                                ) {
                                     "Yemek şu anda satışta"
                                 } else {
                                     "Yemek satışa kapalı"
                                 },
 
                             style =
-                                MaterialTheme.typography.bodySmall
+                                MaterialTheme
+                                    .typography
+                                    .bodySmall
                         )
                     }
 
                     Switch(
-                        checked = uiState.isAvailable,
+                        checked =
+                            uiState.isAvailable,
                         onCheckedChange =
                             onAvailabilityChange,
-                        enabled = !uiState.isSaving
+                        enabled =
+                            !uiState.isSaving
                     )
                 }
 
-                if (uiState.errorMessage != null) {
-                    Text(
-                        text = uiState.errorMessage,
-                        color =
-                            MaterialTheme.colorScheme.error
+                if (
+                    !uiState.errorMessage
+                        .isNullOrBlank()
+                ) {
+                    AppInlineMessage(
+                        message =
+                            uiState.errorMessage,
+                        type =
+                            AppMessageType.Error
                     )
                 }
 
-                if (uiState.successMessage != null) {
-                    Text(
-                        text = uiState.successMessage,
-                        color =
-                            MaterialTheme.colorScheme.primary
+                if (
+                    !uiState.successMessage
+                        .isNullOrBlank()
+                ) {
+                    AppInlineMessage(
+                        message =
+                            uiState.successMessage,
+                        type =
+                            AppMessageType.Success
                     )
                 }
 
                 Button(
                     onClick = onSaveClick,
                     enabled = uiState.canSave,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier =
+                        Modifier.fillMaxWidth()
                 ) {
                     if (uiState.isSaving) {
                         CircularProgressIndicator(
                             modifier =
-                                Modifier.height(22.dp),
+                                Modifier.height(
+                                    22.dp
+                                ),
                             strokeWidth = 2.dp
                         )
                     } else {
-                        Text("Değişiklikleri Kaydet")
+                        Text(
+                            "Değişiklikleri Kaydet"
+                        )
                     }
                 }
 
                 if (uiState.isSaving) {
                     Text(
-                        text = "Yemek güncelleniyor...",
+                        text =
+                            "Yemek güncelleniyor...",
                         style =
-                            MaterialTheme.typography.bodySmall,
+                            MaterialTheme
+                                .typography
+                                .bodySmall,
 
                         modifier =
                             Modifier.align(
-                                Alignment.CenterHorizontally
+                                Alignment
+                                    .CenterHorizontally
                             )
                     )
                 }
 
                 Spacer(
-                    modifier = Modifier.height(30.dp)
+                    modifier =
+                        Modifier.height(30.dp)
                 )
             }
         }

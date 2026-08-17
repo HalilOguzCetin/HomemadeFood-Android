@@ -16,7 +16,15 @@ data class EditFoodUiState(
     val description: String = "",
     val price: String = "",
     val preparationTimeMinutes: String = "",
+
+    // Backend'de kayıtlı mevcut fotoğraf.
+    // Kullanıcı yeni fotoğraf seçmezse bu görsel korunur.
     val imageUrl: String = "",
+
+    // Photo Picker'dan seçilen yeni yerel fotoğraf URI'si.
+    // Null ise update sırasında mevcut backend fotoğrafı korunur.
+    val selectedImageUri: String? = null,
+
     val isAvailable: Boolean = true,
 
     val isLoading: Boolean = false,
@@ -33,5 +41,9 @@ data class EditFoodUiState(
                     !isSaving &&
                     !isCategoriesLoading &&
                     categoryErrorMessage == null &&
-                    selectedCategoryId != null
+                    selectedCategoryId != null &&
+                    (
+                            imageUrl.isNotBlank() ||
+                                    !selectedImageUri.isNullOrBlank()
+                            )
 }

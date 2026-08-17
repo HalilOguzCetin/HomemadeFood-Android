@@ -33,6 +33,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.homemadefood.app.data.model.ProducerApplicationStatusResponse
+import com.homemadefood.app.ui.components.AppErrorState
+import com.homemadefood.app.ui.components.AppLoadingState
 import com.homemadefood.app.ui.customer.ProducerBusinessImagePicker
 import com.homemadefood.app.ui.customer.ProducerBusinessImagePreview
 import java.time.LocalDateTime
@@ -243,26 +245,10 @@ fun ProducerProfileScreen(
 private fun ProducerProfileLoadingContent(
     modifier: Modifier = Modifier
 ) {
-    Box(
+    AppLoadingState(
         modifier = modifier,
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment =
-                Alignment.CenterHorizontally
-        ) {
-            CircularProgressIndicator()
-
-            Spacer(
-                modifier = Modifier.height(14.dp)
-            )
-
-            Text(
-                text =
-                    "İşletme profiliniz yükleniyor..."
-            )
-        }
-    }
+        message = "İşletme profiliniz yükleniyor..."
+    )
 }
 
 @Composable
@@ -272,60 +258,22 @@ private fun ProducerProfileErrorContent(
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(20.dp),
-
-        horizontalAlignment =
-            Alignment.CenterHorizontally,
-
-        verticalArrangement =
-            Arrangement.Center
+    Box(
+        modifier = modifier.fillMaxSize()
     ) {
-        Text(
-            text =
-                "İşletme profili yüklenemedi",
-
-            style =
-                MaterialTheme.typography
-                    .titleLarge,
-
-            color =
-                MaterialTheme.colorScheme.error
-        )
-
-        Spacer(
-            modifier = Modifier.height(10.dp)
-        )
-
-        Text(
-            text = message,
-            style =
-                MaterialTheme.typography
-                    .bodyLarge
-        )
-
-        Spacer(
-            modifier = Modifier.height(20.dp)
-        )
-
-        Button(
-            onClick = onRetryClick,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Tekrar Dene")
-        }
-
-        Spacer(
-            modifier = Modifier.height(8.dp)
+        AppErrorState(
+            message = message,
+            onRetryClick = onRetryClick,
+            modifier = Modifier.fillMaxSize()
         )
 
         TextButton(
             onClick = onBackClick,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(12.dp)
         ) {
-            Text("Üretici Paneline Dön")
+            Text("← Üretici Paneline Dön")
         }
     }
 }

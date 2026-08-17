@@ -1,33 +1,31 @@
 package com.homemadefood.app.ui.auth
 
 import android.util.Patterns
-import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -40,8 +38,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -49,6 +49,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.homemadefood.app.R
 
 @Composable
 fun LoginScreen(
@@ -61,17 +63,8 @@ fun LoginScreen(
 
     onNavigateToRegister: () -> Unit,
 
-    /*
-     * Şifremi unuttum ekranı hazırlandığında
-     * Navigation tarafından bu callback bağlanacak.
-     */
     onForgotPasswordClick: () -> Unit = {},
 
-    /*
-     * Kullanıcı formu düzenlemeye başladığında
-     * önceki genel hata mesajını temizlemek için
-     * AuthViewModel.clearMessage bağlanabilir.
-     */
     onClearMessage: () -> Unit = {},
 
     modifier: Modifier = Modifier
@@ -81,9 +74,8 @@ fun LoginScreen(
     }
 
     /*
-     * Şifreyi rememberSaveable ile saklamıyoruz.
-     * Böylece Activity yeniden oluşturulduğunda veya
-     * ekran tekrar açıldığında şifre korunmaz.
+     * Şifre güvenlik nedeniyle rememberSaveable
+     * kullanılmadan yalnız bellekte tutulur.
      */
     var password by remember {
         mutableStateOf("")
@@ -157,80 +149,56 @@ fun LoginScreen(
 
     Box(
         modifier =
-            modifier
-                .fillMaxSize()
-                .background(
-                    brush =
-                        Brush.verticalGradient(
-                            colors =
-                                listOf(
-                                    MaterialTheme
-                                        .colorScheme
-                                        .primaryContainer,
-
-                                    MaterialTheme
-                                        .colorScheme
-                                        .background
-                                )
-                        )
-                )
-                .imePadding()
+            modifier.fillMaxSize()
     ) {
+        /*
+         * Tek parça auth background.
+         * Altındaki yapay navigation bar temizlenmiş
+         * drawable kullanılır.
+         */
+        Image(
+            painter =
+                painterResource(
+                    id =
+                        R.drawable
+                            .auth_login_background
+                ),
+            contentDescription = null,
+            modifier =
+                Modifier.fillMaxSize(),
+            contentScale =
+                ContentScale.Crop,
+            alignment =
+                Alignment.TopCenter
+        )
+
         Column(
             modifier =
                 Modifier
                     .fillMaxSize()
+                    .statusBarsPadding()
+                    .navigationBarsPadding()
+                    .imePadding()
                     .verticalScroll(
                         rememberScrollState()
                     )
                     .padding(
-                        horizontal = 24.dp,
-                        vertical = 32.dp
+                        horizontal = 20.dp
                     ),
-
-            verticalArrangement =
-                Arrangement.Center,
-
             horizontalAlignment =
                 Alignment.CenterHorizontally
         ) {
-            Surface(
+            /*
+             * Mockup'a göre header biraz yukarıda
+             * tutuluyor. System status bar'dan sonra
+             * kontrollü bir nefes alanı bırakılır.
+             */
+            Spacer(
                 modifier =
-                    Modifier.size(82.dp),
+                    Modifier.height(44.dp)
+            )
 
-                shape =
-                    CircleShape,
-
-                color =
-                    MaterialTheme
-                        .colorScheme
-                        .primary,
-
-                shadowElevation =
-                    8.dp
-            ) {
-                Box(
-                    contentAlignment =
-                        Alignment.Center
-                ) {
-                    Text(
-                        text = "HF",
-
-                        style =
-                            MaterialTheme
-                                .typography
-                                .headlineMedium,
-
-                        color =
-                            MaterialTheme
-                                .colorScheme
-                                .onPrimary,
-
-                        fontWeight =
-                            FontWeight.Bold
-                    )
-                }
-            }
+            AuthBrandLogo()
 
             Spacer(
                 modifier =
@@ -239,427 +207,438 @@ fun LoginScreen(
 
             Text(
                 text = "HomemadeFood",
-
-                style =
-                    MaterialTheme
-                        .typography
-                        .headlineLarge,
-
-                fontWeight =
-                    FontWeight.Bold,
-
                 color =
-                    MaterialTheme
-                        .colorScheme
-                        .onBackground
+                    AuthVisualColors.BrandOlive,
+                fontFamily =
+                    FontFamily.Serif,
+                fontWeight =
+                    FontWeight.Medium,
+                fontSize = 39.sp,
+                lineHeight = 44.sp,
+                textAlign =
+                    TextAlign.Center
             )
 
             Text(
                 text =
                     "Ev yapımı lezzetlere güvenle ulaşın",
-
                 modifier =
                     Modifier.padding(
-                        top = 4.dp
+                        top = 6.dp
                     ),
-
+                color =
+                    AuthVisualColors
+                        .BrandOlive
+                        .copy(
+                            alpha = 0.86f
+                        ),
                 style =
                     MaterialTheme
                         .typography
                         .bodyLarge,
-
-                color =
-                    MaterialTheme
-                        .colorScheme
-                        .onSurfaceVariant,
-
+                fontWeight =
+                    FontWeight.Medium,
                 textAlign =
                     TextAlign.Center
             )
 
             Spacer(
                 modifier =
-                    Modifier.height(28.dp)
+                    Modifier.height(30.dp)
             )
 
-            ElevatedCard(
+            AuthGlassCard(
                 modifier =
                     Modifier
                         .fillMaxWidth()
                         .widthIn(
                             max = 520.dp
-                        ),
-
-                shape =
-                    RoundedCornerShape(24.dp),
-
-                elevation =
-                    CardDefaults
-                        .elevatedCardElevation(
-                            defaultElevation =
-                                8.dp
                         )
             ) {
-                Column(
+                Text(
+                    text = "Tekrar hoş geldiniz",
+                    color =
+                        AuthVisualColors
+                            .OliveText,
+                    style =
+                        MaterialTheme
+                            .typography
+                            .headlineMedium,
+                    fontWeight =
+                        FontWeight.Bold
+                )
+
+                Text(
+                    text =
+                        "Devam etmek için hesabınıza giriş yapın.",
                     modifier =
-                        Modifier.padding(24.dp)
-                ) {
-                    Text(
-                        text = "Tekrar hoş geldiniz",
-
-                        style =
-                            MaterialTheme
-                                .typography
-                                .headlineSmall,
-
-                        fontWeight =
-                            FontWeight.SemiBold
-                    )
-
-                    Text(
-                        text =
-                            "Devam etmek için hesabınıza giriş yapın.",
-
-                        modifier =
-                            Modifier.padding(
-                                top = 6.dp
+                        Modifier.padding(
+                            top = 8.dp
+                        ),
+                    color =
+                        AuthVisualColors
+                            .OliveText
+                            .copy(
+                                alpha = 0.90f
                             ),
+                    style =
+                        MaterialTheme
+                            .typography
+                            .bodyLarge
+                )
 
-                        style =
-                            MaterialTheme
-                                .typography
-                                .bodyMedium,
+                Spacer(
+                    modifier =
+                        Modifier.height(24.dp)
+                )
 
-                        color =
-                            MaterialTheme
-                                .colorScheme
-                                .onSurfaceVariant
-                    )
+                OutlinedTextField(
+                    value = email,
 
-                    Spacer(
-                        modifier =
-                            Modifier.height(24.dp)
-                    )
+                    onValueChange = { value ->
+                        email =
+                            value.trimStart()
 
-                    OutlinedTextField(
-                        value = email,
+                        emailError = null
 
-                        onValueChange = { value ->
-                            email =
-                                value.trimStart()
+                        if (
+                            !uiState.message
+                                .isNullOrBlank()
+                        ) {
+                            onClearMessage()
+                        }
+                    },
 
-                            emailError = null
+                    modifier =
+                        Modifier.fillMaxWidth(),
 
-                            if (
-                                !uiState.message
-                                    .isNullOrBlank()
-                            ) {
-                                onClearMessage()
-                            }
-                        },
+                    label = {
+                        Text("E-posta")
+                    },
 
-                        modifier =
-                            Modifier.fillMaxWidth(),
+                    placeholder = {
+                        Text(
+                            "ornek@eposta.com"
+                        )
+                    },
 
-                        label = {
-                            Text("E-posta")
-                        },
+                    singleLine = true,
 
-                        placeholder = {
-                            Text(
-                                "ornek@eposta.com"
-                            )
-                        },
+                    enabled =
+                        !uiState.isLoading,
 
-                        singleLine = true,
+                    isError =
+                        emailError != null,
 
-                        enabled =
-                            !uiState.isLoading,
-
-                        isError =
-                            emailError != null,
-
-                        supportingText = {
-                            emailError?.let {
-                                    message ->
-
+                    supportingText =
+                        emailError?.let { message ->
+                            {
                                 Text(message)
                             }
                         },
 
-                        keyboardOptions =
-                            KeyboardOptions(
-                                keyboardType =
-                                    KeyboardType.Email,
+                    shape =
+                        RoundedCornerShape(
+                            16.dp
+                        ),
 
-                                imeAction =
-                                    ImeAction.Next
+                    colors =
+                        authTextFieldColors(),
+
+                    keyboardOptions =
+                        KeyboardOptions(
+                            keyboardType =
+                                KeyboardType.Email,
+                            imeAction =
+                                ImeAction.Next
+                        ),
+
+                    keyboardActions =
+                        KeyboardActions(
+                            onNext = {
+                                passwordFocusRequester
+                                    .requestFocus()
+                            }
+                        )
+                )
+
+                Spacer(
+                    modifier =
+                        Modifier.height(14.dp)
+                )
+
+                OutlinedTextField(
+                    value = password,
+
+                    onValueChange = { value ->
+                        password = value
+                        passwordError = null
+
+                        if (
+                            !uiState.message
+                                .isNullOrBlank()
+                        ) {
+                            onClearMessage()
+                        }
+                    },
+
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .focusRequester(
+                                passwordFocusRequester
                             ),
 
-                        keyboardActions =
-                            KeyboardActions(
-                                onNext = {
-                                    passwordFocusRequester
-                                        .requestFocus()
-                                }
-                            )
-                    )
+                    label = {
+                        Text("Şifre")
+                    },
 
-                    Spacer(
-                        modifier =
-                            Modifier.height(10.dp)
-                    )
+                    singleLine = true,
 
-                    OutlinedTextField(
-                        value = password,
+                    enabled =
+                        !uiState.isLoading,
 
-                        onValueChange = { value ->
-                            password = value
-                            passwordError = null
+                    isError =
+                        passwordError != null,
 
-                            if (
-                                !uiState.message
-                                    .isNullOrBlank()
-                            ) {
-                                onClearMessage()
-                            }
-                        },
-
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .focusRequester(
-                                    passwordFocusRequester
-                                ),
-
-                        label = {
-                            Text("Şifre")
-                        },
-
-                        singleLine = true,
-
-                        enabled =
-                            !uiState.isLoading,
-
-                        isError =
-                            passwordError != null,
-
-                        supportingText = {
-                            passwordError?.let {
-                                    message ->
-
+                    supportingText =
+                        passwordError?.let { message ->
+                            {
                                 Text(message)
                             }
                         },
 
-                        visualTransformation =
-                            if (passwordVisible) {
-                                VisualTransformation.None
-                            } else {
-                                PasswordVisualTransformation()
+                    visualTransformation =
+                        if (passwordVisible) {
+                            VisualTransformation.None
+                        } else {
+                            PasswordVisualTransformation()
+                        },
+
+                    trailingIcon = {
+                        TextButton(
+                            onClick = {
+                                passwordVisible =
+                                    !passwordVisible
                             },
 
-                        trailingIcon = {
-                            TextButton(
-                                onClick = {
-                                    passwordVisible =
-                                        !passwordVisible
-                                },
-
-                                enabled =
-                                    !uiState.isLoading,
-
-                                contentPadding =
-                                    PaddingValues(
-                                        horizontal =
-                                            8.dp
-                                    )
-                            ) {
-                                Text(
-                                    text =
-                                        if (
-                                            passwordVisible
-                                        ) {
-                                            "Gizle"
-                                        } else {
-                                            "Göster"
-                                        }
-                                )
-                            }
-                        },
-
-                        keyboardOptions =
-                            KeyboardOptions(
-                                keyboardType =
-                                    KeyboardType.Password,
-
-                                imeAction =
-                                    ImeAction.Done
-                            ),
-
-                        keyboardActions =
-                            KeyboardActions(
-                                onDone = {
-                                    submitLogin()
-                                }
-                            )
-                    )
-
-                    Row(
-                        modifier =
-                            Modifier.fillMaxWidth(),
-
-                        horizontalArrangement =
-                            Arrangement.End
-                    ) {
-                        TextButton(
-                            onClick =
-                                onForgotPasswordClick,
-
                             enabled =
-                                !uiState.isLoading
-                        ) {
-                            Text(
-                                "Şifremi Unuttum"
-                            )
-                        }
-                    }
+                                !uiState.isLoading,
 
-                    if (
-                        !uiState.message
-                            .isNullOrBlank()
-                    ) {
-                        Surface(
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(
-                                        top = 4.dp
-                                    ),
-
-                            shape =
-                                RoundedCornerShape(
-                                    12.dp
-                                ),
-
-                            color =
-                                if (
-                                    uiState.isError
-                                ) {
-                                    MaterialTheme
-                                        .colorScheme
-                                        .errorContainer
-                                } else {
-                                    MaterialTheme
-                                        .colorScheme
-                                        .primaryContainer
-                                }
+                            contentPadding =
+                                PaddingValues(
+                                    horizontal = 8.dp
+                                )
                         ) {
                             Text(
                                 text =
-                                    uiState.message,
-
-                                modifier =
-                                    Modifier.padding(
-                                        12.dp
-                                    ),
-
-                                color =
                                     if (
-                                        uiState.isError
+                                        passwordVisible
                                     ) {
-                                        MaterialTheme
-                                            .colorScheme
-                                            .onErrorContainer
+                                        "Gizle"
                                     } else {
-                                        MaterialTheme
-                                            .colorScheme
-                                            .onPrimaryContainer
+                                        "Göster"
                                     },
 
-                                style =
-                                    MaterialTheme
-                                        .typography
-                                        .bodyMedium
-                            )
-                        }
-                    }
-
-                    Spacer(
-                        modifier =
-                            Modifier.height(20.dp)
-                    )
-
-                    Button(
-                        onClick = {
-                            submitLogin()
-                        },
-
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .height(52.dp),
-
-                        enabled =
-                            !uiState.isLoading,
-
-                        shape =
-                            RoundedCornerShape(
-                                14.dp
-                            )
-                    ) {
-                        if (uiState.isLoading) {
-                            CircularProgressIndicator(
-                                modifier =
-                                    Modifier.size(
-                                        22.dp
-                                    ),
-
-                                strokeWidth =
-                                    2.dp,
-
                                 color =
-                                    MaterialTheme
-                                        .colorScheme
-                                        .onPrimary
-                            )
-                        } else {
-                            Text(
-                                text = "Giriş Yap",
-
-                                style =
-                                    MaterialTheme
-                                        .typography
-                                        .titleMedium,
+                                    AuthVisualColors
+                                        .DeepOlive,
 
                                 fontWeight =
                                     FontWeight.SemiBold
                             )
                         }
-                    }
+                    },
 
-                    Spacer(
-                        modifier =
-                            Modifier.height(12.dp)
-                    )
+                    shape =
+                        RoundedCornerShape(
+                            16.dp
+                        ),
 
+                    colors =
+                        authTextFieldColors(),
+
+                    keyboardOptions =
+                        KeyboardOptions(
+                            keyboardType =
+                                KeyboardType.Password,
+                            imeAction =
+                                ImeAction.Done
+                        ),
+
+                    keyboardActions =
+                        KeyboardActions(
+                            onDone = {
+                                submitLogin()
+                            }
+                        )
+                )
+
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(
+                                top = 6.dp
+                            ),
+
+                    horizontalArrangement =
+                        Arrangement.End
+                ) {
                     TextButton(
                         onClick =
-                            onNavigateToRegister,
-
-                        modifier =
-                            Modifier.fillMaxWidth(),
+                            onForgotPasswordClick,
 
                         enabled =
-                            !uiState.isLoading
+                            !uiState.isLoading,
+
+                        contentPadding =
+                            PaddingValues(
+                                horizontal = 4.dp,
+                                vertical = 6.dp
+                            )
                     ) {
                         Text(
                             text =
-                                "Hesabınız yok mu? Kayıt olun"
+                                "Şifremi Unuttum",
+
+                            color =
+                                AuthVisualColors
+                                    .DeepOlive,
+
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .titleSmall,
+
+                            fontWeight =
+                                FontWeight.SemiBold
                         )
                     }
                 }
+
+                if (
+                    !uiState.message
+                        .isNullOrBlank()
+                ) {
+                    Spacer(
+                        modifier =
+                            Modifier.height(14.dp)
+                    )
+
+                    AuthMessageCard(
+                        message =
+                            uiState.message,
+                        isError =
+                            uiState.isError,
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                    )
+                }
+
+                Spacer(
+                    modifier =
+                        Modifier.height(
+                            if (
+                                uiState.message
+                                    .isNullOrBlank()
+                            ) {
+                                18.dp
+                            } else {
+                                16.dp
+                            }
+                        )
+                )
+
+                Button(
+                    onClick = {
+                        submitLogin()
+                    },
+
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(58.dp),
+
+                    enabled =
+                        !uiState.isLoading,
+
+                    shape =
+                        RoundedCornerShape(
+                            18.dp
+                        ),
+
+                    colors =
+                        authPrimaryButtonColors(),
+
+                    contentPadding =
+                        PaddingValues(
+                            horizontal = 20.dp
+                        )
+                ) {
+                    if (uiState.isLoading) {
+                        CircularProgressIndicator(
+                            modifier =
+                                Modifier.height(
+                                    24.dp
+                                ),
+                            strokeWidth = 2.dp,
+                            color =
+                                androidx.compose
+                                    .ui
+                                    .graphics
+                                    .Color
+                                    .White
+                        )
+                    } else {
+                        Text(
+                            text = "Giriş Yap",
+                            fontSize = 20.sp,
+                            fontWeight =
+                                FontWeight.Bold
+                        )
+                    }
+                }
+
+                Spacer(
+                    modifier =
+                        Modifier.height(18.dp)
+                )
+
+                TextButton(
+                    onClick =
+                        onNavigateToRegister,
+
+                    modifier =
+                        Modifier.fillMaxWidth(),
+
+                    enabled =
+                        !uiState.isLoading
+                ) {
+                    Text(
+                        text =
+                            "Hesabınız yok mu? Kayıt olun",
+
+                        color =
+                            AuthVisualColors
+                                .DeepOlive,
+
+                        style =
+                            MaterialTheme
+                                .typography
+                                .titleSmall,
+
+                        fontWeight =
+                            FontWeight.SemiBold
+                    )
+                }
             }
+
+            Spacer(
+                modifier =
+                    Modifier.height(28.dp)
+            )
         }
     }
 }

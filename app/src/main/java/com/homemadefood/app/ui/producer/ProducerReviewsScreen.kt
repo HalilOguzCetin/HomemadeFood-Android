@@ -10,9 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -22,6 +20,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.homemadefood.app.data.model.ReviewResponse
+import com.homemadefood.app.ui.components.AppErrorState
+import com.homemadefood.app.ui.components.AppInlineMessage
+import com.homemadefood.app.ui.components.AppLoadingState
+import com.homemadefood.app.ui.components.AppMessageType
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
@@ -36,18 +38,32 @@ fun ProducerReviewsScreen(
 ) {
     when {
         uiState.isLoading -> {
-            ProducerReviewsLoadingContent(
-                modifier = modifier
+            AppLoadingState(
+                modifier = modifier,
+                message = "Değerlendirmeler yükleniyor..."
             )
         }
 
         uiState.errorMessage != null -> {
-            ProducerReviewsErrorContent(
-                message = uiState.errorMessage,
-                onBackClick = onBackClick,
-                onRetryClick = onRetryClick,
-                modifier = modifier
-            )
+            Column(
+                modifier = modifier.fillMaxSize()
+            ) {
+                TextButton(
+                    onClick = onBackClick,
+                    modifier = Modifier.padding(
+                        horizontal = 20.dp,
+                        vertical = 8.dp
+                    )
+                ) {
+                    Text("← Üretici Paneline Dön")
+                }
+
+                AppErrorState(
+                    message = uiState.errorMessage,
+                    onRetryClick = onRetryClick,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
         }
 
         else -> {
@@ -56,83 +72,6 @@ fun ProducerReviewsScreen(
                 onBackClick = onBackClick,
                 modifier = modifier
             )
-        }
-    }
-}
-
-@Composable
-private fun ProducerReviewsLoadingContent(
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(20.dp),
-
-        horizontalAlignment =
-            Alignment.CenterHorizontally,
-
-        verticalArrangement =
-            Arrangement.Center
-    ) {
-        CircularProgressIndicator()
-
-        Spacer(
-            modifier = Modifier.height(12.dp)
-        )
-
-        Text(
-            text = "Değerlendirmeler yükleniyor..."
-        )
-    }
-}
-
-@Composable
-private fun ProducerReviewsErrorContent(
-    message: String,
-    onBackClick: () -> Unit,
-    onRetryClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(20.dp),
-
-        horizontalAlignment =
-            Alignment.CenterHorizontally,
-
-        verticalArrangement =
-            Arrangement.Center
-    ) {
-        Text(
-            text = message,
-            color =
-                MaterialTheme.colorScheme.error,
-            style =
-                MaterialTheme.typography.bodyLarge
-        )
-
-        Spacer(
-            modifier = Modifier.height(16.dp)
-        )
-
-        Button(
-            onClick = onRetryClick,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Tekrar Dene")
-        }
-
-        Spacer(
-            modifier = Modifier.height(8.dp)
-        )
-
-        TextButton(
-            onClick = onBackClick,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Üretici Paneline Dön")
         }
     }
 }
@@ -193,7 +132,11 @@ private fun ProducerReviewsContent(
 
         if (uiState.reviews.isEmpty()) {
             item {
-                EmptyProducerReviewsCard()
+                AppInlineMessage(
+                    message =
+                        "Henüz değerlendirme bulunmuyor. Müşteriler teslim edilen siparişleri değerlendirdiğinde yorumlar burada görünecek.",
+                    type = AppMessageType.Info
+                )
             }
         } else {
             items(
@@ -326,39 +269,6 @@ private fun ProducerReviewSummaryCard(
                             .primary
                 )
             }
-        }
-    }
-}
-
-@Composable
-private fun EmptyProducerReviewsCard() {
-    Card(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(18.dp)
-        ) {
-            Text(
-                text =
-                    "Henüz değerlendirme bulunmuyor.",
-
-                style =
-                    MaterialTheme.typography
-                        .titleMedium
-            )
-
-            Spacer(
-                modifier = Modifier.height(8.dp)
-            )
-
-            Text(
-                text =
-                    "Müşteriler teslim edilen siparişleri değerlendirdiğinde yorumlar burada görünecek.",
-
-                style =
-                    MaterialTheme.typography
-                        .bodyMedium
-            )
         }
     }
 }

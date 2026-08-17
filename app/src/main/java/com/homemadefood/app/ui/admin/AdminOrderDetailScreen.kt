@@ -1,7 +1,6 @@
 package com.homemadefood.app.ui.admin
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,9 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -24,6 +21,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.homemadefood.app.data.model.AdminOrderDetailResponse
 import com.homemadefood.app.data.model.AdminOrderItemResponse
+import com.homemadefood.app.ui.components.AppErrorState
+import com.homemadefood.app.ui.components.AppLoadingState
 import java.text.NumberFormat
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
@@ -68,17 +67,17 @@ fun AdminOrderDetailScreen(
 
         when {
             uiState.isLoading -> {
-                AdminOrderDetailLoadingContent()
+                AppLoadingState(
+                    message = "Sipariş bilgileri yükleniyor..."
+                )
             }
 
             uiState.order == null -> {
-                AdminOrderDetailErrorContent(
+                AppErrorState(
                     message =
                         uiState.errorMessage
                             ?: "Sipariş bilgileri alınamadı.",
-
-                    onRetryClick =
-                        onRetryClick
+                    onRetryClick = onRetryClick
                 )
             }
 
@@ -719,67 +718,6 @@ private fun AdminOrderDetailInformation(
                 MaterialTheme.typography
                     .titleSmall
         )
-    }
-}
-
-@Composable
-private fun AdminOrderDetailLoadingContent() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment =
-            Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment =
-                Alignment.CenterHorizontally
-        ) {
-            CircularProgressIndicator()
-
-            Spacer(
-                modifier = Modifier.height(12.dp)
-            )
-
-            Text(
-                text =
-                    "Sipariş bilgileri yükleniyor..."
-            )
-        }
-    }
-}
-
-@Composable
-private fun AdminOrderDetailErrorContent(
-    message: String,
-    onRetryClick: () -> Unit
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-
-        horizontalAlignment =
-            Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = message,
-
-            color =
-                MaterialTheme.colorScheme.error,
-
-            style =
-                MaterialTheme.typography
-                    .bodyLarge
-        )
-
-        Spacer(
-            modifier = Modifier.height(14.dp)
-        )
-
-        Button(
-            onClick = onRetryClick,
-            modifier =
-                Modifier.fillMaxWidth()
-        ) {
-            Text("Tekrar Dene")
-        }
     }
 }
 

@@ -24,7 +24,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -165,8 +164,7 @@ private fun FavoriteCard(
                                 topStart = 20.dp,
                                 topEnd = 20.dp
                             )
-                        ),
-                    contentScale = ContentScale.Fit
+                        )
                 )
 
                 Surface(

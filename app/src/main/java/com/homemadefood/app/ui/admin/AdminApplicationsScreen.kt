@@ -37,6 +37,11 @@ import coil3.compose.AsyncImage
 import com.homemadefood.app.data.model.AdminProducerApplicationResponse
 import com.homemadefood.app.data.remote.ApiConfig
 import com.homemadefood.app.data.model.ProducerApplicationStatus
+import com.homemadefood.app.ui.components.AppEmptyState
+import com.homemadefood.app.ui.components.AppErrorState
+import com.homemadefood.app.ui.components.AppInlineMessage
+import com.homemadefood.app.ui.components.AppLoadingState
+import com.homemadefood.app.ui.components.AppMessageType
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
@@ -128,15 +133,13 @@ fun AdminApplicationsScreen(
         )
 
         uiState.successMessage?.let { message ->
-            ApplicationMessageCard(
+            AppInlineMessage(
                 message = message,
-                isError = false,
-                onCloseClick =
-                    onClearMessage
+                type = AppMessageType.Success
             )
 
             Spacer(
-                modifier = Modifier.height(12.dp)
+                modifier = Modifier.height(8.dp)
             )
         }
 
@@ -144,42 +147,36 @@ fun AdminApplicationsScreen(
             uiState.errorMessage != null &&
             uiState.applications.isNotEmpty()
         ) {
-            ApplicationMessageCard(
-                message =
-                    uiState.errorMessage,
-
-                isError = true,
-
-                onCloseClick =
-                    onClearMessage
+            AppInlineMessage(
+                message = uiState.errorMessage,
+                type = AppMessageType.Error
             )
 
             Spacer(
-                modifier = Modifier.height(12.dp)
+                modifier = Modifier.height(8.dp)
             )
         }
 
         when {
             uiState.isLoading -> {
-                ApplicationsLoadingContent()
+                AppLoadingState(
+                    message = "Başvurular yükleniyor..."
+                )
             }
 
             uiState.errorMessage != null &&
                     uiState.applications.isEmpty() -> {
 
-                ApplicationsErrorContent(
-                    message =
-                        uiState.errorMessage,
-
-                    onRetryClick =
-                        onRetryClick
+                AppErrorState(
+                    message = uiState.errorMessage,
+                    onRetryClick = onRetryClick
                 )
             }
 
             uiState.applications.isEmpty() -> {
-                ApplicationsEmptyContent(
-                    message =
-                        uiState.emptyMessage
+                AppEmptyState(
+                    title = "Başvuru bulunamadı",
+                    message = uiState.emptyMessage
                 )
             }
 
@@ -338,126 +335,9 @@ private fun ApplicationStatusTabs(
     }
 }
 
-@Composable
-private fun ApplicationMessageCard(
-    message: String,
-    isError: Boolean,
-    onCloseClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier =
-                Modifier.padding(14.dp)
-        ) {
-            Text(
-                text = message,
 
-                color =
-                    if (isError) {
-                        MaterialTheme
-                            .colorScheme.error
-                    } else {
-                        MaterialTheme
-                            .colorScheme.primary
-                    },
 
-                style =
-                    MaterialTheme.typography
-                        .bodyMedium
-            )
 
-            TextButton(
-                onClick =
-                    onCloseClick
-            ) {
-                Text("Kapat")
-            }
-        }
-    }
-}
-
-@Composable
-private fun ApplicationsLoadingContent() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment =
-            Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment =
-                Alignment.CenterHorizontally
-        ) {
-            CircularProgressIndicator()
-
-            Spacer(
-                modifier =
-                    Modifier.height(12.dp)
-            )
-
-            Text(
-                text =
-                    "Başvurular yükleniyor..."
-            )
-        }
-    }
-}
-
-@Composable
-private fun ApplicationsErrorContent(
-    message: String,
-    onRetryClick: () -> Unit
-) {
-    Column(
-        modifier =
-            Modifier.fillMaxWidth(),
-
-        horizontalAlignment =
-            Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = message,
-            color =
-                MaterialTheme.colorScheme.error,
-            style =
-                MaterialTheme.typography
-                    .bodyLarge
-        )
-
-        Spacer(
-            modifier = Modifier.height(14.dp)
-        )
-
-        Button(
-            onClick =
-                onRetryClick,
-
-            modifier =
-                Modifier.fillMaxWidth()
-        ) {
-            Text("Tekrar Dene")
-        }
-    }
-}
-
-@Composable
-private fun ApplicationsEmptyContent(
-    message: String
-) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment =
-            Alignment.Center
-    ) {
-        Text(
-            text = message,
-            style =
-                MaterialTheme.typography
-                    .bodyLarge
-        )
-    }
-}
 
 @Composable
 private fun AdminApplicationCard(

@@ -1,7 +1,6 @@
 package com.homemadefood.app.ui.producer
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,7 +12,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -22,6 +20,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.homemadefood.app.data.model.FoodResponse
+import com.homemadefood.app.ui.components.AppEmptyState
+import com.homemadefood.app.ui.components.AppErrorState
+import com.homemadefood.app.ui.components.AppLoadingState
 import java.util.Locale
 
 @Composable
@@ -70,44 +71,27 @@ fun ProducerFoodsScreen(
 
         when {
             uiState.isLoading -> {
-                Box(
+                AppLoadingState(
                     modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
+                    message = "Yemekleriniz yükleniyor..."
+                )
             }
 
             uiState.errorMessage != null -> {
-                Text(
-                    text = uiState.errorMessage,
-                    color = MaterialTheme.colorScheme.error
+                AppErrorState(
+                    message = uiState.errorMessage,
+                    onRetryClick = onRetryClick,
+                    modifier = Modifier.fillMaxSize()
                 )
-
-                Spacer(
-                    modifier = Modifier.height(14.dp)
-                )
-
-                Button(
-                    onClick = onRetryClick,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Tekrar Dene")
-                }
             }
 
             uiState.foods.isEmpty() -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text =
-                            "Henüz eklenmiş bir yemeğiniz bulunmuyor.",
-                        style =
-                            MaterialTheme.typography.bodyLarge
-                    )
-                }
+                AppEmptyState(
+                    title = "Henüz yemek eklemediniz",
+                    message =
+                        "Yeni Yemek Ekle butonunu kullanarak menünüze ilk yemeğinizi ekleyebilirsiniz.",
+                    modifier = Modifier.fillMaxSize()
+                )
             }
 
             else -> {

@@ -436,9 +436,14 @@ private fun NavGraphBuilder.editFoodDestination(
                     .onPreparationTimeChange(value)
             },
 
-            onImageUrlChange = { value ->
+            onImageSelected = { uri ->
                 editFoodViewModel
-                    .onImageUrlChange(value)
+                    .onImageSelected(uri)
+            },
+
+            onCancelImageSelection = {
+                editFoodViewModel
+                    .onImageSelectionRemoved()
             },
 
             onAvailabilityChange = { value ->

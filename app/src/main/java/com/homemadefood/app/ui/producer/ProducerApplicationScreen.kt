@@ -11,9 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -22,6 +20,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.homemadefood.app.ui.components.AppErrorState
+import com.homemadefood.app.ui.components.AppLoadingState
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
@@ -36,46 +36,31 @@ fun ProducerApplicationScreen(
 ) {
     when {
         uiState.isLoading -> {
-            Box(
+            AppLoadingState(
                 modifier = modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
+                message = "Üretici başvurunuz yükleniyor..."
+            )
         }
 
         uiState.application == null -> {
-            Column(
-                modifier = modifier
-                    .fillMaxSize()
-                    .padding(20.dp)
+            Box(
+                modifier = modifier.fillMaxSize()
             ) {
-                TextButton(
-                    onClick = onBackClick
-                ) {
-                    Text("← Üretici Paneline Dön")
-                }
-
-                Spacer(
-                    modifier = Modifier.height(18.dp)
-                )
-
-                Text(
-                    text =
+                AppErrorState(
+                    message =
                         uiState.errorMessage
                             ?: "Üretici başvuru bilgisi bulunamadı.",
-                    color = MaterialTheme.colorScheme.error
+                    onRetryClick = onRetryClick,
+                    modifier = Modifier.fillMaxSize()
                 )
 
-                Spacer(
-                    modifier = Modifier.height(16.dp)
-                )
-
-                Button(
-                    onClick = onRetryClick,
-                    modifier = Modifier.fillMaxWidth()
+                TextButton(
+                    onClick = onBackClick,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(12.dp)
                 ) {
-                    Text("Tekrar Dene")
+                    Text("← Üretici Paneline Dön")
                 }
             }
         }

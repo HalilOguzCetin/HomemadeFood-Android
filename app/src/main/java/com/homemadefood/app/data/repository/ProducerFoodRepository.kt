@@ -2,7 +2,6 @@ package com.homemadefood.app.data.repository
 
 import com.homemadefood.app.data.model.ApiResponse
 import com.homemadefood.app.data.model.FoodResponse
-import com.homemadefood.app.data.model.UpdateFoodRequest
 import com.homemadefood.app.data.remote.ProducerFoodApiService
 import com.homemadefood.app.data.remote.RetrofitClient
 import okhttp3.MediaType.Companion.toMediaType
@@ -94,15 +93,63 @@ class ProducerFoodRepository(
 
     suspend fun updateFood(
         foodId: Int,
-        request: UpdateFoodRequest
+        categoryId: Int,
+        name: String,
+        description: String,
+        price: Double,
+        preparationTimeMinutes: Int,
+        isAvailable: Boolean,
+        image: MultipartBody.Part?
     ): Response<
             ApiResponse<FoodResponse>
             > {
 
+        val normalizedPrice =
+            BigDecimal.valueOf(price)
+                .stripTrailingZeros()
+                .toPlainString()
+
         return producerFoodApiService
             .updateFood(
                 foodId = foodId,
-                request = request
+
+                categoryId =
+                    categoryId.toString()
+                        .toRequestBody(
+                            plainTextMediaType
+                        ),
+
+                name =
+                    name.toRequestBody(
+                        plainTextMediaType
+                    ),
+
+                description =
+                    description.toRequestBody(
+                        plainTextMediaType
+                    ),
+
+                price =
+                    normalizedPrice
+                        .toRequestBody(
+                            plainTextMediaType
+                        ),
+
+                preparationTimeMinutes =
+                    preparationTimeMinutes
+                        .toString()
+                        .toRequestBody(
+                            plainTextMediaType
+                        ),
+
+                isAvailable =
+                    isAvailable
+                        .toString()
+                        .toRequestBody(
+                            plainTextMediaType
+                        ),
+
+                image = image
             )
     }
 }

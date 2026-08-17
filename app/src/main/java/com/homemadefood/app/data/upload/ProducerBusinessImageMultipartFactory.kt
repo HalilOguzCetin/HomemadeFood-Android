@@ -46,6 +46,12 @@ class ProducerBusinessImageMultipartFactory(
                         "Yalnızca JPG, PNG veya WEBP işletme görselleri yüklenebilir."
                     )
 
+            ImageQualityValidator
+                .validateMinimumResolution(
+                    bytes = bytes,
+                    imageLabel = "İşletme görseli"
+                )
+
             val requestBody =
                 bytes.toRequestBody(
                     imageType.mimeType

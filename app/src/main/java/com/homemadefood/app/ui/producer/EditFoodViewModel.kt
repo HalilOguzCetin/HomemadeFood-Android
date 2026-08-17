@@ -3,10 +3,10 @@ package com.homemadefood.app.ui.producer
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.homemadefood.app.data.local.SessionManager
-import com.homemadefood.app.data.model.UpdateFoodRequest
 import com.homemadefood.app.data.repository.CategoryRepository
 import com.homemadefood.app.data.repository.ProducerFoodRepository
 import com.homemadefood.app.data.remote.ApiErrorParser
+import com.homemadefood.app.data.upload.FoodImageMultipartFactory
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,7 +23,10 @@ class EditFoodViewModel(
     CategoryRepository,
 
     private val sessionManager:
-    SessionManager
+    SessionManager,
+
+    private val foodImageMultipartFactory:
+    FoodImageMultipartFactory
 ) : ViewModel() {
 
     private var categoryLoadJob: Job? = null
@@ -111,6 +114,7 @@ class EditFoodViewModel(
                                     .preparationTimeMinutes
                                     .toString(),
                             imageUrl = food.imageUrl,
+                            selectedImageUri = null,
                             isAvailable = food.isAvailable,
                             isLoading = false,
                             errorMessage = null
@@ -302,11 +306,42 @@ class EditFoodViewModel(
             )
     }
 
-    fun onImageUrlChange(value: String) {
+    fun onImageSelected(
+        uriString: String
+    ) {
+        if (
+            _uiState.value.isSaving ||
+            _uiState.value.isLoading
+        ) {
+            return
+        }
+
         _uiState.value =
             _uiState.value.copy(
-                imageUrl = value,
-                errorMessage = null
+                selectedImageUri =
+                    uriString
+                        .trim()
+                        .takeIf {
+                            it.isNotBlank()
+                        },
+                errorMessage = null,
+                successMessage = null
+            )
+    }
+
+    fun onImageSelectionRemoved() {
+        if (
+            _uiState.value.isSaving ||
+            _uiState.value.isLoading
+        ) {
+            return
+        }
+
+        _uiState.value =
+            _uiState.value.copy(
+                selectedImageUri = null,
+                errorMessage = null,
+                successMessage = null
             )
     }
 
@@ -396,6 +431,14 @@ class EditFoodViewModel(
                 )
                 return
             }
+
+            currentState.imageUrl.isBlank() &&
+                    currentState.selectedImageUri.isNullOrBlank() -> {
+                showError(
+                    "Yemek fotoğrafı bulunamadı. Lütfen bir fotoğraf seçin."
+                )
+                return
+            }
         }
 
         viewModelScope.launch {
@@ -421,30 +464,65 @@ class EditFoodViewModel(
                 return@launch
             }
 
-            val request =
-                UpdateFoodRequest(
-                    categoryId = categoryId,
-                    name =
-                        currentState.name.trim(),
-                    description =
-                        currentState
-                            .description
-                            .trim(),
-                    price = price,
-                    preparationTimeMinutes =
-                        preparationTime,
-                    imageUrl =
-                        currentState.imageUrl.trim(),
-                    isAvailable =
-                        currentState.isAvailable
-                )
+            val imagePart =
+                if (
+                    currentState
+                        .selectedImageUri
+                        .isNullOrBlank()
+                ) {
+                    null
+                } else {
+                    try {
+                        foodImageMultipartFactory
+                            .createPart(
+                                currentState
+                                    .selectedImageUri
+                                    .orEmpty()
+                            )
+                    } catch (
+                        exception: IllegalArgumentException
+                    ) {
+                        showError(
+                            exception.message
+                                ?: "Seçilen fotoğraf yüklemeye hazırlanamadı."
+                        )
+                        return@launch
+                    } catch (_: SecurityException) {
+                        showError(
+                            "Seçilen fotoğrafa erişilemiyor. Lütfen fotoğrafı yeniden seçin."
+                        )
+                        return@launch
+                    } catch (_: IOException) {
+                        showError(
+                            "Seçilen fotoğraf okunamadı. Lütfen başka bir fotoğraf deneyin."
+                        )
+                        return@launch
+                    } catch (_: Exception) {
+                        showError(
+                            "Fotoğraf hazırlanırken bir hata oluştu."
+                        )
+                        return@launch
+                    }
+                }
 
             try {
                 val response =
                     producerFoodRepository
                         .updateFood(
                             foodId = foodId,
-                            request = request
+                            categoryId = categoryId,
+                            name =
+                                currentState.name.trim(),
+                            description =
+                                currentState
+                                    .description
+                                    .trim(),
+                            price = price,
+                            preparationTimeMinutes =
+                                preparationTime,
+                            isAvailable =
+                                currentState.isAvailable,
+                            image = imagePart
                         )
 
                 val responseBody =
@@ -466,8 +544,10 @@ class EditFoodViewModel(
                                 updatedFood.categoryId,
                             selectedCategoryName =
                                 updatedFood.categoryName,
+                            imageUrl = updatedFood.imageUrl,
+                            selectedImageUri = null,
                             successMessage =
-                                "Yemek başarıyla güncellendi.",
+                                "Yemek fotoğrafı ve bilgileri başarıyla güncellendi.",
                             errorMessage = null
                         )
                 } else {

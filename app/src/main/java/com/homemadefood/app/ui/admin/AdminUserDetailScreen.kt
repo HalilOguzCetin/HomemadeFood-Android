@@ -29,6 +29,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.homemadefood.app.data.model.AdminUserDetailResponse
+import com.homemadefood.app.ui.components.AppErrorState
+import com.homemadefood.app.ui.components.AppInlineMessage
+import com.homemadefood.app.ui.components.AppLoadingState
+import com.homemadefood.app.ui.components.AppMessageType
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
@@ -78,14 +82,13 @@ fun AdminUserDetailScreen(
         )
 
         uiState.successMessage?.let { message ->
-            AdminUserDetailMessageCard(
+            AppInlineMessage(
                 message = message,
-                isError = false,
-                onCloseClick = onClearMessage
+                type = AppMessageType.Success
             )
 
             Spacer(
-                modifier = Modifier.height(12.dp)
+                modifier = Modifier.height(8.dp)
             )
         }
 
@@ -93,44 +96,25 @@ fun AdminUserDetailScreen(
             uiState.errorMessage != null &&
             uiState.user != null
         ) {
-            AdminUserDetailMessageCard(
+            AppInlineMessage(
                 message = uiState.errorMessage,
-                isError = true,
-                onCloseClick = onClearMessage
+                type = AppMessageType.Error
             )
 
             Spacer(
-                modifier = Modifier.height(12.dp)
+                modifier = Modifier.height(8.dp)
             )
         }
 
         when {
             uiState.isLoading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment =
-                            Alignment.CenterHorizontally
-                    ) {
-                        CircularProgressIndicator()
-
-                        Spacer(
-                            modifier =
-                                Modifier.height(12.dp)
-                        )
-
-                        Text(
-                            text =
-                                "Kullanıcı bilgileri yükleniyor..."
-                        )
-                    }
-                }
+                AppLoadingState(
+                    message = "Kullanıcı bilgileri yükleniyor..."
+                )
             }
 
             uiState.user == null -> {
-                AdminUserDetailErrorContent(
+                AppErrorState(
                     message =
                         uiState.errorMessage
                             ?: "Kullanıcı bilgileri alınamadı.",
@@ -634,75 +618,7 @@ private fun AdminUserDetailInformation(
     }
 }
 
-@Composable
-private fun AdminUserDetailMessageCard(
-    message: String,
-    isError: Boolean,
-    onCloseClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(14.dp)
-        ) {
-            Text(
-                text = message,
 
-                color =
-                    if (isError) {
-                        MaterialTheme
-                            .colorScheme.error
-                    } else {
-                        MaterialTheme
-                            .colorScheme.primary
-                    },
-
-                style =
-                    MaterialTheme.typography
-                        .bodyMedium
-            )
-
-            TextButton(
-                onClick = onCloseClick
-            ) {
-                Text("Kapat")
-            }
-        }
-    }
-}
-
-@Composable
-private fun AdminUserDetailErrorContent(
-    message: String,
-    onRetryClick: () -> Unit
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment =
-            Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = message,
-            color =
-                MaterialTheme.colorScheme.error,
-            style =
-                MaterialTheme.typography
-                    .bodyLarge
-        )
-
-        Spacer(
-            modifier = Modifier.height(14.dp)
-        )
-
-        Button(
-            onClick = onRetryClick,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Tekrar Dene")
-        }
-    }
-}
 
 @Composable
 private fun UserStatusConfirmationDialog(

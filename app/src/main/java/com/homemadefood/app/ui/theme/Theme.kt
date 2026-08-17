@@ -1,57 +1,94 @@
 package com.homemadefood.app.ui.theme
 
-import android.app.Activity
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
-)
+/*
+ * HomemadeFood kendi marka paletini kullanır.
+ * Dynamic Color bilinçli olarak kaldırılmıştır:
+ * uygulamanın ana rengi cihaz duvar kağıdına göre değişmemelidir.
+ */
 
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+private val DarkColorScheme =
+    darkColorScheme(
+        primary = HomemadeAmberDarkTheme,
+        onPrimary = HomemadeText,
+        primaryContainer =
+            HomemadeAmberContainerDark,
+        onPrimaryContainer =
+            HomemadeOnAmberContainerDark,
 
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
-)
+        secondary = HomemadeBrownDarkTheme,
+        onSecondary = HomemadeText,
+        secondaryContainer =
+            HomemadeBrownContainerDark,
+        onSecondaryContainer =
+            HomemadeOnBrownContainerDark,
+
+        background = HomemadeBackgroundDark,
+        onBackground = HomemadeTextDark,
+
+        surface = HomemadeSurfaceDark,
+        onSurface = HomemadeTextDark,
+        surfaceVariant =
+            HomemadeSurfaceVariantDark,
+        onSurfaceVariant =
+            HomemadeTextMutedDark,
+
+        outline = HomemadeOutlineDark,
+
+        error = HomemadeError,
+        onError = HomemadeOnError
+    )
+
+private val LightColorScheme =
+    lightColorScheme(
+        primary = HomemadeAmber,
+        onPrimary = HomemadeText,
+        primaryContainer =
+            HomemadeAmberContainer,
+        onPrimaryContainer =
+            HomemadeOnAmberContainer,
+
+        secondary = HomemadeBrown,
+        onSecondary = HomemadeOnError,
+        secondaryContainer =
+            HomemadeBrownContainer,
+        onSecondaryContainer =
+            HomemadeOnBrownContainer,
+
+        background = HomemadeBackground,
+        onBackground = HomemadeText,
+
+        surface = HomemadeSurface,
+        onSurface = HomemadeText,
+        surfaceVariant =
+            HomemadeSurfaceVariant,
+        onSurfaceVariant =
+            HomemadeTextMuted,
+
+        outline = HomemadeOutline,
+
+        error = HomemadeError,
+        onError = HomemadeOnError
+    )
 
 @Composable
 fun HomemadeFoodTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    darkTheme: Boolean =
+        isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
-
     MaterialTheme(
-        colorScheme = colorScheme,
+        colorScheme =
+            if (darkTheme) {
+                DarkColorScheme
+            } else {
+                LightColorScheme
+            },
         typography = Typography,
         content = content
     )

@@ -43,6 +43,12 @@ class FoodImageMultipartFactory(
                         "Yalnızca JPG, PNG veya WEBP yemek fotoğrafları yüklenebilir."
                     )
 
+            ImageQualityValidator
+                .validateMinimumResolution(
+                    bytes = bytes,
+                    imageLabel = "Yemek fotoğrafı"
+                )
+
             val requestBody =
                 bytes.toRequestBody(
                     imageType.mimeType.toMediaType()
