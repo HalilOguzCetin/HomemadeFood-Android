@@ -1,15 +1,24 @@
 package com.homemadefood.app.ui.auth
 
 import android.util.Patterns
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -29,30 +38,54 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.homemadefood.app.R
 
 @Composable
 fun RegisterScreen(
     uiState: AuthUiState,
+
     onRegisterClick: (
         fullName: String,
         email: String,
         password: String
     ) -> Unit,
+
     onNavigateToLogin: () -> Unit,
+
     onClearMessage: () -> Unit = {},
+
     modifier: Modifier = Modifier
 ) {
-    val focusManager = LocalFocusManager.current
+    val focusManager =
+        LocalFocusManager.current
 
-    val emailFocusRequester = remember { FocusRequester() }
-    val passwordFocusRequester = remember { FocusRequester() }
-    val confirmPasswordFocusRequester = remember { FocusRequester() }
+    val emailFocusRequester =
+        remember {
+            FocusRequester()
+        }
+
+    val passwordFocusRequester =
+        remember {
+            FocusRequester()
+        }
+
+    val confirmPasswordFocusRequester =
+        remember {
+            FocusRequester()
+        }
 
     var fullName by rememberSaveable {
         mutableStateOf("")
@@ -63,8 +96,9 @@ fun RegisterScreen(
     }
 
     /*
-     * Şifreler rememberSaveable kullanılmadan
-     * yalnızca bellekte tutulur.
+     * Şifre alanları güvenlik nedeniyle
+     * rememberSaveable kullanılmadan yalnızca
+     * bellekte tutulur.
      */
     var password by remember {
         mutableStateOf("")
@@ -82,18 +116,17 @@ fun RegisterScreen(
         mutableStateOf(false)
     }
 
-    /*
-     * Alan hataları yalnızca kullanıcı kayıt
-     * işlemini denedikten sonra gösterilir.
-     */
     var submitAttempted by remember {
         mutableStateOf(false)
     }
 
-    val normalizedFullName = fullName.trim()
+    val normalizedFullName =
+        fullName.trim()
 
     val normalizedEmail =
-        email.trim().lowercase()
+        email
+            .trim()
+            .lowercase()
 
     val fullNameError =
         when {
@@ -148,16 +181,24 @@ fun RegisterScreen(
             password.length > 100 ->
                 "Şifre en fazla 100 karakter olabilir."
 
-            password.none { it.isUpperCase() } ->
+            password.none {
+                it.isUpperCase()
+            } ->
                 "Şifre en az bir büyük harf içermelidir."
 
-            password.none { it.isLowerCase() } ->
+            password.none {
+                it.isLowerCase()
+            } ->
                 "Şifre en az bir küçük harf içermelidir."
 
-            password.none { it.isDigit() } ->
+            password.none {
+                it.isDigit()
+            } ->
                 "Şifre en az bir rakam içermelidir."
 
-            password.none { !it.isLetterOrDigit() } ->
+            password.none {
+                !it.isLetterOrDigit()
+            } ->
                 "Şifre en az bir özel karakter içermelidir."
 
             else ->
@@ -176,19 +217,50 @@ fun RegisterScreen(
                 null
         }
 
+    val visibleFullNameError =
+        if (submitAttempted) {
+            fullNameError
+        } else {
+            null
+        }
+
+    val visibleEmailError =
+        if (submitAttempted) {
+            emailError
+        } else {
+            null
+        }
+
+    val visiblePasswordError =
+        if (submitAttempted) {
+            passwordError
+        } else {
+            null
+        }
+
+    val visibleConfirmPasswordError =
+        if (submitAttempted) {
+            confirmPasswordError
+        } else {
+            null
+        }
+
     fun clearServerMessageIfNeeded() {
-        if (!uiState.message.isNullOrBlank()) {
+        if (
+            !uiState.message
+                .isNullOrBlank()
+        ) {
             onClearMessage()
         }
     }
 
     fun submit() {
+        if (uiState.isLoading) {
+            return
+        }
+
         submitAttempted = true
 
-        /*
-         * Formdaki tek bir alan bile geçersizse
-         * backend'e kayıt isteği gönderilmez.
-         */
         if (
             fullNameError != null ||
             emailError != null ||
@@ -208,370 +280,666 @@ fun RegisterScreen(
         )
     }
 
-    Column(
+    Box(
         modifier =
-            modifier
-                .fillMaxSize()
-                .verticalScroll(
-                    rememberScrollState()
-                )
-                .imePadding()
-                .padding(
-                    horizontal = 24.dp,
-                    vertical = 32.dp
-                ),
-        verticalArrangement =
-            Arrangement.Center,
-        horizontalAlignment =
-            Alignment.CenterHorizontally
+            modifier.fillMaxSize()
     ) {
-        Text(
-            text = "Hesap Oluştur",
-            style =
-                MaterialTheme
-                    .typography
-                    .headlineLarge
-        )
-
-        Spacer(
-            modifier =
-                Modifier.height(8.dp)
-        )
-
-        Text(
-            text =
-                "Ev yapımı lezzetleri keşfetmeye başlayın",
-            style =
-                MaterialTheme
-                    .typography
-                    .bodyLarge
-        )
-
-        Spacer(
-            modifier =
-                Modifier.height(28.dp)
-        )
-
-        OutlinedTextField(
-            value = fullName,
-            onValueChange = { value ->
-                if (value.length <= 100) {
-                    fullName = value
-                    clearServerMessageIfNeeded()
-                }
-            },
-            modifier =
-                Modifier.fillMaxWidth(),
-            label = {
-                Text("Ad Soyad")
-            },
-            supportingText = {
-                if (
-                    submitAttempted &&
-                    fullNameError != null
-                ) {
-                    Text(fullNameError)
-                }
-            },
-            isError =
-                submitAttempted &&
-                        fullNameError != null,
-            singleLine = true,
-            enabled = !uiState.isLoading,
-            keyboardOptions =
-                KeyboardOptions(
-                    keyboardType =
-                        KeyboardType.Text,
-                    imeAction =
-                        ImeAction.Next
+        /*
+         * Login ile AYNI drawable kullanılır.
+         * Ayrı register background dosyası gerekmez.
+         */
+        Image(
+            painter =
+                painterResource(
+                    id =
+                        R.drawable
+                            .auth_login_background
                 ),
-            keyboardActions =
-                KeyboardActions(
-                    onNext = {
-                        emailFocusRequester
-                            .requestFocus()
-                    }
-                )
-        )
-
-        Spacer(
+            contentDescription = null,
             modifier =
-                Modifier.height(8.dp)
+                Modifier.fillMaxSize(),
+            contentScale =
+                ContentScale.Crop,
+            alignment =
+                Alignment.TopCenter
         )
 
-        OutlinedTextField(
-            value = email,
-            onValueChange = { value ->
-                if (value.length <= 255) {
-                    email = value
-                    clearServerMessageIfNeeded()
-                }
-            },
+        /*
+         * Register formu daha uzun olduğu için
+         * aynı arka plan biraz sakinleştirilir.
+         *
+         * Daha görünür arka plan istersen:
+         * alpha = 0.10f
+         *
+         * Daha sade istersen:
+         * alpha = 0.28f
+         */
+        Box(
             modifier =
                 Modifier
-                    .fillMaxWidth()
-                    .focusRequester(
-                        emailFocusRequester
-                    ),
-            label = {
-                Text("E-posta")
-            },
-            supportingText = {
-                if (
-                    submitAttempted &&
-                    emailError != null
-                ) {
-                    Text(emailError)
-                }
-            },
-            isError =
-                submitAttempted &&
-                        emailError != null,
-            singleLine = true,
-            enabled = !uiState.isLoading,
-            keyboardOptions =
-                KeyboardOptions(
-                    keyboardType =
-                        KeyboardType.Email,
-                    imeAction =
-                        ImeAction.Next
-                ),
-            keyboardActions =
-                KeyboardActions(
-                    onNext = {
-                        passwordFocusRequester
-                            .requestFocus()
-                    }
-                )
+                    .fillMaxSize()
+                    .background(
+                        Color(0xFFFFF7ED)
+                            .copy(
+                                alpha = 0.18f
+                            )
+                    )
         )
 
-        Spacer(
-            modifier =
-                Modifier.height(8.dp)
-        )
-
-        OutlinedTextField(
-            value = password,
-            onValueChange = { value ->
-                if (value.length <= 100) {
-                    password = value
-                    clearServerMessageIfNeeded()
-                }
-            },
+        Column(
             modifier =
                 Modifier
-                    .fillMaxWidth()
-                    .focusRequester(
-                        passwordFocusRequester
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .navigationBarsPadding()
+                    .imePadding()
+                    .verticalScroll(
+                        rememberScrollState()
+                    )
+                    .padding(
+                        horizontal = 20.dp
                     ),
-            label = {
-                Text("Şifre")
-            },
-            supportingText = {
-                if (
-                    submitAttempted &&
-                    passwordError != null
-                ) {
-                    Text(passwordError)
-                } else {
-                    Text(
-                        "En az 8 karakter; büyük/küçük harf, rakam ve özel karakter."
-                    )
-                }
-            },
-            isError =
-                submitAttempted &&
-                        passwordError != null,
-            singleLine = true,
-            enabled = !uiState.isLoading,
-            visualTransformation =
-                if (passwordVisible) {
-                    VisualTransformation.None
-                } else {
-                    PasswordVisualTransformation()
-                },
-            trailingIcon = {
-                TextButton(
-                    onClick = {
-                        passwordVisible =
-                            !passwordVisible
-                    },
-                    enabled =
-                        !uiState.isLoading
-                ) {
-                    Text(
-                        if (passwordVisible) {
-                            "Gizle"
-                        } else {
-                            "Göster"
-                        }
-                    )
-                }
-            },
-            keyboardOptions =
-                KeyboardOptions(
-                    keyboardType =
-                        KeyboardType.Password,
-                    imeAction =
-                        ImeAction.Next
-                ),
-            keyboardActions =
-                KeyboardActions(
-                    onNext = {
-                        confirmPasswordFocusRequester
-                            .requestFocus()
-                    }
-                )
-        )
 
-        Spacer(
-            modifier =
-                Modifier.height(8.dp)
-        )
-
-        OutlinedTextField(
-            value = confirmPassword,
-            onValueChange = { value ->
-                if (value.length <= 100) {
-                    confirmPassword = value
-                    clearServerMessageIfNeeded()
-                }
-            },
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .focusRequester(
-                        confirmPasswordFocusRequester
-                    ),
-            label = {
-                Text("Şifre Tekrar")
-            },
-            supportingText = {
-                if (
-                    submitAttempted &&
-                    confirmPasswordError != null
-                ) {
-                    Text(
-                        confirmPasswordError
-                    )
-                }
-            },
-            isError =
-                submitAttempted &&
-                        confirmPasswordError != null,
-            singleLine = true,
-            enabled = !uiState.isLoading,
-            visualTransformation =
-                if (confirmPasswordVisible) {
-                    VisualTransformation.None
-                } else {
-                    PasswordVisualTransformation()
-                },
-            trailingIcon = {
-                TextButton(
-                    onClick = {
-                        confirmPasswordVisible =
-                            !confirmPasswordVisible
-                    },
-                    enabled =
-                        !uiState.isLoading
-                ) {
-                    Text(
-                        if (confirmPasswordVisible) {
-                            "Gizle"
-                        } else {
-                            "Göster"
-                        }
-                    )
-                }
-            },
-            keyboardOptions =
-                KeyboardOptions(
-                    keyboardType =
-                        KeyboardType.Password,
-                    imeAction =
-                        ImeAction.Done
-                ),
-            keyboardActions =
-                KeyboardActions(
-                    onDone = {
-                        if (!uiState.isLoading) {
-                            submit()
-                        }
-                    }
-                )
-        )
-
-        if (
-            !uiState.message
-                .isNullOrBlank()
+            horizontalAlignment =
+                Alignment.CenterHorizontally
         ) {
             Spacer(
                 modifier =
-                    Modifier.height(12.dp)
+                    Modifier.height(34.dp)
+            )
+
+            /*
+             * Register'da Login kadar büyük logo
+             * kullanılmıyor. Ekran bilinçli olarak
+             * daha sade tutuluyor.
+             */
+            Text(
+                text = "HomemadeFood",
+                color =
+                    AuthVisualColors
+                        .BrandOlive,
+                fontFamily =
+                    FontFamily.Serif,
+                fontWeight =
+                    FontWeight.Medium,
+                fontSize = 25.sp,
+                lineHeight = 30.sp,
+                textAlign =
+                    TextAlign.Center
+            )
+
+            Spacer(
+                modifier =
+                    Modifier.height(8.dp)
+            )
+
+            Text(
+                text = "Hesap Oluştur",
+                color =
+                    AuthVisualColors
+                        .OliveText,
+                style =
+                    MaterialTheme
+                        .typography
+                        .headlineLarge,
+                fontWeight =
+                    FontWeight.Bold,
+                textAlign =
+                    TextAlign.Center
             )
 
             Text(
                 text =
-                    uiState.message,
+                    "Ev yapımı lezzetleri keşfetmeye başlayın",
+                modifier =
+                    Modifier.padding(
+                        top = 6.dp
+                    ),
                 color =
-                    if (uiState.isError) {
-                        MaterialTheme
-                            .colorScheme
-                            .error
-                    } else {
-                        MaterialTheme
-                            .colorScheme
-                            .primary
-                    },
+                    AuthVisualColors.OliveText,
                 style =
                     MaterialTheme
                         .typography
-                        .bodyMedium
+                        .bodyLarge,
+                fontWeight =
+                    FontWeight.Medium,
+                textAlign =
+                    TextAlign.Center
             )
-        }
 
-        Spacer(
-            modifier =
-                Modifier.height(20.dp)
-        )
+            Spacer(
+                modifier =
+                    Modifier.height(22.dp)
+            )
 
-        Button(
-            onClick = {
-                submit()
-            },
-            modifier =
-                Modifier.fillMaxWidth(),
-            enabled =
-                !uiState.isLoading
-        ) {
-            if (uiState.isLoading) {
-                CircularProgressIndicator(
-                    modifier =
-                        Modifier.height(
-                            22.dp
+            AuthGlassCard(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .widthIn(
+                            max = 520.dp
                         ),
-                    strokeWidth =
-                        2.dp
+
+                contentPadding =
+                    PaddingValues(
+                        horizontal = 22.dp,
+                        vertical = 22.dp
+                    )
+            ) {
+                OutlinedTextField(
+                    value = fullName,
+
+                    onValueChange = { value ->
+                        if (
+                            value.length <= 100
+                        ) {
+                            fullName = value
+                            clearServerMessageIfNeeded()
+                        }
+                    },
+
+                    modifier =
+                        Modifier.fillMaxWidth(),
+
+                    label = {
+                        Text("Ad Soyad")
+                    },
+
+                    placeholder = {
+                        Text(
+                            "Adınız ve soyadınız"
+                        )
+                    },
+
+                    supportingText =
+                        visibleFullNameError
+                            ?.let { error ->
+                                {
+                                    Text(error)
+                                }
+                            },
+
+                    isError =
+                        visibleFullNameError != null,
+
+                    singleLine = true,
+
+                    enabled =
+                        !uiState.isLoading,
+
+                    shape =
+                        RoundedCornerShape(
+                            16.dp
+                        ),
+
+                    colors =
+                        authTextFieldColors(),
+
+                    keyboardOptions =
+                        KeyboardOptions(
+                            keyboardType =
+                                KeyboardType.Text,
+                            imeAction =
+                                ImeAction.Next
+                        ),
+
+                    keyboardActions =
+                        KeyboardActions(
+                            onNext = {
+                                emailFocusRequester
+                                    .requestFocus()
+                            }
+                        )
                 )
-            } else {
-                Text("Kayıt Ol")
+
+                Spacer(
+                    modifier =
+                        Modifier.height(12.dp)
+                )
+
+                OutlinedTextField(
+                    value = email,
+
+                    onValueChange = { value ->
+                        if (
+                            value.length <= 255
+                        ) {
+                            email = value
+                            clearServerMessageIfNeeded()
+                        }
+                    },
+
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .focusRequester(
+                                emailFocusRequester
+                            ),
+
+                    label = {
+                        Text("E-posta")
+                    },
+
+                    placeholder = {
+                        Text(
+                            "ornek@eposta.com"
+                        )
+                    },
+
+                    supportingText =
+                        visibleEmailError
+                            ?.let { error ->
+                                {
+                                    Text(error)
+                                }
+                            },
+
+                    isError =
+                        visibleEmailError != null,
+
+                    singleLine = true,
+
+                    enabled =
+                        !uiState.isLoading,
+
+                    shape =
+                        RoundedCornerShape(
+                            16.dp
+                        ),
+
+                    colors =
+                        authTextFieldColors(),
+
+                    keyboardOptions =
+                        KeyboardOptions(
+                            keyboardType =
+                                KeyboardType.Email,
+                            imeAction =
+                                ImeAction.Next
+                        ),
+
+                    keyboardActions =
+                        KeyboardActions(
+                            onNext = {
+                                passwordFocusRequester
+                                    .requestFocus()
+                            }
+                        )
+                )
+
+                Spacer(
+                    modifier =
+                        Modifier.height(12.dp)
+                )
+
+                OutlinedTextField(
+                    value = password,
+
+                    onValueChange = { value ->
+                        if (
+                            value.length <= 100
+                        ) {
+                            password = value
+                            clearServerMessageIfNeeded()
+                        }
+                    },
+
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .focusRequester(
+                                passwordFocusRequester
+                            ),
+
+                    label = {
+                        Text("Şifre")
+                    },
+
+                    supportingText =
+                        visiblePasswordError
+                            ?.let { error ->
+                                {
+                                    Text(error)
+                                }
+                            },
+
+                    isError =
+                        visiblePasswordError != null,
+
+                    singleLine = true,
+
+                    enabled =
+                        !uiState.isLoading,
+
+                    visualTransformation =
+                        if (passwordVisible) {
+                            VisualTransformation.None
+                        } else {
+                            PasswordVisualTransformation()
+                        },
+
+                    trailingIcon = {
+                        TextButton(
+                            onClick = {
+                                passwordVisible =
+                                    !passwordVisible
+                            },
+
+                            enabled =
+                                !uiState.isLoading,
+
+                            contentPadding =
+                                PaddingValues(
+                                    horizontal = 8.dp
+                                )
+                        ) {
+                            Text(
+                                text =
+                                    if (
+                                        passwordVisible
+                                    ) {
+                                        "Gizle"
+                                    } else {
+                                        "Göster"
+                                    },
+
+                                color =
+                                    AuthVisualColors
+                                        .DeepOlive,
+
+                                fontWeight =
+                                    FontWeight.SemiBold
+                            )
+                        }
+                    },
+
+                    shape =
+                        RoundedCornerShape(
+                            16.dp
+                        ),
+
+                    colors =
+                        authTextFieldColors(),
+
+                    keyboardOptions =
+                        KeyboardOptions(
+                            keyboardType =
+                                KeyboardType.Password,
+                            imeAction =
+                                ImeAction.Next
+                        ),
+
+                    keyboardActions =
+                        KeyboardActions(
+                            onNext = {
+                                confirmPasswordFocusRequester
+                                    .requestFocus()
+                            }
+                        )
+                )
+
+                if (
+                    visiblePasswordError == null
+                ) {
+                    Text(
+                        text =
+                            "En az 8 karakter; büyük/küçük harf, rakam ve özel karakter.",
+                        modifier =
+                            Modifier.padding(
+                                start = 4.dp,
+                                top = 6.dp
+                            ),
+                        color =
+                            AuthVisualColors
+                                .OliveText
+                                .copy(
+                                    alpha = 0.72f
+                                ),
+                        style =
+                            MaterialTheme
+                                .typography
+                                .bodySmall
+                    )
+                }
+
+                Spacer(
+                    modifier =
+                        Modifier.height(12.dp)
+                )
+
+                OutlinedTextField(
+                    value =
+                        confirmPassword,
+
+                    onValueChange = { value ->
+                        if (
+                            value.length <= 100
+                        ) {
+                            confirmPassword =
+                                value
+
+                            clearServerMessageIfNeeded()
+                        }
+                    },
+
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .focusRequester(
+                                confirmPasswordFocusRequester
+                            ),
+
+                    label = {
+                        Text("Şifre Tekrar")
+                    },
+
+                    supportingText =
+                        visibleConfirmPasswordError
+                            ?.let { error ->
+                                {
+                                    Text(error)
+                                }
+                            },
+
+                    isError =
+                        visibleConfirmPasswordError != null,
+
+                    singleLine = true,
+
+                    enabled =
+                        !uiState.isLoading,
+
+                    visualTransformation =
+                        if (
+                            confirmPasswordVisible
+                        ) {
+                            VisualTransformation.None
+                        } else {
+                            PasswordVisualTransformation()
+                        },
+
+                    trailingIcon = {
+                        TextButton(
+                            onClick = {
+                                confirmPasswordVisible =
+                                    !confirmPasswordVisible
+                            },
+
+                            enabled =
+                                !uiState.isLoading,
+
+                            contentPadding =
+                                PaddingValues(
+                                    horizontal = 8.dp
+                                )
+                        ) {
+                            Text(
+                                text =
+                                    if (
+                                        confirmPasswordVisible
+                                    ) {
+                                        "Gizle"
+                                    } else {
+                                        "Göster"
+                                    },
+
+                                color =
+                                    AuthVisualColors
+                                        .DeepOlive,
+
+                                fontWeight =
+                                    FontWeight.SemiBold
+                            )
+                        }
+                    },
+
+                    shape =
+                        RoundedCornerShape(
+                            16.dp
+                        ),
+
+                    colors =
+                        authTextFieldColors(),
+
+                    keyboardOptions =
+                        KeyboardOptions(
+                            keyboardType =
+                                KeyboardType.Password,
+                            imeAction =
+                                ImeAction.Done
+                        ),
+
+                    keyboardActions =
+                        KeyboardActions(
+                            onDone = {
+                                submit()
+                            }
+                        )
+                )
+
+                if (
+                    !uiState.message
+                        .isNullOrBlank()
+                ) {
+                    Spacer(
+                        modifier =
+                            Modifier.height(14.dp)
+                    )
+
+                    AuthMessageCard(
+                        message =
+                            uiState.message,
+                        isError =
+                            uiState.isError,
+                        modifier =
+                            Modifier.fillMaxWidth()
+                    )
+                }
+
+                Spacer(
+                    modifier =
+                        Modifier.height(20.dp)
+                )
+
+                Button(
+                    onClick = {
+                        submit()
+                    },
+
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(58.dp),
+
+                    enabled =
+                        !uiState.isLoading,
+
+                    shape =
+                        RoundedCornerShape(
+                            18.dp
+                        ),
+
+                    colors =
+                        authPrimaryButtonColors(),
+
+                    contentPadding =
+                        PaddingValues(
+                            horizontal = 20.dp
+                        )
+                ) {
+                    if (uiState.isLoading) {
+                        CircularProgressIndicator(
+                            modifier =
+                                Modifier.height(
+                                    24.dp
+                                ),
+                            strokeWidth = 2.dp,
+                            color = Color.White
+                        )
+                    } else {
+                        Text(
+                            text = "Kayıt Ol",
+                            fontSize = 19.sp,
+                            fontWeight =
+                                FontWeight.Bold
+                        )
+                    }
+                }
+
+                Spacer(
+                    modifier =
+                        Modifier.height(16.dp)
+                )
+
+                TextButton(
+                    onClick =
+                        onNavigateToLogin,
+
+                    modifier =
+                        Modifier.fillMaxWidth(),
+
+                    enabled =
+                        !uiState.isLoading
+                ) {
+                    Row(
+                        horizontalArrangement =
+                            Arrangement.Center,
+                        verticalAlignment =
+                            Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text =
+                                "Zaten hesabınız var mı? ",
+                            color =
+                                AuthVisualColors
+                                    .DeepOlive,
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .titleSmall,
+                            fontWeight =
+                                FontWeight.Medium
+                        )
+
+                        Text(
+                            text = "Giriş yapın",
+                            color =
+                                AuthVisualColors
+                                    .Terracotta,
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .titleSmall,
+                            fontWeight =
+                                FontWeight.Bold
+                        )
+                    }
+                }
             }
-        }
 
-        Spacer(
-            modifier =
-                Modifier.height(12.dp)
-        )
-
-        TextButton(
-            onClick =
-                onNavigateToLogin,
-            enabled =
-                !uiState.isLoading
-        ) {
-            Text(
-                "Zaten hesabınız var mı? Giriş yapın"
+            Spacer(
+                modifier =
+                    Modifier.height(28.dp)
             )
         }
     }
