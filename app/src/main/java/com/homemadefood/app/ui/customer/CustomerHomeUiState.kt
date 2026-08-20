@@ -2,16 +2,10 @@ package com.homemadefood.app.ui.customer
 
 import com.homemadefood.app.data.model.AddressResponse
 import com.homemadefood.app.data.model.CategoryResponse
+import com.homemadefood.app.data.model.PopularProducerStorefrontResponse
 import com.homemadefood.app.data.model.ProducerStorefrontSummaryResponse
 
 data class CustomerHomeUiState(
-    /*
-     * C4:
-     * Home'da kullanılacak aktif teslimat adresi.
-     *
-     * deliveryAddresses C4C hızlı seçim arayüzünde
-     * doğrudan kullanılacak.
-     */
     val isDeliveryAddressLoading: Boolean = false,
 
     val deliveryAddresses:
@@ -26,24 +20,46 @@ data class CustomerHomeUiState(
 
     val isCategoriesLoading: Boolean = false,
 
-    val categories: List<CategoryResponse> =
+    val categories:
+    List<CategoryResponse> =
         emptyList(),
 
-    val selectedCategoryId: Int? = null,
+    val selectedCategoryId:
+    Int? = null,
+
+    val searchQuery:
+    String = "",
 
     /*
-     * AŞAMA 4 ile arama artık doğrudan ana sayfadaki
-     * işletme/vitrin kartlarını filtreler.
+     * Normal işletme listesi:
+     * kategori + işletme araması için kullanılır.
      */
-    val searchQuery: String = "",
-
-    val isStorefrontsLoading: Boolean = false,
+    val isStorefrontsLoading:
+    Boolean = false,
 
     val storefronts:
     List<ProducerStorefrontSummaryResponse> =
         emptyList(),
 
-    val categoryErrorMessage: String? = null,
+    /*
+     * H4B:
+     * Popüler İşletmeler normal storefront listesinden ayrı
+     * state taşır. Böylece kategori/arama filtreleri popülerlik
+     * listesinin veri kaynağını değiştirmez.
+     */
+    val isPopularStorefrontsLoading:
+    Boolean = false,
 
-    val storefrontErrorMessage: String? = null
+    val popularStorefronts:
+    List<PopularProducerStorefrontResponse> =
+        emptyList(),
+
+    val popularStorefrontErrorMessage:
+    String? = null,
+
+    val categoryErrorMessage:
+    String? = null,
+
+    val storefrontErrorMessage:
+    String? = null
 )

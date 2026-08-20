@@ -2,18 +2,19 @@ package com.homemadefood.app.ui.customer
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.homemadefood.app.data.local.DeliveryAddressSelectionManager
+import com.homemadefood.app.data.local.SessionManager
 import com.homemadefood.app.data.model.AddressResponse
 import com.homemadefood.app.data.model.ProducerStorefrontSummaryResponse
 import com.homemadefood.app.data.repository.AddressRepository
 import com.homemadefood.app.data.repository.CategoryRepository
 import com.homemadefood.app.data.repository.StorefrontRepository
-import com.homemadefood.app.data.remote.ApiErrorParser
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 import java.io.IOException
 
 class CustomerHomeViewModel(
@@ -26,21 +27,16 @@ class CustomerHomeViewModel(
     private val addressRepository:
     AddressRepository,
 
-    private val deliveryAddressSelectionManager:
-    DeliveryAddressSelectionManager
+    private val sessionManager:
+    SessionManager
 ) : ViewModel() {
 
     private var storefrontLoadJob: Job? =
         null
 
-    /*
-     * Backend kategori filtresini uygular.
-     * Arama metni ise o anda yüklenmiş işletmeler üzerinde
-     * yalnızca vitrin adı/açıklama/konum alanlarında uygulanır.
-     *
-     * AŞAMA 4'ün amacı yemek araması değil,
-     * işletme keşif ekranıdır.
-     */
+    private var popularStorefrontLoadJob:
+            Job? = null
+
     private var loadedStorefronts:
             List<ProducerStorefrontSummaryResponse> =
         emptyList()
@@ -50,7 +46,8 @@ class CustomerHomeViewModel(
             CustomerHomeUiState(
                 isDeliveryAddressLoading = true,
                 isCategoriesLoading = true,
-                isStorefrontsLoading = true
+                isStorefrontsLoading = true,
+                isPopularStorefrontsLoading = true
             )
         )
 
@@ -62,24 +59,9 @@ class CustomerHomeViewModel(
         loadDeliveryAddresses()
         loadCategories()
         loadStorefronts()
+        loadPopularStorefronts()
     }
 
-    /*
-     * C4B aktif teslimat adresi çözümleme algoritması:
-     *
-     * 1) DataStore'daki selectedDeliveryAddressId hâlâ
-     *    kullanıcı adresleri arasında ise onu kullan.
-     *
-     * 2) Yoksa backend IsDefault adresini kullan.
-     *
-     * 3) O da yoksa listenin ilk adresini kullan.
-     *
-     * 4) Adres hiç yoksa seçimi temizle.
-     *
-     * Böylece backend'deki "varsayılan adres" ile
-     * uygulamadaki "şu an seçili teslimat adresi"
-     * birbirinden ayrılmış olur.
-     */
     fun loadDeliveryAddresses() {
         viewModelScope.launch {
             _uiState.value =
@@ -127,28 +109,22 @@ class CustomerHomeViewModel(
         }
     }
 
-    /*
-     * C4C hızlı seçim ekranı bu metodu kullanacak.
-     * Şimdiden altyapıya ekliyoruz.
-     *
-     * Yalnız gerçekten bu kullanıcıya ait ve o anda
-     * yüklenmiş adresler seçilebilir.
-     */
     fun selectDeliveryAddress(
         addressId: Int
     ) {
-        viewModelScope.launch {
-            val selectedAddress =
-                deliveryAddressSelectionManager
-                    .select(
-                        addressId =
-                            addressId,
+        val selectedAddress =
+            _uiState.value
+                .deliveryAddresses
+                .firstOrNull {
+                    it.id == addressId
+                }
+                ?: return
 
-                        addresses =
-                            _uiState.value
-                                .deliveryAddresses
-                    )
-                    ?: return@launch
+        viewModelScope.launch {
+            sessionManager
+                .setSelectedDeliveryAddressId(
+                    selectedAddress.id
+                )
 
             _uiState.value =
                 _uiState.value.copy(
@@ -164,11 +140,61 @@ class CustomerHomeViewModel(
     private suspend fun resolveAndApplyDeliveryAddress(
         addresses: List<AddressResponse>
     ) {
-        val resolvedAddress =
-            deliveryAddressSelectionManager
-                .resolve(
-                    addresses
+        if (addresses.isEmpty()) {
+            sessionManager
+                .clearSelectedDeliveryAddress()
+
+            _uiState.value =
+                _uiState.value.copy(
+                    isDeliveryAddressLoading =
+                        false,
+
+                    deliveryAddresses =
+                        emptyList(),
+
+                    selectedDeliveryAddress =
+                        null,
+
+                    deliveryAddressErrorMessage =
+                        null
                 )
+
+            return
+        }
+
+        val storedAddressId =
+            sessionManager
+                .selectedDeliveryAddressId
+                .first()
+
+        val storedAddress =
+            storedAddressId?.let {
+                    selectedId ->
+
+                addresses.firstOrNull {
+                        address ->
+                    address.id == selectedId
+                }
+            }
+
+        val resolvedAddress =
+            storedAddress
+                ?: addresses
+                    .firstOrNull {
+                        it.isDefault
+                    }
+                ?: addresses
+                    .first()
+
+        if (
+            storedAddressId !=
+            resolvedAddress.id
+        ) {
+            sessionManager
+                .setSelectedDeliveryAddressId(
+                    resolvedAddress.id
+                )
+        }
 
         _uiState.value =
             _uiState.value.copy(
@@ -189,11 +215,6 @@ class CustomerHomeViewModel(
     private fun showDeliveryAddressError(
         message: String
     ) {
-        /*
-         * Geçici ağ hatasında son başarılı seçimi ekrandan
-         * silmiyoruz. C4C'de kullanıcı mevcut address label'ını
-         * görmeye devam edebilir ve Retry kullanabilir.
-         */
         _uiState.value =
             _uiState.value.copy(
                 isDeliveryAddressLoading =
@@ -257,6 +278,77 @@ class CustomerHomeViewModel(
                 )
             }
         }
+    }
+
+    /*
+     * H4B:
+     * Popüler işletmeler normal storefront yükleme işinden
+     * bağımsızdır. Arama veya kategori değişimi bu listeyi
+     * yeniden sıralamaz.
+     */
+    fun loadPopularStorefronts(
+        limit: Int = 6
+    ) {
+        popularStorefrontLoadJob
+            ?.cancel()
+
+        popularStorefrontLoadJob =
+            viewModelScope.launch {
+                _uiState.value =
+                    _uiState.value.copy(
+                        isPopularStorefrontsLoading =
+                            true,
+                        popularStorefrontErrorMessage =
+                            null
+                    )
+
+                try {
+                    val response =
+                        storefrontRepository
+                            .getPopularStorefronts(
+                                limit = limit
+                            )
+
+                    val responseBody =
+                        response.body()
+
+                    val storefronts =
+                        responseBody?.data
+
+                    if (
+                        response.isSuccessful &&
+                        responseBody?.success == true &&
+                        storefronts != null
+                    ) {
+                        _uiState.value =
+                            _uiState.value.copy(
+                                isPopularStorefrontsLoading =
+                                    false,
+                                popularStorefronts =
+                                    storefronts,
+                                popularStorefrontErrorMessage =
+                                    null
+                            )
+                    } else {
+                        showPopularStorefrontError(
+                            parseErrorMessage(
+                                response
+                                    .errorBody()
+                                    ?.string()
+                            )
+                                ?: "Popüler işletmeler alınamadı."
+                        )
+                    }
+                } catch (_: IOException) {
+                    showPopularStorefrontError(
+                        "Popüler işletmeler için sunucuya bağlanılamadı."
+                    )
+                } catch (_: Exception) {
+                    showPopularStorefrontError(
+                        "Popüler işletmeler yüklenirken bir hata oluştu."
+                    )
+                }
+            }
     }
 
     fun loadStorefronts(
@@ -433,13 +525,33 @@ class CustomerHomeViewModel(
             )
     }
 
+    private fun showPopularStorefrontError(
+        message: String
+    ) {
+        _uiState.value =
+            _uiState.value.copy(
+                isPopularStorefrontsLoading =
+                    false,
+                popularStorefronts =
+                    emptyList(),
+                popularStorefrontErrorMessage =
+                    message
+            )
+    }
+
     private fun parseErrorMessage(
         errorJson: String?
     ): String? {
-        return ApiErrorParser
-            .parse(
-                errorJson
-            )
-            .message
+        if (errorJson.isNullOrBlank()) {
+            return null
+        }
+
+        return runCatching {
+            JSONObject(errorJson)
+                .optString("message")
+                .takeIf {
+                    it.isNotBlank()
+                }
+        }.getOrNull()
     }
 }

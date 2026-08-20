@@ -1,7 +1,7 @@
 package com.homemadefood.app.ui.customer
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,31 +13,26 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.homemadefood.app.data.model.ProducerStorefrontSummaryResponse
 import com.homemadefood.app.data.remote.ApiConfig
-import com.homemadefood.app.ui.components.CustomerCartButton
 import java.util.Locale
 
 @Composable
@@ -59,459 +54,372 @@ fun CustomerHomeScreen(
     onRecommendationClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(
-                rememberScrollState()
-            )
-            .padding(20.dp)
-    ) {
-        Row(
-            modifier =
-                Modifier.fillMaxWidth(),
-
-            horizontalArrangement =
-                Arrangement.SpaceBetween,
-
-            verticalAlignment =
-                Alignment.CenterVertically
-        ) {
-            Column(
-                modifier =
-                    Modifier.weight(1f)
-            ) {
-                Text(
-                    text = "Hoş Geldiniz",
-
-                    style =
-                        MaterialTheme.typography
-                            .headlineSmall
+    CustomerHomeTheme {
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .background(
+                    CustomerHomeColors.Cream
                 )
+                .verticalScroll(
+                    rememberScrollState()
+                )
+                .padding(
+                    horizontal = 18.dp,
+                    vertical = 18.dp
+                )
+        ) {
+            Row(
+                modifier =
+                    Modifier.fillMaxWidth(),
 
-                Text(
-                    text =
-                        "Bugün hangi mutfaktan yemek istersiniz?",
+                horizontalArrangement =
+                    Arrangement.SpaceBetween,
 
-                    style =
-                        MaterialTheme.typography
-                            .bodyMedium
+                verticalAlignment =
+                    Alignment.CenterVertically
+            ) {
+                Column(
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .padding(
+                                end = 16.dp
+                            )
+                ) {
+                    Text(
+                        text =
+                            "Hoş geldiniz 👋",
+
+                        style =
+                            MaterialTheme
+                                .typography
+                                .headlineSmall,
+
+                        fontWeight =
+                            FontWeight.Bold,
+
+                        color =
+                            CustomerHomeColors
+                                .DeepOlive
+                    )
+
+                    Spacer(
+                        modifier =
+                            Modifier.height(3.dp)
+                    )
+
+                    Text(
+                        text =
+                            "Bugün hangi mutfaktan yemek istersiniz?",
+
+                        style =
+                            MaterialTheme
+                                .typography
+                                .bodyMedium,
+
+                        color =
+                            CustomerHomeColors
+                                .TextMuted
+                    )
+                }
+
+                CustomerHomeCartButton(
+                    totalQuantity =
+                        cartTotalQuantity,
+
+                    onClick =
+                        onCartClick
                 )
             }
 
-            CustomerCartButton(
-                totalQuantity =
-                    cartTotalQuantity,
-
-                onClick =
-                    onCartClick
+            Spacer(
+                modifier =
+                    Modifier.height(14.dp)
             )
-        }
 
-        Spacer(
-            modifier =
-                Modifier.height(18.dp)
-        )
+            CustomerDeliveryAddressPicker(
+                isLoading =
+                    uiState
+                        .isDeliveryAddressLoading,
 
-        CustomerDeliveryAddressPicker(
-            isLoading =
-                uiState
-                    .isDeliveryAddressLoading,
+                addresses =
+                    uiState
+                        .deliveryAddresses,
 
-            addresses =
-                uiState
-                    .deliveryAddresses,
+                selectedAddress =
+                    uiState
+                        .selectedDeliveryAddress,
 
-            selectedAddress =
-                uiState
-                    .selectedDeliveryAddress,
+                errorMessage =
+                    uiState
+                        .deliveryAddressErrorMessage,
 
-            errorMessage =
-                uiState
-                    .deliveryAddressErrorMessage,
+                onRetryClick =
+                    onRetryDeliveryAddressesClick,
 
-            onRetryClick =
-                onRetryDeliveryAddressesClick,
+                onAddressSelected =
+                    onDeliveryAddressSelected,
 
-            onAddressSelected =
-                onDeliveryAddressSelected,
+                onAddAddressClick =
+                    onAddAddressClick,
 
-            onAddAddressClick =
-                onAddAddressClick,
+                onManageAddressesClick =
+                    onManageAddressesClick,
 
-            onManageAddressesClick =
-                onManageAddressesClick,
+                modifier =
+                    Modifier.fillMaxWidth()
+            )
 
-            modifier =
-                Modifier.fillMaxWidth()
-        )
+            Spacer(
+                modifier =
+                    Modifier.height(18.dp)
+            )
 
-        Spacer(
-            modifier =
-                Modifier.height(24.dp)
-        )
+            CustomerHomeCampaignSection(
+                modifier =
+                    Modifier.fillMaxWidth()
+            )
 
-        OutlinedTextField(
-            value = uiState.searchQuery,
+            Spacer(
+                modifier =
+                    Modifier.height(18.dp)
+            )
 
-            onValueChange =
-                onSearchQueryChange,
+            CustomerHomeSearchAndCategorySection(
+                searchQuery =
+                    uiState.searchQuery,
 
-            modifier =
-                Modifier.fillMaxWidth(),
+                categories =
+                    uiState.categories,
 
-            label = {
-                Text("İşletme ara")
-            },
+                selectedCategoryId =
+                    uiState.selectedCategoryId,
 
-            placeholder = {
-                Text(
-                    "İşletme adı, açıklama, şehir..."
-                )
-            },
+                isCategoriesLoading =
+                    uiState.isCategoriesLoading,
 
-            singleLine = true,
+                categoryErrorMessage =
+                    uiState.categoryErrorMessage,
 
-            keyboardOptions =
-                KeyboardOptions(
-                    imeAction =
-                        ImeAction.Search
-                ),
+                isStorefrontsLoading =
+                    uiState.isStorefrontsLoading,
 
-            keyboardActions =
-                KeyboardActions(
-                    onSearch = {
-                        onSearchClick()
-                    }
-                )
-        )
+                onSearchQueryChange =
+                    onSearchQueryChange,
 
-        Spacer(
-            modifier =
-                Modifier.height(12.dp)
-        )
+                onSearchClick =
+                    onSearchClick,
 
-        Button(
-            onClick = onSearchClick,
+                onCategoryClick =
+                    onCategoryClick,
 
-            modifier =
-                Modifier.fillMaxWidth(),
-
-            enabled =
-                !uiState
-                    .isStorefrontsLoading
-        ) {
-            Text("Ara")
-        }
-
-        if (
-            uiState.searchQuery.isNotBlank() ||
-            uiState.selectedCategoryId != null
-        ) {
-            TextButton(
-                onClick =
+                onClearFiltersClick =
                     onClearFiltersClick,
 
+                onRetryCategoriesClick =
+                    onRetryCategoriesClick,
+
                 modifier =
-                    Modifier.align(
-                        Alignment.End
-                    )
+                    Modifier.fillMaxWidth()
+            )
+
+            Spacer(
+                modifier =
+                    Modifier.height(26.dp)
+            )
+
+            if (
+                uiState.searchQuery.isBlank() &&
+                uiState.selectedCategoryId == null &&
+                !uiState.isPopularStorefrontsLoading &&
+                uiState.popularStorefronts.isNotEmpty()
             ) {
-                Text("Filtreleri Temizle")
-            }
-        }
+                CustomerHomePopularStorefrontSection(
+                    storefronts =
+                        uiState.popularStorefronts,
 
-        Spacer(
-            modifier =
-                Modifier.height(20.dp)
-        )
+                    onStorefrontClick =
+                        onStorefrontClick,
 
-        Text(
-            text = "Kategoriler",
-
-            style =
-                MaterialTheme.typography
-                    .titleLarge
-        )
-
-        Spacer(
-            modifier =
-                Modifier.height(12.dp)
-        )
-
-        when {
-            uiState.isCategoriesLoading -> {
-                CircularProgressIndicator(
                     modifier =
-                        Modifier.align(
-                            Alignment.CenterHorizontally
-                        )
-                )
-            }
-
-            uiState.categories.isEmpty() &&
-                    uiState.categoryErrorMessage != null -> {
-
-                Text(
-                    text =
-                        uiState
-                            .categoryErrorMessage,
-
-                    color =
-                        MaterialTheme
-                            .colorScheme
-                            .error
+                        Modifier.fillMaxWidth()
                 )
 
                 Spacer(
                     modifier =
-                        Modifier.height(8.dp)
+                        Modifier.height(30.dp)
                 )
+            }
 
-                Button(
-                    onClick =
-                        onRetryCategoriesClick
-                ) {
-                    Text(
-                        "Kategorileri Tekrar Yükle"
+            Text(
+                text = "İşletmeler",
+
+                style =
+                    MaterialTheme.typography
+                        .titleLarge
+            )
+
+            Text(
+                text =
+                    if (
+                        uiState.selectedCategoryId ==
+                        null
+                    ) {
+                        "Aktif yemekleri bulunan işletmeler"
+                    } else {
+                        "Seçili kategoride yemek sunan işletmeler"
+                    },
+
+                modifier =
+                    Modifier.padding(
+                        top = 4.dp
+                    ),
+
+                style =
+                    MaterialTheme.typography
+                        .bodyMedium,
+
+                color =
+                    MaterialTheme
+                        .colorScheme
+                        .onSurfaceVariant
+            )
+
+            Spacer(
+                modifier =
+                    Modifier.height(12.dp)
+            )
+
+            when {
+                uiState.isStorefrontsLoading -> {
+                    CircularProgressIndicator(
+                        modifier =
+                            Modifier.align(
+                                Alignment.CenterHorizontally
+                            )
                     )
                 }
-            }
 
-            uiState.categories.isEmpty() -> {
-                Text(
-                    text =
-                        "Henüz aktif kategori bulunmuyor."
-                )
-            }
+                uiState.storefronts.isEmpty() &&
+                        uiState
+                            .storefrontErrorMessage != null -> {
 
-            else -> {
-                Row(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(
-                                rememberScrollState()
-                            ),
-
-                    horizontalArrangement =
-                        Arrangement.spacedBy(
-                            8.dp
-                        )
-                ) {
-                    FilterChip(
-                        selected =
+                    Text(
+                        text =
                             uiState
-                                .selectedCategoryId ==
-                                    null,
+                                .storefrontErrorMessage,
 
-                        onClick = {
-                            onCategoryClick(null)
-                        },
-
-                        label = {
-                            Text("Tümü")
-                        }
+                        color =
+                            MaterialTheme
+                                .colorScheme
+                                .error
                     )
 
-                    uiState.categories
-                        .forEach {
-                                category ->
+                    Spacer(
+                        modifier =
+                            Modifier.height(10.dp)
+                    )
 
-                            FilterChip(
-                                selected =
+                    Button(
+                        onClick =
+                            onRetryStorefrontsClick,
+
+                        modifier =
+                            Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            "İşletmeleri Tekrar Yükle"
+                        )
+                    }
+                }
+
+                uiState.storefronts.isEmpty() -> {
+                    Text(
+                        text =
+                            if (
+                                uiState.searchQuery
+                                    .isNotBlank()
+                            ) {
+                                "Aramanıza uygun işletme bulunamadı."
+                            } else if (
+                                uiState
+                                    .selectedCategoryId !=
+                                null
+                            ) {
+                                "Bu kategoride aktif yemek sunan işletme bulunamadı."
+                            } else {
+                                "Şu anda listelenecek aktif işletme bulunamadı."
+                            },
+
+                        style =
+                            MaterialTheme.typography
+                                .bodyMedium
+                    )
+                }
+
+                else -> {
+                    uiState.storefronts
+                        .forEach {
+                                storefront ->
+
+                            StorefrontCard(
+                                storefront =
+                                    storefront,
+
+                                categoryFiltered =
                                     uiState
-                                        .selectedCategoryId ==
-                                            category.id,
+                                        .selectedCategoryId !=
+                                            null,
 
                                 onClick = {
-                                    onCategoryClick(
-                                        category.id
-                                    )
-                                },
-
-                                label = {
-                                    Text(
-                                        category.name
+                                    onStorefrontClick(
+                                        storefront
+                                            .producerProfileId
                                     )
                                 }
                             )
                         }
                 }
             }
-        }
 
-        Spacer(
-            modifier =
-                Modifier.height(28.dp)
-        )
+            Spacer(
+                modifier =
+                    Modifier.height(28.dp)
+            )
 
-        Text(
-            text = "İşletmeler",
-
-            style =
-                MaterialTheme.typography
-                    .titleLarge
-        )
-
-        Text(
-            text =
-                if (
-                    uiState.selectedCategoryId ==
-                    null
-                ) {
-                    "Aktif yemekleri bulunan işletmeler"
-                } else {
-                    "Seçili kategoride yemek sunan işletmeler"
-                },
-
-            modifier =
-                Modifier.padding(
-                    top = 4.dp
-                ),
-
-            style =
-                MaterialTheme.typography
-                    .bodyMedium,
-
-            color =
-                MaterialTheme
-                    .colorScheme
-                    .onSurfaceVariant
-        )
-
-        Spacer(
-            modifier =
-                Modifier.height(12.dp)
-        )
-
-        when {
-            uiState.isStorefrontsLoading -> {
-                CircularProgressIndicator(
-                    modifier =
-                        Modifier.align(
-                            Alignment.CenterHorizontally
-                        )
-                )
-            }
-
-            uiState.storefronts.isEmpty() &&
-                    uiState
-                        .storefrontErrorMessage != null -> {
-
-                Text(
-                    text =
-                        uiState
-                            .storefrontErrorMessage,
-
-                    color =
-                        MaterialTheme
-                            .colorScheme
-                            .error
-                )
-
-                Spacer(
-                    modifier =
-                        Modifier.height(10.dp)
-                )
-
-                Button(
-                    onClick =
-                        onRetryStorefrontsClick,
-
-                    modifier =
-                        Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        "İşletmeleri Tekrar Yükle"
-                    )
-                }
-            }
-
-            uiState.storefronts.isEmpty() -> {
-                Text(
-                    text =
-                        if (
-                            uiState.searchQuery
-                                .isNotBlank()
-                        ) {
-                            "Aramanıza uygun işletme bulunamadı."
-                        } else if (
-                            uiState
-                                .selectedCategoryId !=
-                            null
-                        ) {
-                            "Bu kategoride aktif yemek sunan işletme bulunamadı."
-                        } else {
-                            "Şu anda listelenecek aktif işletme bulunamadı."
-                        },
-
-                    style =
-                        MaterialTheme.typography
-                            .bodyMedium
-                )
-            }
-
-            else -> {
-                uiState.storefronts
-                    .forEach {
-                            storefront ->
-
-                        StorefrontCard(
-                            storefront =
-                                storefront,
-
-                            categoryFiltered =
-                                uiState
-                                    .selectedCategoryId !=
-                                        null,
-
-                            onClick = {
-                                onStorefrontClick(
-                                    storefront
-                                        .producerProfileId
-                                )
-                            }
-                        )
-                    }
-            }
-        }
-
-        Spacer(
-            modifier =
-                Modifier.height(28.dp)
-        )
-
-        Text(
-            text = "Hızlı İşlemler",
-
-            style =
-                MaterialTheme.typography
-                    .titleLarge
-        )
-
-        Spacer(
-            modifier =
-                Modifier.height(12.dp)
-        )
-
-        Button(
-            onClick =
-                onRecommendationClick,
-
-            modifier =
-                Modifier.fillMaxWidth()
-        ) {
             Text(
-                "Akıllı Üretici Önerisi"
+                text = "Hızlı İşlemler",
+
+                style =
+                    MaterialTheme.typography
+                        .titleLarge
+            )
+
+            Spacer(
+                modifier =
+                    Modifier.height(12.dp)
+            )
+
+            Button(
+                onClick =
+                    onRecommendationClick,
+
+                modifier =
+                    Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    "Akıllı Üretici Önerisi"
+                )
+            }
+
+            Spacer(
+                modifier =
+                    Modifier.height(24.dp)
             )
         }
-
-        Spacer(
-            modifier =
-                Modifier.height(24.dp)
-        )
     }
+
 }
 
 @Composable

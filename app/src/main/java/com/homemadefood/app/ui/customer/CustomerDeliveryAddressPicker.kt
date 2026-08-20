@@ -1,20 +1,28 @@
 package com.homemadefood.app.ui.customer
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -24,11 +32,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.homemadefood.app.R
 import com.homemadefood.app.data.model.AddressResponse
-import androidx.compose.material3.ExperimentalMaterial3Api
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,48 +62,48 @@ fun CustomerDeliveryAddressPicker(
         isLoading &&
                 selectedAddress == null -> {
 
-            Card(
-                modifier =
-                    modifier.fillMaxWidth()
+            AddressShell(
+                modifier = modifier
             ) {
-                Row(
+                CircularProgressIndicator(
+                    modifier =
+                        Modifier.size(20.dp),
+                    strokeWidth = 2.dp,
+                    color =
+                        CustomerHomeColors
+                            .DeepOlive
+                )
+
+                Column(
                     modifier =
                         Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-
-                    verticalAlignment =
-                        Alignment.CenterVertically
-                ) {
-                    CircularProgressIndicator(
-                        modifier =
-                            Modifier.height(22.dp),
-                        strokeWidth = 2.dp
-                    )
-
-                    Column(
-                        modifier =
-                            Modifier.padding(
+                            .weight(1f)
+                            .padding(
                                 start = 12.dp
                             )
-                    ) {
-                        Text(
-                            text = "Teslimat adresi",
-                            style =
-                                MaterialTheme
-                                    .typography
-                                    .labelMedium
-                        )
+                ) {
+                    Text(
+                        text = "Teslimat Adresi",
+                        style =
+                            MaterialTheme
+                                .typography
+                                .labelMedium,
+                        color =
+                            CustomerHomeColors
+                                .TextMuted
+                    )
 
-                        Text(
-                            text =
-                                "Adresleriniz yükleniyor...",
-                            style =
-                                MaterialTheme
-                                    .typography
-                                    .bodyMedium
-                        )
-                    }
+                    Text(
+                        text =
+                            "Adresleriniz yükleniyor...",
+                        style =
+                            MaterialTheme
+                                .typography
+                                .bodyMedium,
+                        color =
+                            CustomerHomeColors
+                                .Text
+                    )
                 }
             }
         }
@@ -108,46 +118,99 @@ fun CustomerDeliveryAddressPicker(
                             onClick = {
                                 showAddressSheet = true
                             }
-                        )
+                        ),
+
+                shape =
+                    RoundedCornerShape(
+                        20.dp
+                    ),
+
+                colors =
+                    CardDefaults.cardColors(
+                        containerColor =
+                            CustomerHomeColors
+                                .Surface
+                    ),
+
+                border =
+                    BorderStroke(
+                        width = 1.dp,
+                        color =
+                            CustomerHomeColors
+                                .Outline
+                    ),
+
+                elevation =
+                    CardDefaults.cardElevation(
+                        defaultElevation = 1.dp
+                    )
             ) {
                 Row(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
-
-                    horizontalArrangement =
-                        Arrangement.SpaceBetween,
+                            .padding(
+                                horizontal = 14.dp,
+                                vertical = 11.dp
+                            ),
 
                     verticalAlignment =
                         Alignment.CenterVertically
                 ) {
+                    Surface(
+                        modifier =
+                            Modifier.size(38.dp),
+                        shape = CircleShape,
+                        color =
+                            CustomerHomeColors
+                                .OliveSoft
+                    ) {
+                        Box(
+                            contentAlignment =
+                                Alignment.Center
+                        ) {
+                            Icon(
+                                painter =
+                                    painterResource(
+                                        id =
+                                            R.drawable
+                                                .ic_customer_home_location
+                                    ),
+                                contentDescription = null,
+                                tint =
+                                    CustomerHomeColors
+                                        .DeepOlive,
+                                modifier =
+                                    Modifier.size(
+                                        21.dp
+                                    )
+                            )
+                        }
+                    }
+
                     Column(
                         modifier =
                             Modifier
                                 .weight(1f)
                                 .padding(
-                                    end = 12.dp
+                                    start = 11.dp,
+                                    end = 8.dp
                                 )
                     ) {
                         Text(
-                            text =
-                                "Teslimat adresi",
-
+                            text = "Teslimat Adresi",
                             style =
                                 MaterialTheme
                                     .typography
-                                    .labelMedium,
-
+                                    .labelSmall,
                             color =
-                                MaterialTheme
-                                    .colorScheme
-                                    .onSurfaceVariant
+                                CustomerHomeColors
+                                    .TextMuted
                         )
 
                         Spacer(
                             modifier =
-                                Modifier.height(3.dp)
+                                Modifier.size(2.dp)
                         )
 
                         Row(
@@ -157,94 +220,104 @@ fun CustomerDeliveryAddressPicker(
                             Text(
                                 text =
                                     selectedAddress.title,
-
                                 style =
                                     MaterialTheme
                                         .typography
-                                        .titleMedium,
-
+                                        .titleSmall,
                                 fontWeight =
-                                    FontWeight.SemiBold
+                                    FontWeight
+                                        .SemiBold,
+                                color =
+                                    CustomerHomeColors
+                                        .Text,
+                                maxLines = 1,
+                                overflow =
+                                    TextOverflow
+                                        .Ellipsis
                             )
 
-                            if (
-                                selectedAddress.isDefault
-                            ) {
-                                Text(
-                                    text =
-                                        "  • Varsayılan",
-
-                                    style =
-                                        MaterialTheme
-                                            .typography
-                                            .labelSmall,
-
-                                    color =
-                                        MaterialTheme
-                                            .colorScheme
-                                            .primary
-                                )
-                            }
-                        }
-
-                        Spacer(
-                            modifier =
-                                Modifier.height(3.dp)
-                        )
-
-                        Text(
-                            text =
-                                deliveryAddressSummary(
-                                    selectedAddress
-                                ),
-
-                            style =
-                                MaterialTheme
-                                    .typography
-                                    .bodySmall,
-
-                            color =
-                                MaterialTheme
-                                    .colorScheme
-                                    .onSurfaceVariant,
-
-                            maxLines = 2,
-
-                            overflow =
-                                TextOverflow.Ellipsis
-                        )
-
-                        if (
-                            !errorMessage.isNullOrBlank()
-                        ) {
-                            Spacer(
-                                modifier =
-                                    Modifier.height(6.dp)
+                            Text(
+                                text = " • ",
+                                color =
+                                    CustomerHomeColors
+                                        .TextMuted
                             )
 
                             Text(
                                 text =
-                                    "Adresler yenilenemedi. Tekrar deneyebilirsiniz.",
-
+                                    deliveryAddressSummary(
+                                        selectedAddress
+                                    ),
+                                modifier =
+                                    Modifier.weight(1f),
                                 style =
                                     MaterialTheme
                                         .typography
-                                        .labelSmall,
-
+                                        .bodySmall,
                                 color =
-                                    MaterialTheme
-                                        .colorScheme
-                                        .error
+                                    CustomerHomeColors
+                                        .TextMuted,
+                                maxLines = 1,
+                                overflow =
+                                    TextOverflow
+                                        .Ellipsis
                             )
                         }
                     }
 
-                    Text(
-                        text = "⌄",
-                        style =
-                            MaterialTheme
-                                .typography
-                                .titleLarge
+                    if (
+                        selectedAddress.isDefault
+                    ) {
+                        Surface(
+                            shape =
+                                RoundedCornerShape(
+                                    50.dp
+                                ),
+                            color =
+                                CustomerHomeColors
+                                    .OliveSoft
+                        ) {
+                            Text(
+                                text = "✓ Varsayılan",
+                                modifier =
+                                    Modifier.padding(
+                                        horizontal =
+                                            8.dp,
+                                        vertical =
+                                            5.dp
+                                    ),
+                                style =
+                                    MaterialTheme
+                                        .typography
+                                        .labelSmall,
+                                color =
+                                    CustomerHomeColors
+                                        .DeepOlive,
+                                fontWeight =
+                                    FontWeight
+                                        .SemiBold
+                            )
+                        }
+                    }
+
+                    Icon(
+                        painter =
+                            painterResource(
+                                id =
+                                    R.drawable
+                                        .ic_customer_home_chevron
+                            ),
+                        contentDescription =
+                            "Teslimat adresini değiştir",
+                        tint =
+                            CustomerHomeColors
+                                .DeepOlive,
+                        modifier =
+                            Modifier
+                                .padding(
+                                    start = 5.dp
+                                )
+                                .size(20.dp)
                     )
                 }
             }
@@ -266,23 +339,46 @@ fun CustomerDeliveryAddressPicker(
         !errorMessage.isNullOrBlank() -> {
             Card(
                 modifier =
-                    modifier.fillMaxWidth()
+                    modifier.fillMaxWidth(),
+                shape =
+                    RoundedCornerShape(
+                        20.dp
+                    ),
+                colors =
+                    CardDefaults.cardColors(
+                        containerColor =
+                            CustomerHomeColors
+                                .Surface
+                    ),
+                border =
+                    BorderStroke(
+                        1.dp,
+                        CustomerHomeColors
+                            .Outline
+                    )
             ) {
                 Column(
                     modifier =
-                        Modifier.padding(16.dp)
+                        Modifier.padding(
+                            14.dp
+                        )
                 ) {
                     Text(
-                        text = "Teslimat adresi",
+                        text = "Teslimat Adresi",
                         style =
                             MaterialTheme
                                 .typography
-                                .titleMedium
+                                .titleSmall,
+                        fontWeight =
+                            FontWeight.SemiBold,
+                        color =
+                            CustomerHomeColors
+                                .Text
                     )
 
                     Spacer(
                         modifier =
-                            Modifier.height(6.dp)
+                            Modifier.size(5.dp)
                     )
 
                     Text(
@@ -290,7 +386,7 @@ fun CustomerDeliveryAddressPicker(
                         style =
                             MaterialTheme
                                 .typography
-                                .bodyMedium,
+                                .bodySmall,
                         color =
                             MaterialTheme
                                 .colorScheme
@@ -299,7 +395,7 @@ fun CustomerDeliveryAddressPicker(
 
                     Spacer(
                         modifier =
-                            Modifier.height(12.dp)
+                            Modifier.size(10.dp)
                     )
 
                     Button(
@@ -308,7 +404,7 @@ fun CustomerDeliveryAddressPicker(
                             Modifier.fillMaxWidth()
                     ) {
                         Text(
-                            "Adresleri Tekrar Yükle"
+                            "Tekrar Dene"
                         )
                     }
                 }
@@ -318,49 +414,95 @@ fun CustomerDeliveryAddressPicker(
         addresses.isEmpty() -> {
             Card(
                 modifier =
-                    modifier.fillMaxWidth()
+                    modifier.fillMaxWidth(),
+                shape =
+                    RoundedCornerShape(
+                        20.dp
+                    ),
+                colors =
+                    CardDefaults.cardColors(
+                        containerColor =
+                            CustomerHomeColors
+                                .Surface
+                    ),
+                border =
+                    BorderStroke(
+                        1.dp,
+                        CustomerHomeColors
+                            .Outline
+                    )
             ) {
-                Column(
+                Row(
                     modifier =
-                        Modifier.padding(16.dp)
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(
+                                horizontal = 14.dp,
+                                vertical = 12.dp
+                            ),
+                    verticalAlignment =
+                        Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "Teslimat adresi",
-                        style =
-                            MaterialTheme
-                                .typography
-                                .titleMedium
-                    )
-
-                    Spacer(
+                    Icon(
+                        painter =
+                            painterResource(
+                                id =
+                                    R.drawable
+                                        .ic_customer_home_location
+                            ),
+                        contentDescription = null,
+                        tint =
+                            CustomerHomeColors
+                                .DeepOlive,
                         modifier =
-                            Modifier.height(6.dp)
+                            Modifier.size(22.dp)
                     )
 
-                    Text(
-                        text =
-                            "Henüz kayıtlı teslimat adresiniz yok.",
-
-                        style =
-                            MaterialTheme
-                                .typography
-                                .bodyMedium
-                    )
-
-                    Spacer(
+                    Column(
                         modifier =
-                            Modifier.height(12.dp)
-                    )
-
-                    Button(
-                        onClick =
-                            onAddAddressClick,
-
-                        modifier =
-                            Modifier.fillMaxWidth()
+                            Modifier
+                                .weight(1f)
+                                .padding(
+                                    horizontal =
+                                        10.dp
+                                )
                     ) {
                         Text(
-                            "Yeni Adres Ekle"
+                            text = "Teslimat Adresi",
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .labelSmall,
+                            color =
+                                CustomerHomeColors
+                                    .TextMuted
+                        )
+
+                        Text(
+                            text =
+                                "Henüz kayıtlı adresiniz yok.",
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .bodyMedium,
+                            color =
+                                CustomerHomeColors
+                                    .Text
+                        )
+                    }
+
+                    TextButton(
+                        onClick =
+                            onAddAddressClick
+                    ) {
+                        Text(
+                            "Ekle",
+                            color =
+                                CustomerHomeColors
+                                    .Terracotta,
+                            fontWeight =
+                                FontWeight
+                                    .SemiBold
                         )
                     }
                 }
@@ -372,7 +514,10 @@ fun CustomerDeliveryAddressPicker(
         ModalBottomSheet(
             onDismissRequest = {
                 showAddressSheet = false
-            }
+            },
+            containerColor =
+                CustomerHomeColors
+                    .Surface
         ) {
             Column(
                 modifier =
@@ -387,36 +532,37 @@ fun CustomerDeliveryAddressPicker(
                 Text(
                     text =
                         "Teslimat adresini seç",
-
                     style =
                         MaterialTheme
                             .typography
-                            .headlineSmall
+                            .headlineSmall,
+                    color =
+                        CustomerHomeColors
+                            .DeepOlive,
+                    fontWeight =
+                        FontWeight.Bold
                 )
 
                 Spacer(
                     modifier =
-                        Modifier.height(6.dp)
+                        Modifier.size(6.dp)
                 )
 
                 Text(
                     text =
                         "Bu seçim yalnız şu anki teslimat adresinizi değiştirir. Varsayılan adres ayarınız değişmez.",
-
                     style =
                         MaterialTheme
                             .typography
                             .bodySmall,
-
                     color =
-                        MaterialTheme
-                            .colorScheme
-                            .onSurfaceVariant
+                        CustomerHomeColors
+                            .TextMuted
                 )
 
                 Spacer(
                     modifier =
-                        Modifier.height(18.dp)
+                        Modifier.size(18.dp)
                 )
 
                 addresses.forEach {
@@ -425,12 +571,10 @@ fun CustomerDeliveryAddressPicker(
                     DeliveryAddressOption(
                         address =
                             address,
-
                         selected =
                             selectedAddress
                                 ?.id ==
                                     address.id,
-
                         onClick = {
                             onAddressSelected(
                                 address.id
@@ -453,15 +597,16 @@ fun CustomerDeliveryAddressPicker(
                     onClick = {
                         showAddressSheet =
                             false
-
                         onAddAddressClick()
                     },
-
                     modifier =
                         Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        "+ Yeni adres ekle"
+                        "+ Yeni adres ekle",
+                        color =
+                            CustomerHomeColors
+                                .Terracotta
                     )
                 }
 
@@ -469,24 +614,71 @@ fun CustomerDeliveryAddressPicker(
                     onClick = {
                         showAddressSheet =
                             false
-
                         onManageAddressesClick()
                     },
-
                     modifier =
                         Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        "Adreslerimi yönet"
+                        "Adreslerimi yönet",
+                        color =
+                            CustomerHomeColors
+                                .DeepOlive
                     )
                 }
 
                 Spacer(
                     modifier =
-                        Modifier.height(8.dp)
+                        Modifier.size(8.dp)
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun AddressShell(
+    modifier: Modifier,
+    content:
+    @Composable
+    androidx.compose.foundation.layout.RowScope.() -> Unit
+) {
+    Card(
+        modifier =
+            modifier.fillMaxWidth(),
+        shape =
+            RoundedCornerShape(
+                20.dp
+            ),
+        colors =
+            CardDefaults.cardColors(
+                containerColor =
+                    CustomerHomeColors
+                        .Surface
+            ),
+        border =
+            BorderStroke(
+                1.dp,
+                CustomerHomeColors
+                    .Outline
+            ),
+        elevation =
+            CardDefaults.cardElevation(
+                defaultElevation = 1.dp
+            )
+    ) {
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        horizontal = 14.dp,
+                        vertical = 12.dp
+                    ),
+            verticalAlignment =
+                Alignment.CenterVertically,
+            content = content
+        )
     }
 }
 
@@ -506,7 +698,6 @@ private fun DeliveryAddressOption(
                 .padding(
                     vertical = 10.dp
                 ),
-
         verticalAlignment =
             Alignment.CenterVertically
     ) {
@@ -532,30 +723,30 @@ private fun DeliveryAddressOption(
                     style =
                         MaterialTheme
                             .typography
-                            .titleMedium
+                            .titleMedium,
+                    color =
+                        CustomerHomeColors
+                            .Text
                 )
 
                 if (address.isDefault) {
                     Text(
                         text =
                             "  • Varsayılan",
-
                         style =
                             MaterialTheme
                                 .typography
                                 .labelSmall,
-
                         color =
-                            MaterialTheme
-                                .colorScheme
-                                .primary
+                            CustomerHomeColors
+                                .DeepOlive
                     )
                 }
             }
 
             Spacer(
                 modifier =
-                    Modifier.height(3.dp)
+                    Modifier.size(3.dp)
             )
 
             Text(
@@ -563,19 +754,14 @@ private fun DeliveryAddressOption(
                     deliveryAddressSummary(
                         address
                     ),
-
                 style =
                     MaterialTheme
                         .typography
                         .bodySmall,
-
                 color =
-                    MaterialTheme
-                        .colorScheme
-                        .onSurfaceVariant,
-
+                    CustomerHomeColors
+                        .TextMuted,
                 maxLines = 2,
-
                 overflow =
                     TextOverflow.Ellipsis
             )
