@@ -20,6 +20,8 @@ import androidx.navigation.navArgument
 import androidx.navigation.navigation
 import com.homemadefood.app.ui.customer.CustomerAccountScreen
 import com.homemadefood.app.ui.customer.CustomerExploreScreen
+import com.homemadefood.app.ui.customer.CustomerExploreViewModel
+import com.homemadefood.app.ui.customer.CustomerExploreViewModelFactory
 import com.homemadefood.app.ui.customer.CustomerHomeScreen
 import com.homemadefood.app.ui.customer.CustomerProfileScreen
 import com.homemadefood.app.ui.customer.CustomerPhoneVerificationScreen
@@ -110,8 +112,10 @@ fun NavGraphBuilder.customerNavGraph(
         )
 
         customerExploreDestination(
-            navController = navController
+            navController = navController,
+            context = context
         )
+
 
         customerAccountDestination(
             navController = navController,
@@ -307,6 +311,9 @@ private fun NavGraphBuilder.customerHomeDestination(
                     ) {
                         cartViewModel
                             .loadCart()
+                        customerHomeViewModel
+                            .loadHomeFavorites()
+
 
                         customerHomeViewModel
                             .loadDeliveryAddresses()
@@ -413,6 +420,16 @@ private fun NavGraphBuilder.customerHomeDestination(
                         .loadStorefronts()
                 },
 
+                onRetryNearbyStorefrontsClick = {
+                    customerHomeViewModel
+                        .loadNearbyStorefronts()
+                },
+                onRetryCityStorefrontsClick = {
+                    customerHomeViewModel
+                        .loadCityStorefronts()
+                },
+
+
                 onStorefrontClick = {
                         producerProfileId ->
 
@@ -422,6 +439,20 @@ private fun NavGraphBuilder.customerHomeDestination(
                             .createRoute(
                                 producerProfileId
                             )
+                    )
+                },
+                onFoodClick = { foodId ->
+                    navController.navigate(
+                        AppDestination
+                            .FoodDetail
+                            .createRoute(
+                                foodId
+                            )
+                    )
+                },
+                onToggleFavorite = { foodId ->
+                    customerHomeViewModel.toggleHomeFavorite(
+                        foodId = foodId
                     )
                 },
 
@@ -459,7 +490,8 @@ private fun NavGraphBuilder.customerHomeDestination(
 }
 
 private fun NavGraphBuilder.customerExploreDestination(
-    navController: NavHostController
+    navController: NavHostController,
+    context: Context
 ) {
     composable(
         route =
@@ -467,6 +499,71 @@ private fun NavGraphBuilder.customerExploreDestination(
                 .CustomerExplore
                 .route
     ) {
+        val customerExploreViewModel:
+                CustomerExploreViewModel =
+            viewModel(
+                factory =
+                    CustomerExploreViewModelFactory(
+                        context
+                    )
+            )
+
+        val customerExploreUiState by
+        customerExploreViewModel
+            .uiState
+            .collectAsStateWithLifecycle()
+
+        /*
+         * H8D-2B FIX:
+         *
+         * Keşfet -> Adreslerim -> varsayılan adres değiştir -> geri
+         * akışında destination back stack'te kaldığı için
+         * LaunchedEffect(Unit) yeniden çalışmıyordu.
+         *
+         * Home ekranındaki gibi her ON_RESUME'da aktif teslimat
+         * adresini yeniden çözüyoruz.
+         *
+         * Böylece:
+         * - varsayılan/seçili adres güncellenir,
+         * - city/latitude/longitude yenilenir,
+         * - Food discover ve Storefront discover yeni adrese göre
+         *   yeniden yüklenir.
+         */
+        val lifecycleOwner =
+            LocalLifecycleOwner.current
+
+        DisposableEffect(
+            lifecycleOwner,
+            customerExploreViewModel
+        ) {
+            val observer =
+                LifecycleEventObserver {
+                        _,
+                        event ->
+
+                    if (
+                        event ==
+                        Lifecycle.Event.ON_RESUME
+                    ) {
+                        customerExploreViewModel
+                            .refreshDeliveryContext()
+                    }
+                }
+
+            lifecycleOwner.lifecycle
+                .addObserver(
+                    observer
+                )
+
+            onDispose {
+                lifecycleOwner.lifecycle
+                    .removeObserver(
+                        observer
+                    )
+            }
+        }
+
+
         CustomerRootScaffold(
             selectedRoute =
                 AppDestination
@@ -483,7 +580,121 @@ private fun NavGraphBuilder.customerExploreDestination(
                 )
             }
         ) { innerPadding ->
+
             CustomerExploreScreen(
+                uiState =
+                    customerExploreUiState,
+
+                onSearchQueryChange = { value ->
+                    customerExploreViewModel
+                        .updateSearchQuery(
+                            value
+                        )
+                },
+
+                onSearchClick = {
+                    customerExploreViewModel
+                        .search()
+                },
+                onRecommendationClick = {
+                    navController.navigate(
+                        AppDestination
+                            .Recommendation
+                            .route
+                    )
+                },
+
+
+                onCategoryClick = { categoryId ->
+                    customerExploreViewModel
+                        .selectCategory(
+                            categoryId
+                        )
+                },
+
+                onClearFiltersClick = {
+                    customerExploreViewModel
+                        .clearFilters()
+                },
+
+                onContentTypeClick = { contentType ->
+                    customerExploreViewModel
+                        .selectContentType(
+                            contentType
+                        )
+                },
+
+                onRetryDeliveryAddressClick = {
+                    customerExploreViewModel
+                        .retryDeliveryAddress()
+                },
+                onDeliveryAddressSelected = {
+                        addressId ->
+
+                    customerExploreViewModel
+                        .selectDeliveryAddress(
+                            addressId
+                        )
+                },
+
+                onRetryCategoriesClick = {
+                    customerExploreViewModel
+                        .retryCategories()
+                },
+
+                onRetryFoodsClick = {
+                    customerExploreViewModel
+                        .retryFoods()
+                },
+
+                onRetryStorefrontsClick = {
+                    customerExploreViewModel
+                        .retryStorefronts()
+                },
+
+                onLoadMoreClick = {
+                    customerExploreViewModel
+                        .loadMoreForSelectedTab()
+                },
+
+                onAddAddressClick = {
+                    navController.navigate(
+                        AppDestination
+                            .AddAddress
+                            .route
+                    )
+                },
+
+                onManageAddressesClick = {
+                    navController.navigate(
+                        AppDestination
+                            .Addresses
+                            .route
+                    )
+                },
+
+                onFoodClick = { foodId ->
+                    navController.navigate(
+                        AppDestination
+                            .FoodDetail
+                            .createRoute(
+                                foodId
+                            )
+                    )
+                },
+
+                onStorefrontClick = {
+                        producerProfileId ->
+
+                    navController.navigate(
+                        AppDestination
+                            .StorefrontMenu
+                            .createRoute(
+                                producerProfileId
+                            )
+                    )
+                },
+
                 modifier =
                     Modifier
                         .fillMaxSize()
@@ -494,6 +705,7 @@ private fun NavGraphBuilder.customerExploreDestination(
         }
     }
 }
+
 
 private fun NavGraphBuilder.customerAccountDestination(
     navController: NavHostController,
@@ -878,6 +1090,7 @@ private fun NavGraphBuilder.storefrontMenuDestination(
                         event ==
                         Lifecycle.Event.ON_RESUME
                     ) {
+
                         cartViewModel
                             .loadCart()
                     }

@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -37,28 +38,33 @@ import androidx.compose.ui.unit.dp
 import com.homemadefood.app.R
 import com.homemadefood.app.data.model.CategoryResponse
 
+/*
+ * H8B.1
+ *
+ * Arama alanı ve kategori alanı iki ayrı composable olarak ayrıldı.
+ * Böylece Home ekranı yalnız arama kartını stickyHeader olarak
+ * sabitleyebilir; kategoriler normal akışta kaymaya devam eder.
+ */
+
 @Composable
-fun CustomerHomeSearchAndCategorySection(
+fun CustomerHomeSearchField(
     searchQuery: String,
-    categories: List<CategoryResponse>,
-    selectedCategoryId: Int?,
-    isCategoriesLoading: Boolean,
-    categoryErrorMessage: String?,
     isStorefrontsLoading: Boolean,
     onSearchQueryChange: (String) -> Unit,
     onSearchClick: () -> Unit,
-    onCategoryClick: (Int?) -> Unit,
-    onClearFiltersClick: () -> Unit,
-    onRetryCategoriesClick: () -> Unit,
+    onRecommendationClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier
+    Row(
+        modifier =
+            modifier.fillMaxWidth(),
+        verticalAlignment =
+            Alignment.CenterVertically
     ) {
         Surface(
             modifier =
                 Modifier
-                    .fillMaxWidth()
+                    .weight(1f)
                     .height(50.dp),
             shape =
                 RoundedCornerShape(
@@ -74,7 +80,7 @@ fun CustomerHomeSearchAndCategorySection(
                         CustomerHomeColors
                             .Outline
                 ),
-            shadowElevation = 0.dp
+            shadowElevation = 1.dp
         ) {
             Row(
                 modifier =
@@ -108,12 +114,17 @@ fun CustomerHomeSearchAndCategorySection(
                 )
 
                 BasicTextField(
-                    value = searchQuery,
+                    value =
+                        searchQuery,
+
                     onValueChange =
                         onSearchQueryChange,
+
                     modifier =
                         Modifier.weight(1f),
+
                     singleLine = true,
+
                     textStyle =
                         MaterialTheme
                             .typography
@@ -125,22 +136,26 @@ fun CustomerHomeSearchAndCategorySection(
                                             .Text
                                 )
                             ),
+
                     cursorBrush =
                         SolidColor(
                             CustomerHomeColors
                                 .DeepOlive
                         ),
+
                     keyboardOptions =
                         KeyboardOptions(
                             imeAction =
                                 ImeAction.Search
                         ),
+
                     keyboardActions =
                         KeyboardActions(
                             onSearch = {
                                 onSearchClick()
                             }
                         ),
+
                     decorationBox = {
                             innerTextField ->
 
@@ -175,10 +190,14 @@ fun CustomerHomeSearchAndCategorySection(
                         Modifier.size(34.dp),
                     shape = CircleShape,
                     color =
-                        if (isStorefrontsLoading) {
+                        if (
+                            isStorefrontsLoading
+                        ) {
                             CustomerHomeColors
                                 .Terracotta
-                                .copy(alpha = 0.48f)
+                                .copy(
+                                    alpha = 0.48f
+                                )
                         } else {
                             CustomerHomeColors
                                 .Terracotta
@@ -187,6 +206,7 @@ fun CustomerHomeSearchAndCategorySection(
                     IconButton(
                         onClick =
                             onSearchClick,
+
                         enabled =
                             !isStorefrontsLoading
                     ) {
@@ -199,7 +219,8 @@ fun CustomerHomeSearchAndCategorySection(
                                         16.dp
                                     ),
                                 strokeWidth = 2.dp,
-                                color = Color.White
+                                color =
+                                    Color.White
                             )
                         } else {
                             Icon(
@@ -211,7 +232,8 @@ fun CustomerHomeSearchAndCategorySection(
                                     ),
                                 contentDescription =
                                     "Ara",
-                                tint = Color.White,
+                                tint =
+                                    Color.White,
                                 modifier =
                                     Modifier.size(
                                         16.dp
@@ -223,11 +245,75 @@ fun CustomerHomeSearchAndCategorySection(
             }
         }
 
-        Spacer(
-            modifier =
-                Modifier.height(18.dp)
-        )
+        if (onRecommendationClick != null) {
+            Spacer(
+                modifier =
+                    Modifier.size(
+                        8.dp
+                    )
+            )
 
+            Surface(
+                modifier =
+                    Modifier
+                        .size(
+                            50.dp
+                        )
+                        .clickable(
+                            onClick =
+                                onRecommendationClick
+                        ),
+                shape =
+                    CircleShape,
+                color =
+                    CustomerHomeColors
+                        .DeepOlive,
+                shadowElevation =
+                    2.dp
+            ) {
+                Box(
+                    contentAlignment =
+                        Alignment.Center
+                ) {
+                    Icon(
+                        painter =
+                            painterResource(
+                                id =
+                                    R.drawable
+                                        .ic_customer_ai_sparkle
+                            ),
+                        contentDescription =
+                            "Akıllı Öneri",
+                        tint =
+                            CustomerHomeColors
+                                .Gold,
+                        modifier =
+                            Modifier.size(
+                                23.dp
+                            )
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun CustomerHomeCategorySection(
+    searchQuery: String,
+    categories: List<CategoryResponse>,
+    selectedCategoryId: Int?,
+    isCategoriesLoading: Boolean,
+    categoryErrorMessage: String?,
+    onCategoryClick: (Int?) -> Unit,
+    onClearFiltersClick: () -> Unit,
+    onRetryCategoriesClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier =
+            modifier
+    ) {
         Row(
             modifier =
                 Modifier.fillMaxWidth(),
@@ -285,14 +371,17 @@ fun CustomerHomeSearchAndCategorySection(
                         Modifier
                             .fillMaxWidth()
                             .padding(
-                                vertical = 10.dp
+                                vertical =
+                                    10.dp
                             ),
                     verticalAlignment =
                         Alignment.CenterVertically
                 ) {
                     CircularProgressIndicator(
                         modifier =
-                            Modifier.size(20.dp),
+                            Modifier.size(
+                                20.dp
+                            ),
                         strokeWidth = 2.dp,
                         color =
                             CustomerHomeColors
@@ -387,7 +476,9 @@ fun CustomerHomeSearchAndCategorySection(
                             selectedCategoryId ==
                                     null,
                         onClick = {
-                            onCategoryClick(null)
+                            onCategoryClick(
+                                null
+                            )
                         }
                     )
 
@@ -413,6 +504,84 @@ fun CustomerHomeSearchAndCategorySection(
     }
 }
 
+/*
+ * Eski çağrılar bozulmasın diye wrapper'ı koruyoruz.
+ * Home ekranı H8B.1'den sonra ayrı SearchField + CategorySection kullanıyor.
+ */
+@Composable
+fun CustomerHomeSearchAndCategorySection(
+    searchQuery: String,
+    categories: List<CategoryResponse>,
+    selectedCategoryId: Int?,
+    isCategoriesLoading: Boolean,
+    categoryErrorMessage: String?,
+    isStorefrontsLoading: Boolean,
+    onSearchQueryChange: (String) -> Unit,
+    onSearchClick: () -> Unit,
+    onCategoryClick: (Int?) -> Unit,
+    onClearFiltersClick: () -> Unit,
+    onRetryCategoriesClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier =
+            modifier
+    ) {
+        CustomerHomeSearchField(
+            searchQuery =
+                searchQuery,
+
+            isStorefrontsLoading =
+                isStorefrontsLoading,
+
+            onSearchQueryChange =
+                onSearchQueryChange,
+
+            onSearchClick =
+                onSearchClick,
+
+            modifier =
+                Modifier.fillMaxWidth()
+        )
+
+        Spacer(
+            modifier =
+                Modifier.height(
+                    18.dp
+                )
+        )
+
+        CustomerHomeCategorySection(
+            searchQuery =
+                searchQuery,
+
+            categories =
+                categories,
+
+            selectedCategoryId =
+                selectedCategoryId,
+
+            isCategoriesLoading =
+                isCategoriesLoading,
+
+            categoryErrorMessage =
+                categoryErrorMessage,
+
+            onCategoryClick =
+                onCategoryClick,
+
+            onClearFiltersClick =
+                onClearFiltersClick,
+
+            onRetryCategoriesClick =
+                onRetryCategoriesClick,
+
+            modifier =
+                Modifier.fillMaxWidth()
+        )
+    }
+}
+
 @Composable
 private fun HomeCategoryPill(
     text: String,
@@ -422,7 +591,8 @@ private fun HomeCategoryPill(
     Surface(
         modifier =
             Modifier.clickable(
-                onClick = onClick
+                onClick =
+                    onClick
             ),
         shape =
             RoundedCornerShape(
@@ -456,11 +626,14 @@ private fun HomeCategoryPill(
             }
     ) {
         Text(
-            text = text,
+            text =
+                text,
             modifier =
                 Modifier.padding(
-                    horizontal = 17.dp,
-                    vertical = 10.dp
+                    horizontal =
+                        17.dp,
+                    vertical =
+                        10.dp
                 ),
             color =
                 if (selected) {

@@ -3,6 +3,7 @@ package com.homemadefood.app.ui.customer.navigation
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import com.homemadefood.app.ui.customer.CustomerHomeColors
 
 @Composable
 fun CustomerRootScaffold(
@@ -11,6 +12,10 @@ fun CustomerRootScaffold(
     content: @Composable (PaddingValues) -> Unit
 ) {
     Scaffold(
+        containerColor =
+            CustomerHomeColors
+                .Cream,
+
         bottomBar = {
             CustomerBottomBar(
                 selectedRoute =
@@ -21,6 +26,8 @@ fun CustomerRootScaffold(
             )
         }
     ) { innerPadding ->
-        content(innerPadding)
+        content(
+            innerPadding
+        )
     }
 }
