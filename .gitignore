@@ -16,3 +16,27 @@ local.properties
 # Android Studio
 .idea/
 *.iml
+
+# Signing / keystore
+*.jks
+*.keystore
+key.properties
+
+# Environment / local secrets
+.env
+.env.*
+!.env.example
+secrets.properties
+
+# Build artifacts
+*.apk
+*.aab
+
+# Certificates / private keys
+*.p12
+*.pfx
+*.pem
+*.key
+
+# OS files
+Thumbs.db
