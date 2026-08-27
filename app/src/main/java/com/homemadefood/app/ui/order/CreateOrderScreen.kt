@@ -1,5 +1,7 @@
 package com.homemadefood.app.ui.order
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,24 +12,41 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.homemadefood.app.data.model.AddressResponse
-import com.homemadefood.app.data.model.PaymentMethods
+import com.homemadefood.app.data.model.CartItemResponse
 import com.homemadefood.app.data.model.OrderStatus
+import com.homemadefood.app.data.model.PaymentMethods
+import com.homemadefood.app.ui.components.AppErrorState
+import com.homemadefood.app.ui.components.AppLoadingState
+import com.homemadefood.app.ui.components.FoodImage
+import com.homemadefood.app.ui.customer.CustomerHomeColors
+import com.homemadefood.app.ui.customer.CustomerHomeTheme
 import java.util.Locale
 
 @Composable
@@ -47,540 +66,289 @@ fun CreateOrderScreen(
     onReturnHomeClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    when {
-        uiState.createdOrder != null -> {
-            OrderSuccessContent(
-                orderId = uiState.createdOrder.orderId,
-                totalPrice = uiState.createdOrder.totalPrice,
-                status = uiState.createdOrder.status,
-                onReturnHomeClick = onReturnHomeClick,
-                modifier = modifier
-            )
-        }
+    CustomerHomeTheme {
+        when {
+            uiState.createdOrder != null -> {
+                OrderSuccessContent(
+                    orderId = uiState.createdOrder.orderId,
+                    totalPrice = uiState.createdOrder.totalPrice,
+                    status = uiState.createdOrder.status,
+                    onReturnHomeClick = onReturnHomeClick,
+                    modifier = modifier
+                )
+            }
 
-        uiState.isLoading -> {
+            uiState.isLoading -> {
+                AppLoadingState(
+                    modifier = modifier
+                        .fillMaxSize()
+                        .background(CustomerHomeColors.Cream),
+                    message = "Sipariş bilgileri yükleniyor..."
+                )
+            }
+
+            uiState.errorMessage != null && uiState.cart == null -> {
+                Column(
+                    modifier = modifier
+                        .fillMaxSize()
+                        .background(CustomerHomeColors.Cream)
+                ) {
+                    CheckoutHeader(
+                        onBackClick = onBackClick,
+                        enabled = true
+                    )
+
+                    AppErrorState(
+                        message = uiState.errorMessage,
+                        onRetryClick = onRetryClick,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+
+            else -> {
+                val cart = uiState.cart
+
+                val serverRequiresPhoneVerification =
+                    uiState.errorMessage
+                        ?.contains(
+                            "telefon numaranızı doğrulamanız gerekir",
+                            ignoreCase = true
+                        ) == true
+
+                val phoneVerificationRequired =
+                    !isPhoneVerificationLoading &&
+                            (!isPhoneVerifiedForOrder || serverRequiresPhoneVerification)
+
+                Column(
+                    modifier = modifier
+                        .fillMaxSize()
+                        .background(CustomerHomeColors.Cream)
+                ) {
+                    CheckoutHeader(
+                        onBackClick = onBackClick,
+                        enabled = !uiState.isCreatingOrder
+                    )
+
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState())
+                            .padding(
+                                start = 20.dp,
+                                end = 20.dp,
+                                bottom = 18.dp
+                            )
+                    ) {
+                        Text(
+                            text = "Siparişinizi gözden geçirin ve onaylayın.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = CustomerHomeColors.TextMuted
+                        )
+
+                        Spacer(Modifier.height(18.dp))
+
+                        AddressSection(
+                            addresses = uiState.addresses,
+                            selectedAddressId = uiState.selectedAddressId,
+                            enabled = !uiState.isCreatingOrder,
+                            onAddressSelected = onAddressSelected
+                        )
+
+                        Spacer(Modifier.height(14.dp))
+
+                        if (cart != null && cart.businessName.isNotBlank()) {
+                            BusinessSummaryCard(
+                                businessName = cart.businessName
+                            )
+
+                            Spacer(Modifier.height(14.dp))
+                        }
+
+                        if (cart != null) {
+                            ProductsSummaryCard(
+                                items = cart.items,
+                                totalQuantity = cart.totalQuantity
+                            )
+
+                            Spacer(Modifier.height(14.dp))
+                        }
+
+                        PaymentSection(
+                            selectedPaymentMethod = uiState.paymentMethod,
+                            enabled = !uiState.isCreatingOrder,
+                            onPaymentMethodSelected = onPaymentMethodSelected
+                        )
+
+                        Spacer(Modifier.height(14.dp))
+
+                        OrderNoteCard(
+                            note = uiState.customerNote,
+                            enabled = !uiState.isCreatingOrder,
+                            onValueChange = onCustomerNoteChange
+                        )
+
+                        if (
+                            !uiState.errorMessage.isNullOrBlank() &&
+                            !serverRequiresPhoneVerification
+                        ) {
+                            Spacer(Modifier.height(14.dp))
+
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                color = CustomerHomeColors.TerracottaSoft
+                            ) {
+                                Text(
+                                    text = uiState.errorMessage,
+                                    modifier = Modifier.padding(14.dp),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = CustomerHomeColors.Error
+                                )
+                            }
+                        }
+
+                        Spacer(Modifier.height(14.dp))
+
+                        PhoneVerificationSection(
+                            isLoading = isPhoneVerificationLoading,
+                            isRequired = phoneVerificationRequired,
+                            errorMessage = phoneVerificationErrorMessage,
+                            enabled = !uiState.isCreatingOrder,
+                            onRetryClick = onRetryPhoneVerificationStatusClick,
+                            onVerificationClick = onPhoneVerificationClick
+                        )
+                    }
+
+                    CheckoutBottomBar(
+                        totalQuantity = cart?.totalQuantity ?: 0,
+                        totalPrice = cart?.totalPrice ?: 0.0,
+                        isCreatingOrder = uiState.isCreatingOrder,
+                        phoneVerificationRequired = phoneVerificationRequired,
+                        phoneVerificationLoading = isPhoneVerificationLoading,
+                        enabled =
+                            cart != null &&
+                                    cart.items.isNotEmpty() &&
+                                    uiState.selectedAddressId != null,
+                        onCreateOrderClick = onCreateOrderClick
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CheckoutHeader(
+    onBackClick: () -> Unit,
+    enabled: Boolean
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(
+                start = 20.dp,
+                end = 20.dp,
+                top = 16.dp,
+                bottom = 12.dp
+            ),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Surface(
+            modifier = Modifier
+                .size(48.dp)
+                .clickable(
+                    enabled = enabled,
+                    onClick = onBackClick
+                ),
+            shape = CircleShape,
+            color = CustomerHomeColors.Surface,
+            border = BorderStroke(
+                1.dp,
+                CustomerHomeColors.Outline
+            ),
+            shadowElevation = 2.dp
+        ) {
             Box(
-                modifier = modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator()
+                Text(
+                    text = "←",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = CustomerHomeColors.DeepOlive,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
 
-        uiState.errorMessage != null &&
-                uiState.cart == null -> {
+        Spacer(Modifier.width(14.dp))
 
-            Column(
-                modifier = modifier
-                    .fillMaxSize()
-                    .padding(20.dp)
-            ) {
-                TextButton(
-                    onClick = onBackClick
-                ) {
-                    Text("← Sepetime Dön")
-                }
+        Text(
+            text = "Siparişi Tamamla",
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.headlineSmall,
+            color = CustomerHomeColors.DeepOlive,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
 
-                Spacer(
-                    modifier = Modifier.height(20.dp)
+@Composable
+private fun AddressSection(
+    addresses: List<AddressResponse>,
+    selectedAddressId: Int?,
+    enabled: Boolean,
+    onAddressSelected: (Int) -> Unit
+) {
+    SectionCard {
+        SectionTitle(
+            title = "Teslimat Adresi",
+            leadingText = "⌖"
+        )
+
+        Spacer(Modifier.height(10.dp))
+
+        if (addresses.isEmpty()) {
+            Text(
+                text =
+                    "Kayıtlı adresiniz bulunmuyor. Sipariş oluşturmadan önce Adreslerim bölümünden adres ekleyin.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = CustomerHomeColors.Error
+            )
+        } else {
+            addresses.forEachIndexed { index, address ->
+                AddressSelectionRow(
+                    address = address,
+                    isSelected = selectedAddressId == address.id,
+                    enabled = enabled,
+                    onClick = {
+                        onAddressSelected(address.id)
+                    }
                 )
 
-                Text(
-                    text = uiState.errorMessage,
-                    color = MaterialTheme.colorScheme.error
-                )
-
-                Spacer(
-                    modifier = Modifier.height(16.dp)
-                )
-
-                Button(
-                    onClick = onRetryClick,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Tekrar Dene")
+                if (index != addresses.lastIndex) {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 6.dp),
+                        color = CustomerHomeColors.Outline
+                    )
                 }
             }
         }
 
-        else -> {
-            val cart = uiState.cart
+        if (addresses.isNotEmpty()) {
+            Spacer(Modifier.height(8.dp))
 
-            /*
-             * C3C backend guard'ının mesajını da tanıyoruz.
-             * Normal durumda bu noktaya gelmeden profile
-             * kontrolü kullanıcıyı OTP akışına yönlendirir.
-             *
-             * Buna rağmen backend ikinci güvenlik katmanı
-             * olarak PHONE_VERIFICATION_REQUIRED döndürürse,
-             * genel order hatası yerine aynı doğrulama CTA'sı
-             * gösterilir.
-             */
-            val serverRequiresPhoneVerification =
-                uiState.errorMessage
-                    ?.contains(
-                        "telefon numaranızı doğrulamanız gerekir",
-                        ignoreCase = true
-                    ) == true
-
-            val phoneVerificationRequired =
-                !isPhoneVerificationLoading &&
-                        (
-                                !isPhoneVerifiedForOrder ||
-                                        serverRequiresPhoneVerification
-                                )
-
-            Column(
-                modifier = modifier
-                    .fillMaxSize()
-                    .verticalScroll(
-                        rememberScrollState()
-                    )
-                    .padding(20.dp)
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = CustomerHomeColors.OliveSoft.copy(alpha = 0.55f)
             ) {
-                TextButton(
-                    onClick = onBackClick,
-                    enabled = !uiState.isCreatingOrder
-                ) {
-                    Text("← Sepetime Dön")
-                }
-
-                Spacer(
-                    modifier = Modifier.height(8.dp)
-                )
-
                 Text(
-                    text = "Siparişi Tamamla",
-                    style = MaterialTheme.typography.headlineMedium
-                )
-
-                Spacer(
-                    modifier = Modifier.height(22.dp)
-                )
-
-                Text(
-                    text = "Sepet Özeti",
-                    style = MaterialTheme.typography.titleLarge
-                )
-
-                Spacer(
-                    modifier = Modifier.height(12.dp)
-                )
-
-                Card(
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp)
-                    ) {
-                        if (
-                            cart != null &&
-                            cart.businessName.isNotBlank()
-                        ) {
-                            Text(
-                                text = cart.businessName,
-                                style =
-                                    MaterialTheme.typography.titleMedium,
-                                color =
-                                    MaterialTheme.colorScheme.primary
-                            )
-
-                            Spacer(
-                                modifier = Modifier.height(10.dp)
-                            )
-                        }
-
-                        cart?.items?.forEach { item ->
-                            Row(
-                                modifier =
-                                    Modifier.fillMaxWidth(),
-                                horizontalArrangement =
-                                    Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    text =
-                                        "${item.foodName} × ${item.quantity}"
-                                )
-
-                                Text(
-                                    text =
-                                        formatPrice(item.lineTotal)
-                                )
-                            }
-
-                            Spacer(
-                                modifier = Modifier.height(6.dp)
-                            )
-                        }
-
-                        HorizontalDivider(
-                            modifier =
-                                Modifier.padding(vertical = 10.dp)
-                        )
-
-                        OrderInformationRow(
-                            title = "Toplam ürün",
-                            value =
-                                "${cart?.totalQuantity ?: 0} adet"
-                        )
-
-                        OrderInformationRow(
-                            title = "Toplam tutar",
-                            value =
-                                formatPrice(
-                                    cart?.totalPrice ?: 0.0
-                                )
-                        )
-                    }
-                }
-
-                Spacer(
-                    modifier = Modifier.height(26.dp)
-                )
-
-                Text(
-                    text = "Teslimat Adresi",
-                    style = MaterialTheme.typography.titleLarge
-                )
-
-                Spacer(
-                    modifier = Modifier.height(12.dp)
-                )
-
-                if (uiState.addresses.isEmpty()) {
-                    Text(
-                        text =
-                            "Kayıtlı adresiniz bulunmuyor. " +
-                                    "Sipariş oluşturmadan önce " +
-                                    "Adreslerim bölümünden adres ekleyin.",
-                        color = MaterialTheme.colorScheme.error
-                    )
-                } else {
-                    uiState.addresses.forEach { address ->
-                        AddressSelectionCard(
-                            address = address,
-
-                            isSelected =
-                                uiState.selectedAddressId ==
-                                        address.id,
-
-                            enabled =
-                                !uiState.isCreatingOrder,
-
-                            onClick = {
-                                onAddressSelected(
-                                    address.id
-                                )
-                            }
-                        )
-
-                        Spacer(
-                            modifier = Modifier.height(10.dp)
-                        )
-                    }
-                }
-
-                Spacer(
-                    modifier = Modifier.height(18.dp)
-                )
-
-                Text(
-                    text = "Ödeme Yöntemi",
-                    style = MaterialTheme.typography.titleLarge
-                )
-
-                Spacer(
-                    modifier = Modifier.height(10.dp)
-                )
-
-                PaymentMethodRow(
-                    title = "Kapıda Nakit Ödeme",
-
-                    selected =
-                        uiState.paymentMethod ==
-                                PaymentMethods.CASH_ON_DELIVERY,
-
-                    enabled =
-                        !uiState.isCreatingOrder,
-
-                    onClick = {
-                        onPaymentMethodSelected(
-                            PaymentMethods.CASH_ON_DELIVERY
-                        )
-                    }
-                )
-
-                PaymentMethodRow(
-                    title = "Kapıda Kartla Ödeme",
-
-                    selected =
-                        uiState.paymentMethod ==
-                                PaymentMethods.CARD_ON_DELIVERY,
-
-                    enabled =
-                        !uiState.isCreatingOrder,
-
-                    onClick = {
-                        onPaymentMethodSelected(
-                            PaymentMethods.CARD_ON_DELIVERY
-                        )
-                    }
-                )
-
-                Spacer(
-                    modifier = Modifier.height(20.dp)
-                )
-
-                OutlinedTextField(
-                    value = uiState.customerNote,
-
-                    onValueChange =
-                        onCustomerNoteChange,
-
-                    modifier =
-                        Modifier.fillMaxWidth(),
-
-                    label = {
-                        Text("Sipariş Notu")
-                    },
-
-                    placeholder = {
-                        Text(
-                            "Örnek: Zili çalmayın, " +
-                                    "telefonla arayın."
-                        )
-                    },
-
-                    supportingText = {
-                        Text(
-                            "${uiState.customerNote.length}/500"
-                        )
-                    },
-
-                    minLines = 3,
-                    maxLines = 5,
-                    enabled = !uiState.isCreatingOrder
-                )
-
-                /*
-                 * PHONE_VERIFICATION_REQUIRED backend mesajını
-                 * normal order error gibi iki kez göstermiyoruz.
-                 * Aşağıdaki telefon doğrulama kartı bu durumu
-                 * kullanıcıya daha anlaşılır biçimde sunar.
-                 */
-                if (
-                    !uiState.errorMessage.isNullOrBlank() &&
-                    !serverRequiresPhoneVerification
-                ) {
-                    Spacer(
-                        modifier = Modifier.height(14.dp)
-                    )
-
-                    Text(
-                        text = uiState.errorMessage,
-                        color = MaterialTheme.colorScheme.error,
-                        style =
-                            MaterialTheme.typography.bodyMedium
-                    )
-                }
-
-                Spacer(
-                    modifier = Modifier.height(24.dp)
-                )
-
-                when {
-                    isPhoneVerificationLoading -> {
-                        Card(
-                            modifier =
-                                Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .padding(16.dp),
-
-                                verticalAlignment =
-                                    Alignment.CenterVertically
-                            ) {
-                                CircularProgressIndicator(
-                                    modifier =
-                                        Modifier.height(22.dp),
-                                    strokeWidth = 2.dp
-                                )
-
-                                Text(
-                                    text =
-                                        "Telefon doğrulama durumu kontrol ediliyor...",
-
-                                    modifier =
-                                        Modifier.padding(
-                                            start = 12.dp
-                                        ),
-
-                                    style =
-                                        MaterialTheme
-                                            .typography
-                                            .bodyMedium
-                                )
-                            }
-                        }
-                    }
-
-                    !phoneVerificationErrorMessage
-                        .isNullOrBlank() -> {
-
-                        Card(
-                            modifier =
-                                Modifier.fillMaxWidth()
-                        ) {
-                            Column(
-                                modifier =
-                                    Modifier.padding(16.dp)
-                            ) {
-                                Text(
-                                    text =
-                                        "Telefon doğrulama durumu alınamadı.",
-
-                                    style =
-                                        MaterialTheme
-                                            .typography
-                                            .titleMedium
-                                )
-
-                                Spacer(
-                                    modifier =
-                                        Modifier.height(6.dp)
-                                )
-
-                                Text(
-                                    text =
-                                        phoneVerificationErrorMessage,
-
-                                    color =
-                                        MaterialTheme
-                                            .colorScheme
-                                            .error,
-
-                                    style =
-                                        MaterialTheme
-                                            .typography
-                                            .bodyMedium
-                                )
-
-                                Spacer(
-                                    modifier =
-                                        Modifier.height(12.dp)
-                                )
-
-                                Button(
-                                    onClick =
-                                        onRetryPhoneVerificationStatusClick,
-
-                                    modifier =
-                                        Modifier.fillMaxWidth(),
-
-                                    enabled =
-                                        !uiState.isCreatingOrder
-                                ) {
-                                    Text(
-                                        "Telefon Durumunu Tekrar Kontrol Et"
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    phoneVerificationRequired -> {
-                        Card(
-                            modifier =
-                                Modifier.fillMaxWidth()
-                        ) {
-                            Column(
-                                modifier =
-                                    Modifier.padding(16.dp)
-                            ) {
-                                Text(
-                                    text =
-                                        "Telefon doğrulaması gerekli",
-
-                                    style =
-                                        MaterialTheme
-                                            .typography
-                                            .titleMedium,
-
-                                    color =
-                                        MaterialTheme
-                                            .colorScheme
-                                            .primary
-                                )
-
-                                Spacer(
-                                    modifier =
-                                        Modifier.height(6.dp)
-                                )
-
-                                Text(
-                                    text =
-                                        "Sipariş verebilmek için telefon numaranızı doğrulamanız gerekir. Sepetiniz, seçtiğiniz adres, ödeme yöntemi ve sipariş notunuz doğrulama sırasında korunur.",
-
-                                    style =
-                                        MaterialTheme
-                                            .typography
-                                            .bodyMedium
-                                )
-
-                                Spacer(
-                                    modifier =
-                                        Modifier.height(14.dp)
-                                )
-
-                                Button(
-                                    onClick =
-                                        onPhoneVerificationClick,
-
-                                    modifier =
-                                        Modifier.fillMaxWidth(),
-
-                                    enabled =
-                                        !uiState.isCreatingOrder
-                                ) {
-                                    Text(
-                                        "Telefonumu Doğrula"
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    else -> {
-                        Button(
-                            onClick = onCreateOrderClick,
-
-                            modifier =
-                                Modifier.fillMaxWidth(),
-
-                            enabled =
-                                !uiState.isCreatingOrder &&
-                                        cart != null &&
-                                        cart.items.isNotEmpty() &&
-                                        uiState.selectedAddressId != null
-                        ) {
-                            if (uiState.isCreatingOrder) {
-                                CircularProgressIndicator(
-                                    modifier =
-                                        Modifier.height(22.dp),
-                                    strokeWidth = 2.dp
-                                )
-                            } else {
-                                Text("Siparişi Onayla")
-                            }
-                        }
-                    }
-                }
-
-                Spacer(
-                    modifier = Modifier.height(30.dp)
+                    text = "Siparişiniz seçili adrese gönderilecektir.",
+                    modifier = Modifier.padding(12.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = CustomerHomeColors.DeepOlive
                 )
             }
         }
@@ -588,70 +356,251 @@ fun CreateOrderScreen(
 }
 
 @Composable
-private fun AddressSelectionCard(
+private fun AddressSelectionRow(
     address: AddressResponse,
     isSelected: Boolean,
     enabled: Boolean,
     onClick: () -> Unit
 ) {
-    Card(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(
                 enabled = enabled,
                 onClick = onClick
             )
+            .padding(vertical = 6.dp),
+        verticalAlignment = Alignment.Top
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
+        RadioButton(
+            selected = isSelected,
+            onClick = onClick,
+            enabled = enabled
+        )
 
-            verticalAlignment =
-                Alignment.CenterVertically
+        Spacer(Modifier.width(8.dp))
+
+        Column(
+            modifier = Modifier.weight(1f)
         ) {
-            RadioButton(
-                selected = isSelected,
-                onClick = onClick,
-                enabled = enabled
-            )
-
-            Column(
-                modifier =
-                    Modifier.padding(start = 8.dp)
+            Row(
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    verticalAlignment =
-                        Alignment.CenterVertically
+                Text(
+                    text = address.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = CustomerHomeColors.DeepOlive,
+                    fontWeight = FontWeight.Bold
+                )
+
+                if (address.isDefault) {
+                    Text(
+                        text = "  • Varsayılan",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = CustomerHomeColors.Terracotta,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(3.dp))
+
+            Text(
+                text = address.fullAddress,
+                style = MaterialTheme.typography.bodyMedium,
+                color = CustomerHomeColors.TextMuted
+            )
+        }
+    }
+}
+
+@Composable
+private fun BusinessSummaryCard(
+    businessName: String
+) {
+    SectionCard {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                modifier = Modifier.size(50.dp),
+                shape = CircleShape,
+                color = CustomerHomeColors.OliveSoft
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = address.title,
-                        style =
-                            MaterialTheme.typography.titleMedium
+                        text = "⌂",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = CustomerHomeColors.DeepOlive,
+                        fontWeight = FontWeight.Bold
                     )
-
-                    if (address.isDefault) {
-                        Text(
-                            text = "  • Varsayılan",
-                            color =
-                                MaterialTheme.colorScheme.primary,
-                            style =
-                                MaterialTheme.typography.labelMedium
-                        )
-                    }
                 }
+            }
 
-                Spacer(
-                    modifier = Modifier.height(4.dp)
+            Spacer(Modifier.width(12.dp))
+
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = "Hazırlayan İşletme",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = CustomerHomeColors.TextMuted
                 )
 
                 Text(
-                    text = address.fullAddress,
-                    style =
-                        MaterialTheme.typography.bodyMedium
+                    text = businessName,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = CustomerHomeColors.DeepOlive,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun ProductsSummaryCard(
+    items: List<CartItemResponse>,
+    totalQuantity: Int
+) {
+    SectionCard {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Sepetinizdeki Ürünler",
+                style = MaterialTheme.typography.titleLarge,
+                color = CustomerHomeColors.DeepOlive,
+                fontWeight = FontWeight.Bold
+            )
+
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = CustomerHomeColors.OliveSoft
+            ) {
+                Text(
+                    text = "$totalQuantity ürün",
+                    modifier = Modifier.padding(
+                        horizontal = 10.dp,
+                        vertical = 5.dp
+                    ),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = CustomerHomeColors.DeepOlive,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
+
+        Spacer(Modifier.height(10.dp))
+
+        items.forEachIndexed { index, item ->
+            CheckoutProductRow(item = item)
+
+            if (index != items.lastIndex) {
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 10.dp),
+                    color = CustomerHomeColors.Outline
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CheckoutProductRow(
+    item: CartItemResponse
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        FoodImage(
+            imageUrl = item.imageUrl,
+            contentDescription = item.foodName,
+            modifier = Modifier
+                .size(68.dp)
+                .clip(RoundedCornerShape(14.dp))
+        )
+
+        Spacer(Modifier.width(12.dp))
+
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
+            Text(
+                text = item.foodName,
+                style = MaterialTheme.typography.titleSmall,
+                color = CustomerHomeColors.Text,
+                fontWeight = FontWeight.Bold,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Spacer(Modifier.height(4.dp))
+
+            Text(
+                text = "${formatPrice(item.unitPrice)}  •  ${item.quantity} adet",
+                style = MaterialTheme.typography.bodySmall,
+                color = CustomerHomeColors.TextMuted
+            )
+        }
+
+        Spacer(Modifier.width(10.dp))
+
+        Text(
+            text = formatPrice(item.lineTotal),
+            style = MaterialTheme.typography.titleMedium,
+            color = CustomerHomeColors.Terracotta,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+private fun PaymentSection(
+    selectedPaymentMethod: String,
+    enabled: Boolean,
+    onPaymentMethodSelected: (String) -> Unit
+) {
+    SectionCard {
+        SectionTitle(
+            title = "Ödeme Yöntemi",
+            leadingText = "₺"
+        )
+
+        Spacer(Modifier.height(8.dp))
+
+        PaymentMethodRow(
+            title = "Kapıda Nakit Ödeme",
+            selected =
+                selectedPaymentMethod == PaymentMethods.CASH_ON_DELIVERY,
+            enabled = enabled,
+            onClick = {
+                onPaymentMethodSelected(
+                    PaymentMethods.CASH_ON_DELIVERY
+                )
+            }
+        )
+
+        PaymentMethodRow(
+            title = "Kapıda Kartla Ödeme",
+            selected =
+                selectedPaymentMethod == PaymentMethods.CARD_ON_DELIVERY,
+            enabled = enabled,
+            onClick = {
+                onPaymentMethodSelected(
+                    PaymentMethods.CARD_ON_DELIVERY
+                )
+            }
+        )
     }
 }
 
@@ -669,10 +618,8 @@ private fun PaymentMethodRow(
                 enabled = enabled,
                 onClick = onClick
             )
-            .padding(vertical = 5.dp),
-
-        verticalAlignment =
-            Alignment.CenterVertically
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
         RadioButton(
             selected = selected,
@@ -680,37 +627,361 @@ private fun PaymentMethodRow(
             enabled = enabled
         )
 
+        Spacer(Modifier.width(8.dp))
+
         Text(
             text = title,
-            modifier = Modifier.padding(start = 8.dp)
+            style = MaterialTheme.typography.bodyMedium,
+            color = CustomerHomeColors.Text
         )
     }
 }
 
 @Composable
-private fun OrderInformationRow(
+private fun OrderNoteCard(
+    note: String,
+    enabled: Boolean,
+    onValueChange: (String) -> Unit
+) {
+    SectionCard {
+        SectionTitle(
+            title = "Sipariş Notu",
+            leadingText = "✎",
+            trailingText = "İsteğe bağlı"
+        )
+
+        Spacer(Modifier.height(10.dp))
+
+        OutlinedTextField(
+            value = note,
+            onValueChange = onValueChange,
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = {
+                Text(
+                    text = "Örn: Zile basmayın, telefonla arayın."
+                )
+            },
+            supportingText = {
+                Text(
+                    text = "${note.length}/500",
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            minLines = 3,
+            maxLines = 5,
+            enabled = enabled,
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
+}
+
+@Composable
+private fun PhoneVerificationSection(
+    isLoading: Boolean,
+    isRequired: Boolean,
+    errorMessage: String?,
+    enabled: Boolean,
+    onRetryClick: () -> Unit,
+    onVerificationClick: () -> Unit
+) {
+    when {
+        isLoading -> {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(18.dp),
+                color = CustomerHomeColors.Surface,
+                border = BorderStroke(
+                    1.dp,
+                    CustomerHomeColors.Outline
+                )
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(22.dp),
+                        strokeWidth = 2.dp,
+                        color = CustomerHomeColors.DeepOlive
+                    )
+
+                    Spacer(Modifier.width(12.dp))
+
+                    Text(
+                        text = "Telefon doğrulama durumu kontrol ediliyor...",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = CustomerHomeColors.TextMuted
+                    )
+                }
+            }
+        }
+
+        !errorMessage.isNullOrBlank() -> {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(18.dp),
+                color = CustomerHomeColors.TerracottaSoft
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Text(
+                        text = "Telefon doğrulama durumu alınamadı",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = CustomerHomeColors.Text,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(Modifier.height(5.dp))
+
+                    Text(
+                        text = errorMessage,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = CustomerHomeColors.Error
+                    )
+
+                    Spacer(Modifier.height(12.dp))
+
+                    Button(
+                        onClick = onRetryClick,
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = enabled,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = CustomerHomeColors.DeepOlive
+                        ),
+                        shape = RoundedCornerShape(14.dp)
+                    ) {
+                        Text("Tekrar Kontrol Et")
+                    }
+                }
+            }
+        }
+
+        isRequired -> {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(18.dp),
+                color = CustomerHomeColors.TerracottaSoft
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Surface(
+                        modifier = Modifier.size(46.dp),
+                        shape = CircleShape,
+                        color = CustomerHomeColors.Surface
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "✓",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = CustomerHomeColors.Terracotta,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.width(12.dp))
+
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = "Telefon Doğrulaması",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = CustomerHomeColors.Terracotta,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        Text(
+                            text = "Sipariş oluşturmak için telefon numaranızın doğrulanmış olması gerekir.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = CustomerHomeColors.TextMuted
+                        )
+                    }
+
+                    Spacer(Modifier.width(10.dp))
+
+                    Button(
+                        onClick = onVerificationClick,
+                        enabled = enabled,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = CustomerHomeColors.Terracotta
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Doğrula")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CheckoutBottomBar(
+    totalQuantity: Int,
+    totalPrice: Double,
+    isCreatingOrder: Boolean,
+    phoneVerificationRequired: Boolean,
+    phoneVerificationLoading: Boolean,
+    enabled: Boolean,
+    onCreateOrderClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = CustomerHomeColors.Surface,
+        shadowElevation = 10.dp
+    ) {
+        Column(
+            modifier = Modifier.padding(
+                start = 20.dp,
+                end = 20.dp,
+                top = 14.dp,
+                bottom = 16.dp
+            )
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "Ürün Toplamı ($totalQuantity ürün)",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = CustomerHomeColors.TextMuted
+                    )
+
+                    Text(
+                        text = "Toplam Tutar",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = CustomerHomeColors.DeepOlive,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Text(
+                    text = formatPrice(totalPrice),
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = CustomerHomeColors.Terracotta,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(Modifier.height(10.dp))
+
+            Button(
+                onClick = onCreateOrderClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp),
+                enabled =
+                    enabled &&
+                            !isCreatingOrder &&
+                            !phoneVerificationRequired &&
+                            !phoneVerificationLoading,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = CustomerHomeColors.Terracotta,
+                    contentColor = CustomerHomeColors.Surface,
+                    disabledContainerColor =
+                        CustomerHomeColors.Terracotta.copy(alpha = 0.45f),
+                    disabledContentColor =
+                        CustomerHomeColors.Surface.copy(alpha = 0.85f)
+                ),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                if (isCreatingOrder) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(22.dp),
+                        strokeWidth = 2.dp,
+                        color = CustomerHomeColors.Surface
+                    )
+                } else {
+                    Text(
+                        text = "Siparişi Oluştur",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionCard(
+    content: @Composable () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = CustomerHomeColors.Surface
+        ),
+        border = BorderStroke(
+            1.dp,
+            CustomerHomeColors.Outline
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            content()
+        }
+    }
+}
+
+@Composable
+private fun SectionTitle(
     title: String,
-    value: String
+    leadingText: String,
+    trailingText: String? = null
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-
-        horizontalArrangement =
-            Arrangement.SpaceBetween
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
     ) {
+        Surface(
+            modifier = Modifier.size(38.dp),
+            shape = CircleShape,
+            color = CustomerHomeColors.OliveSoft
+        ) {
+            Box(
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = leadingText,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = CustomerHomeColors.DeepOlive,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+
+        Spacer(Modifier.width(10.dp))
+
         Text(
             text = title,
-            style =
-                MaterialTheme.typography.bodyMedium
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.titleMedium,
+            color = CustomerHomeColors.DeepOlive,
+            fontWeight = FontWeight.Bold
         )
 
-        Text(
-            text = value,
-            style =
-                MaterialTheme.typography.titleSmall
-        )
+        if (!trailingText.isNullOrBlank()) {
+            Text(
+                text = trailingText,
+                style = MaterialTheme.typography.labelMedium,
+                color = CustomerHomeColors.TextMuted
+            )
+        }
     }
 }
 
@@ -725,51 +996,76 @@ private fun OrderSuccessContent(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .background(CustomerHomeColors.Cream)
             .padding(24.dp),
-
-        horizontalAlignment =
-            Alignment.CenterHorizontally,
-
-        verticalArrangement =
-            Arrangement.Center
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
+        Surface(
+            modifier = Modifier.size(84.dp),
+            shape = CircleShape,
+            color = CustomerHomeColors.OliveSoft
+        ) {
+            Box(
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "✓",
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = CustomerHomeColors.DeepOlive,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+
+        Spacer(Modifier.height(18.dp))
+
         Text(
             text = "Siparişiniz Oluşturuldu",
-            style =
-                MaterialTheme.typography.headlineMedium
+            style = MaterialTheme.typography.headlineSmall,
+            color = CustomerHomeColors.DeepOlive,
+            fontWeight = FontWeight.Bold
         )
 
-        Spacer(
-            modifier = Modifier.height(18.dp)
-        )
+        Spacer(Modifier.height(12.dp))
 
         Text(
             text = "Sipariş No: #$orderId",
-            style =
-                MaterialTheme.typography.titleLarge
+            style = MaterialTheme.typography.titleMedium,
+            color = CustomerHomeColors.Text
         )
 
-        Spacer(
-            modifier = Modifier.height(8.dp)
+        Spacer(Modifier.height(5.dp))
+
+        Text(
+            text = "Tutar: ${formatPrice(totalPrice)}",
+            style = MaterialTheme.typography.bodyLarge,
+            color = CustomerHomeColors.Terracotta,
+            fontWeight = FontWeight.Bold
         )
 
         Text(
-            text = "Tutar: ${formatPrice(totalPrice)}"
+            text = "Durum: ${translateOrderStatus(status)}",
+            style = MaterialTheme.typography.bodyMedium,
+            color = CustomerHomeColors.TextMuted
         )
 
-        Text(
-            text = "Durum: ${translateOrderStatus(status)}"
-        )
-
-        Spacer(
-            modifier = Modifier.height(26.dp)
-        )
+        Spacer(Modifier.height(26.dp))
 
         Button(
             onClick = onReturnHomeClick,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = CustomerHomeColors.DeepOlive
+            ),
+            shape = RoundedCornerShape(16.dp)
         ) {
-            Text("Ana Sayfaya Dön")
+            Text(
+                text = "Ana Sayfaya Dön",
+                fontWeight = FontWeight.Bold
+            )
         }
     }
 }
@@ -779,7 +1075,7 @@ private fun formatPrice(
 ): String {
     return String.format(
         Locale("tr", "TR"),
-        "%.2f TL",
+        "%.2f ₺",
         price
     )
 }
@@ -787,6 +1083,4 @@ private fun formatPrice(
 private fun translateOrderStatus(
     status: String
 ): String =
-    OrderStatus.displayNameFor(
-        status
-    )
+    OrderStatus.displayNameFor(status)
