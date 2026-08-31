@@ -119,9 +119,11 @@ fun NavGraphBuilder.customerNavGraph(
 
         customerAccountDestination(
             navController = navController,
+            context = context,
             authViewModel = authViewModel,
             onLogoutClick = onLogoutClick
         )
+
 
         customerProfileDestination(
             navController = navController,
@@ -707,8 +709,10 @@ private fun NavGraphBuilder.customerExploreDestination(
 }
 
 
+
 private fun NavGraphBuilder.customerAccountDestination(
     navController: NavHostController,
+    context: Context,
     authViewModel: AuthViewModel,
     onLogoutClick: () -> Unit
 ) {
@@ -717,10 +721,82 @@ private fun NavGraphBuilder.customerAccountDestination(
             AppDestination
                 .CustomerAccount
                 .route
-    ) {
+    ) { backStackEntry ->
         val authUiState by
         authViewModel.uiState
             .collectAsStateWithLifecycle()
+
+        val customerProfileViewModel:
+                CustomerProfileViewModel =
+            viewModel(
+                factory =
+                    CustomerProfileViewModelFactory(
+                        context = context
+                    )
+            )
+
+        val customerProfileUiState by
+        customerProfileViewModel
+            .uiState
+            .collectAsStateWithLifecycle()
+
+        val phoneVerificationResult by
+        backStackEntry
+            .savedStateHandle
+            .getStateFlow(
+                PHONE_VERIFICATION_RESULT,
+                false
+            )
+            .collectAsStateWithLifecycle()
+
+        val lifecycleOwner =
+            LocalLifecycleOwner.current
+
+        /*
+         * Account'a her dönüşte profil backend'den yenilenir.
+         * Böylece Profilim veya Telefon Doğrulama ekranında
+         * yapılan değişiklikler Hesabım ekranına anında yansır.
+         */
+        DisposableEffect(
+            lifecycleOwner,
+            customerProfileViewModel
+        ) {
+            val observer =
+                LifecycleEventObserver {
+                        _,
+                        event ->
+
+                    if (
+                        event ==
+                        Lifecycle.Event.ON_RESUME
+                    ) {
+                        customerProfileViewModel
+                            .loadProfile()
+                    }
+                }
+
+            lifecycleOwner.lifecycle
+                .addObserver(observer)
+
+            onDispose {
+                lifecycleOwner.lifecycle
+                    .removeObserver(observer)
+            }
+        }
+
+        LaunchedEffect(
+            phoneVerificationResult
+        ) {
+            if (phoneVerificationResult) {
+                customerProfileViewModel
+                    .loadProfile()
+
+                backStackEntry
+                    .savedStateHandle[
+                    PHONE_VERIFICATION_RESULT
+                ] = false
+            }
+        }
 
         CustomerRootScaffold(
             selectedRoute =
@@ -730,15 +806,15 @@ private fun NavGraphBuilder.customerAccountDestination(
 
             onBottomDestinationClick = { route ->
                 navigateToCustomerRoot(
-                    navController =
-                        navController,
-
-                    route =
-                        route
+                    navController = navController,
+                    route = route
                 )
             }
         ) { innerPadding ->
             CustomerAccountScreen(
+                uiState =
+                    customerProfileUiState,
+
                 canUseProducerMode =
                     authUiState
                         .canUseProducerMode,
@@ -746,6 +822,11 @@ private fun NavGraphBuilder.customerAccountDestination(
                 producerVerificationStatus =
                     authUiState
                         .producerVerificationStatus,
+
+                onRetryClick = {
+                    customerProfileViewModel
+                        .loadProfile()
+                },
 
                 onProfileClick = {
                     navController.navigate(
@@ -779,6 +860,14 @@ private fun NavGraphBuilder.customerAccountDestination(
                     )
                 },
 
+                onPhoneVerificationClick = {
+                    navController.navigate(
+                        AppDestination
+                            .CustomerPhoneVerification
+                            .route
+                    )
+                },
+
                 onProducerApplicationClick = {
                     navController.navigate(
                         AppDestination
@@ -798,13 +887,12 @@ private fun NavGraphBuilder.customerAccountDestination(
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        .padding(
-                            innerPadding
-                        )
+                        .padding(innerPadding)
             )
         }
     }
 }
+
 
 private fun NavGraphBuilder.customerProfileDestination(
     navController: NavHostController,
