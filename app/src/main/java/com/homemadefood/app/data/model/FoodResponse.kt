@@ -8,6 +8,7 @@ data class FoodResponse(
     val categoryName: String,
     val name: String,
     val description: String,
+    val ingredients: String = "",
     val price: Double,
     val preparationTimeMinutes: Int,
     val imageUrl: String,

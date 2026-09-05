@@ -167,6 +167,15 @@ class CreateFoodViewModel(
             )
     }
 
+    fun onIngredientsChange(value: String) {
+        _uiState.value =
+            _uiState.value.copy(
+                ingredients = value.take(2000),
+                successMessage = null,
+                errorMessage = null
+            )
+    }
+
     fun onPriceChange(value: String) {
         val filteredValue =
             value.filter {
@@ -280,6 +289,13 @@ class CreateFoodViewModel(
                 return
             }
 
+            currentState.ingredients.isBlank() -> {
+                showError(
+                    "İçindekiler bilgisi boş bırakılamaz."
+                )
+                return
+            }
+
             price == null || price <= 0 -> {
                 showError(
                     "Geçerli bir fiyat girmelisiniz."
@@ -363,6 +379,10 @@ class CreateFoodViewModel(
                             description =
                                 currentState
                                     .description
+                                    .trim(),
+                            ingredients =
+                                currentState
+                                    .ingredients
                                     .trim(),
                             price = price,
                             preparationTimeMinutes =

@@ -44,6 +44,7 @@ class ProducerFoodRepository(
         categoryId: Int,
         name: String,
         description: String,
+        ingredients: String,
         price: Double,
         preparationTimeMinutes: Int,
         image: MultipartBody.Part
@@ -74,6 +75,11 @@ class ProducerFoodRepository(
                         plainTextMediaType
                     ),
 
+                ingredients =
+                    ingredients.toRequestBody(
+                        plainTextMediaType
+                    ),
+
                 price =
                     normalizedPrice
                         .toRequestBody(
@@ -96,6 +102,7 @@ class ProducerFoodRepository(
         categoryId: Int,
         name: String,
         description: String,
+        ingredients: String,
         price: Double,
         preparationTimeMinutes: Int,
         isAvailable: Boolean,
@@ -126,6 +133,11 @@ class ProducerFoodRepository(
 
                 description =
                     description.toRequestBody(
+                        plainTextMediaType
+                    ),
+
+                ingredients =
+                    ingredients.toRequestBody(
                         plainTextMediaType
                     ),
 

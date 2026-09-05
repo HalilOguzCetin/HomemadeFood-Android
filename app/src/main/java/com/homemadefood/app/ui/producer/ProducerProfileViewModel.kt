@@ -176,9 +176,6 @@ class ProducerProfileViewModel(
                     profile.dailyCapacity
                         .toString(),
 
-                isAvailable =
-                    profile.isAvailable,
-
                 isResolvingAddress = false,
                 locationLookupMessage = null,
 
@@ -276,9 +273,6 @@ class ProducerProfileViewModel(
                 dailyCapacityText =
                     profile.dailyCapacity
                         .toString(),
-
-                isAvailable =
-                    profile.isAvailable,
 
                 isResolvingAddress = false,
                 locationLookupMessage = null,
@@ -601,20 +595,6 @@ class ProducerProfileViewModel(
         }
     }
 
-    fun updateAvailability(
-        value: Boolean
-    ) {
-        if (_uiState.value.isSaving) {
-            return
-        }
-
-        _uiState.value =
-            _uiState.value.copy(
-                isAvailable = value,
-                errorMessage = null
-            )
-    }
-
     fun saveProfile() {
         val current =
             _uiState.value
@@ -815,9 +795,6 @@ class ProducerProfileViewModel(
                                 dailyCapacity =
                                     dailyCapacity,
 
-                                isAvailable =
-                                    current.isAvailable,
-
                                 businessImage =
                                     businessImagePart
                             )
@@ -931,9 +908,6 @@ class ProducerProfileViewModel(
                 dailyCapacityText =
                     profile.dailyCapacity
                         .toString(),
-
-                isAvailable =
-                    profile.isAvailable
             )
     }
 
@@ -987,9 +961,6 @@ class ProducerProfileViewModel(
                 dailyCapacityText =
                     profile.dailyCapacity
                         .toString(),
-
-                isAvailable =
-                    profile.isAvailable,
 
                 successMessage =
                     message

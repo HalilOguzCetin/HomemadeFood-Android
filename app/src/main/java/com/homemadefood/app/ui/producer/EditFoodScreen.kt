@@ -47,6 +47,7 @@ fun EditFoodScreen(
     onRetryCategoriesClick: () -> Unit,
     onNameChange: (String) -> Unit,
     onDescriptionChange: (String) -> Unit,
+    onIngredientsChange: (String) -> Unit,
     onPriceChange: (String) -> Unit,
     onPreparationTimeChange: (String) -> Unit,
 
@@ -300,6 +301,26 @@ fun EditFoodScreen(
                         Modifier.fillMaxWidth()
                 )
 
+
+                OutlinedTextField(
+                    value = uiState.ingredients,
+                    onValueChange =
+                        onIngredientsChange,
+                    label = {
+                        Text("İçindekiler *")
+                    },
+                    placeholder = {
+                        Text("Örn. Un, yumurta, kıyma, soğan, yoğurt")
+                    },
+                    supportingText = {
+                        Text("${uiState.ingredients.length}/2000")
+                    },
+                    minLines = 3,
+                    maxLines = 6,
+                    enabled = !uiState.isSaving,
+                    modifier =
+                        Modifier.fillMaxWidth()
+                )
                 OutlinedTextField(
                     value = uiState.price,
                     onValueChange = onPriceChange,

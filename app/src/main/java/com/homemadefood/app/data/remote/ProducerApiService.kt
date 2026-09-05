@@ -141,9 +141,6 @@ interface ProducerApiService {
         @Part("DailyCapacity")
         dailyCapacity: RequestBody,
 
-        @Part("IsAvailable")
-        isAvailable: RequestBody,
-
         @Part
         businessImage: MultipartBody.Part?
     ): Response<

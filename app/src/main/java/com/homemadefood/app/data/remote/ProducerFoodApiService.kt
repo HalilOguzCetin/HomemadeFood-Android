@@ -50,6 +50,9 @@ interface ProducerFoodApiService {
         @Part("Description")
         description: RequestBody,
 
+        @Part("Ingredients")
+        ingredients: RequestBody,
+
         @Part("Price")
         price: RequestBody,
 
@@ -79,6 +82,9 @@ interface ProducerFoodApiService {
 
         @Part("Description")
         description: RequestBody,
+
+        @Part("Ingredients")
+        ingredients: RequestBody,
 
         @Part("Price")
         price: RequestBody,

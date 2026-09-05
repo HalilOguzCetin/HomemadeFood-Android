@@ -14,6 +14,7 @@ data class EditFoodUiState(
 
     val name: String = "",
     val description: String = "",
+    val ingredients: String = "",
     val price: String = "",
     val preparationTimeMinutes: String = "",
 
@@ -42,6 +43,9 @@ data class EditFoodUiState(
                     !isCategoriesLoading &&
                     categoryErrorMessage == null &&
                     selectedCategoryId != null &&
+                    name.isNotBlank() &&
+                    description.isNotBlank() &&
+                    ingredients.isNotBlank() &&
                     (
                             imageUrl.isNotBlank() ||
                                     !selectedImageUri.isNullOrBlank()

@@ -317,6 +317,11 @@ private fun NavGraphBuilder.createFoodDestination(
                     .onDescriptionChange(value)
             },
 
+            onIngredientsChange = { value ->
+                createFoodViewModel
+                    .onIngredientsChange(value)
+            },
+
             onPriceChange = { value ->
                 createFoodViewModel
                     .onPriceChange(value)
@@ -424,6 +429,11 @@ private fun NavGraphBuilder.editFoodDestination(
             onDescriptionChange = { value ->
                 editFoodViewModel
                     .onDescriptionChange(value)
+            },
+
+            onIngredientsChange = { value ->
+                editFoodViewModel
+                    .onIngredientsChange(value)
             },
 
             onPriceChange = { value ->
@@ -797,11 +807,6 @@ private fun NavGraphBuilder.producerProfileDestination(
             onDailyCapacityChange = { value ->
                 producerProfileViewModel
                     .updateDailyCapacityText(value)
-            },
-
-            onAvailabilityChange = { value ->
-                producerProfileViewModel
-                    .updateAvailability(value)
             },
 
             onSaveClick = {

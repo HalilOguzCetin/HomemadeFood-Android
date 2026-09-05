@@ -181,6 +181,38 @@ fun FoodDetailScreen(
                                 )
                             )
 
+                            if (food.ingredients.isNotBlank()) {
+                                Spacer(modifier = Modifier.height(20.dp))
+
+                                Surface(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(18.dp),
+                                    color = CustomerHomeColors.Surface
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(16.dp)
+                                    ) {
+                                        Text(
+                                            text = "İçindekiler",
+                                            color = CustomerHomeColors.DeepOlive,
+                                            style = MaterialTheme.typography.titleMedium.copy(
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        )
+
+                                        Spacer(modifier = Modifier.height(7.dp))
+
+                                        Text(
+                                            text = food.ingredients,
+                                            color = CustomerHomeColors.TextMuted,
+                                            style = MaterialTheme.typography.bodyMedium.copy(
+                                                lineHeight = 22.sp
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+
                             Spacer(modifier = Modifier.height(22.dp))
 
                             FoodInfoPanel(

@@ -40,7 +40,6 @@ data class ProducerProfileUiState(
     String? = null,
 
     val dailyCapacityText: String = "",
-    val isAvailable: Boolean = false,
 
     val errorMessage: String? = null,
     val successMessage: String? = null

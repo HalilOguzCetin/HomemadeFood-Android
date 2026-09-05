@@ -22,7 +22,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -65,7 +64,6 @@ fun ProducerProfileScreen(
     onSelectLocationClick: () -> Unit,
 
     onDailyCapacityChange: (String) -> Unit,
-    onAvailabilityChange: (Boolean) -> Unit,
     onSaveClick: () -> Unit,
     onMessageShown: () -> Unit,
     modifier: Modifier = Modifier
@@ -206,10 +204,6 @@ fun ProducerProfileScreen(
 
                     onDailyCapacityChange =
                         onDailyCapacityChange,
-
-                    onAvailabilityChange =
-                        onAvailabilityChange,
-
                     onSaveClick =
                         onSaveClick,
 
@@ -302,7 +296,6 @@ private fun ProducerProfileContent(
     onSelectLocationClick: () -> Unit,
 
     onDailyCapacityChange: (String) -> Unit,
-    onAvailabilityChange: (Boolean) -> Unit,
     onSaveClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -342,9 +335,9 @@ private fun ProducerProfileContent(
         Text(
             text =
                 if (uiState.isEditing) {
-                    "İşletme bilgilerinizi, konumunuzu ve sipariş alma durumunuzu güncelleyin."
+                    "İşletme bilgilerinizi, konumunuzu ve kapasitenizi güncelleyin."
                 } else {
-                    "İşletme, kapasite ve sipariş alma bilgilerinizi yönetin."
+                    "İşletme bilgilerinizi ve kapasitenizi yönetin."
                 },
 
             style =
@@ -417,10 +410,6 @@ private fun ProducerProfileContent(
 
                 onDailyCapacityChange =
                     onDailyCapacityChange,
-
-                onAvailabilityChange =
-                    onAvailabilityChange,
-
                 onSaveClick =
                     onSaveClick,
 
@@ -508,13 +497,13 @@ private fun ProducerProfileStatusCard(
             )
 
             ProducerProfileInfoLine(
-                title = "Sipariş alma durumu",
+                title = "Platform durumu",
 
                 value =
                     if (profile.isAvailable) {
-                        "Sipariş Almaya Açık"
+                        "Aktif"
                     } else {
-                        "Sipariş Almaya Kapalı"
+                        "Kullanıma Kapalı"
                     }
             )
 
@@ -757,7 +746,6 @@ private fun ProducerProfileEditForm(
     onSelectLocationClick: () -> Unit,
 
     onDailyCapacityChange: (String) -> Unit,
-    onAvailabilityChange: (Boolean) -> Unit,
     onSaveClick: () -> Unit,
     onCancelClick: () -> Unit
 ) {
@@ -1175,71 +1163,6 @@ private fun ProducerProfileEditForm(
                 singleLine = true,
                 enabled = !uiState.isSaving
             )
-
-            Spacer(
-                modifier = Modifier.height(18.dp)
-            )
-
-            Card(
-                modifier =
-                    Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-
-                    horizontalArrangement =
-                        Arrangement.SpaceBetween,
-
-                    verticalAlignment =
-                        Alignment.CenterVertically
-                ) {
-                    Column(
-                        modifier =
-                            Modifier.weight(1f)
-                    ) {
-                        Text(
-                            text =
-                                "Sipariş Almaya Açık",
-
-                            style =
-                                MaterialTheme.typography
-                                    .titleMedium
-                        )
-
-                        Spacer(
-                            modifier =
-                                Modifier.height(4.dp)
-                        )
-
-                        Text(
-                            text =
-                                if (uiState.isAvailable) {
-                                    "Yeni sipariş kabul edebilirsiniz."
-                                } else {
-                                    "Yeni sipariş kabul etmiyorsunuz."
-                                },
-
-                            style =
-                                MaterialTheme.typography
-                                    .bodySmall
-                        )
-                    }
-
-                    Switch(
-                        checked =
-                            uiState.isAvailable,
-
-                        onCheckedChange =
-                            onAvailabilityChange,
-
-                        enabled =
-                            !uiState.isSaving
-                    )
-                }
-            }
 
             Spacer(
                 modifier = Modifier.height(20.dp)

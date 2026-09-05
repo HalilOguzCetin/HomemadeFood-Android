@@ -4,6 +4,7 @@ data class UpdateFoodRequest(
     val categoryId: Int,
     val name: String,
     val description: String,
+    val ingredients: String,
     val price: Double,
     val preparationTimeMinutes: Int,
     val imageUrl: String,

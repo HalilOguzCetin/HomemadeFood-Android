@@ -108,6 +108,7 @@ class EditFoodViewModel(
                                     ?: food.categoryName,
                             name = food.name,
                             description = food.description,
+                            ingredients = food.ingredients,
                             price = food.price.toString(),
                             preparationTimeMinutes =
                                 food
@@ -278,6 +279,14 @@ class EditFoodViewModel(
             )
     }
 
+    fun onIngredientsChange(value: String) {
+        _uiState.value =
+            _uiState.value.copy(
+                ingredients = value.take(2000),
+                errorMessage = null
+            )
+    }
+
     fun onPriceChange(value: String) {
         val filteredValue =
             value.filter {
@@ -417,6 +426,13 @@ class EditFoodViewModel(
                 return
             }
 
+            currentState.ingredients.isBlank() -> {
+                showError(
+                    "İçindekiler bilgisi boş bırakılamaz."
+                )
+                return
+            }
+
             price == null || price <= 0 -> {
                 showError(
                     "Geçerli bir fiyat girmelisiniz."
@@ -517,6 +533,10 @@ class EditFoodViewModel(
                                 currentState
                                     .description
                                     .trim(),
+                            ingredients =
+                                currentState
+                                    .ingredients
+                                    .trim(),
                             price = price,
                             preparationTimeMinutes =
                                 preparationTime,
@@ -545,6 +565,7 @@ class EditFoodViewModel(
                             selectedCategoryName =
                                 updatedFood.categoryName,
                             imageUrl = updatedFood.imageUrl,
+                            ingredients = updatedFood.ingredients,
                             selectedImageUri = null,
                             successMessage =
                                 "Yemek fotoğrafı ve bilgileri başarıyla güncellendi.",

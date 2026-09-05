@@ -166,7 +166,6 @@ class ProducerRepository(
         longitude: Double,
 
         dailyCapacity: Int,
-        isAvailable: Boolean,
 
         businessImage: MultipartBody.Part?
     ): Response<
@@ -249,12 +248,6 @@ class ProducerRepository(
 
                 dailyCapacity =
                     dailyCapacity.toString()
-                        .toRequestBody(
-                            plainTextMediaType
-                        ),
-
-                isAvailable =
-                    isAvailable.toString()
                         .toRequestBody(
                             plainTextMediaType
                         ),

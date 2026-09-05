@@ -12,6 +12,7 @@ data class CreateFoodUiState(
 
     val name: String = "",
     val description: String = "",
+    val ingredients: String = "",
     val price: String = "",
     val preparationTimeMinutes: String = "",
 
@@ -32,5 +33,8 @@ data class CreateFoodUiState(
                     !isCategoriesLoading &&
                     categoryErrorMessage == null &&
                     selectedCategoryId != null &&
+                    name.isNotBlank() &&
+                    description.isNotBlank() &&
+                    ingredients.isNotBlank() &&
                     !selectedImageUri.isNullOrBlank()
 }
