@@ -159,6 +159,11 @@ sealed class AppDestination(
     data object ProducerProfile :
         AppDestination("producer/profile")
 
+    data object ProducerAvailability :
+        AppDestination(
+            "producer/availability"
+        )
+
     data object ProducerProfileAddressMap :
         AppDestination(
             "producer/profile/address/map"

@@ -35,6 +35,9 @@ import com.homemadefood.app.ui.producer.ProducerReviewsViewModelFactory
 import com.homemadefood.app.ui.producer.ProducerProfileScreen
 import com.homemadefood.app.ui.producer.ProducerProfileViewModel
 import com.homemadefood.app.ui.producer.ProducerProfileViewModelFactory
+import com.homemadefood.app.ui.producer.ProducerAvailabilityScreen
+import com.homemadefood.app.ui.producer.ProducerAvailabilityViewModel
+import com.homemadefood.app.ui.producer.ProducerAvailabilityViewModelFactory
 import com.homemadefood.app.ui.auth.AuthViewModel
 import com.homemadefood.app.ui.address.SelectedLocation
 import com.homemadefood.app.ui.location.LocationMapScreen
@@ -72,6 +75,10 @@ fun NavGraphBuilder.producerNavGraph(
             context = context
         )
         producerProfileDestination(
+            navController = navController,
+            context = context
+        )
+        producerAvailabilityDestination(
             navController = navController,
             context = context
         )
@@ -129,6 +136,14 @@ private fun NavGraphBuilder.producerHomeDestination(
                 navController.navigate(
                     AppDestination
                         .ProducerProfile
+                        .route
+                )
+            },
+
+            onAvailabilityClick = {
+                navController.navigate(
+                    AppDestination
+                        .ProducerAvailability
                         .route
                 )
             },
@@ -817,6 +832,77 @@ private fun NavGraphBuilder.producerProfileDestination(
             onMessageShown = {
                 producerProfileViewModel
                     .clearMessages()
+            },
+
+            modifier =
+                Modifier.fillMaxSize()
+        )
+    }
+}
+
+
+private fun NavGraphBuilder.producerAvailabilityDestination(
+    navController: NavHostController,
+    context: Context
+) {
+    composable(
+        route =
+            AppDestination
+                .ProducerAvailability
+                .route
+    ) {
+        val producerAvailabilityViewModel:
+                ProducerAvailabilityViewModel =
+            viewModel(
+                factory =
+                    ProducerAvailabilityViewModelFactory(
+                        context = context
+                    )
+            )
+
+        val producerAvailabilityUiState by
+        producerAvailabilityViewModel
+            .uiState
+            .collectAsStateWithLifecycle()
+
+        LaunchedEffect(Unit) {
+            producerAvailabilityViewModel
+                .loadAvailability()
+        }
+
+        ProducerAvailabilityScreen(
+            uiState =
+                producerAvailabilityUiState,
+
+            onBackClick = {
+                navController.popBackStack()
+            },
+
+            onRetryClick = {
+                producerAvailabilityViewModel
+                    .loadAvailability()
+            },
+
+            onModeChange = { mode ->
+                producerAvailabilityViewModel
+                    .updateAvailabilityMode(
+                        mode = mode
+                    )
+            },
+
+            onSaveBusinessHours = {
+                    businessHours ->
+
+                producerAvailabilityViewModel
+                    .updateBusinessHours(
+                        businessHours =
+                            businessHours
+                    )
+            },
+
+            onMessageShown = {
+                producerAvailabilityViewModel
+                    .clearMessage()
             },
 
             modifier =

@@ -233,6 +233,20 @@ private fun PopularFoodCard(
                         food.name
                 )
 
+                if (!food.isCurrentlyOpen) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .height(138.dp)
+                                .background(
+                                    CustomerHomeColors
+                                        .Surface
+                                        .copy(alpha = 0.55f)
+                                )
+                    )
+                }
+
                 FavoriteHeartButton(
                     isFavorite =
                         isFavorite,
@@ -262,32 +276,65 @@ private fun PopularFoodCard(
                         bottom = 13.dp
                     )
             ) {
-                Surface(
-                    shape =
-                        RoundedCornerShape(
-                            50.dp
-                        ),
-                    color =
-                        CustomerHomeColors
-                            .TerracottaSoft
+                Row(
+                    horizontalArrangement =
+                        Arrangement.spacedBy(6.dp),
+                    verticalAlignment =
+                        Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "Popüler",
-                        modifier =
-                            Modifier.padding(
-                                horizontal = 9.dp,
-                                vertical = 4.dp
-                            ),
-                        style =
-                            MaterialTheme
-                                .typography
-                                .labelSmall,
+                    Surface(
+                        shape =
+                            RoundedCornerShape(50.dp),
                         color =
                             CustomerHomeColors
-                                .Terracotta,
-                        fontWeight =
-                            FontWeight.Bold
-                    )
+                                .TerracottaSoft
+                    ) {
+                        Text(
+                            text = "Popüler",
+                            modifier =
+                                Modifier.padding(
+                                    horizontal = 9.dp,
+                                    vertical = 4.dp
+                                ),
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .labelSmall,
+                            color =
+                                CustomerHomeColors
+                                    .Terracotta,
+                            fontWeight =
+                                FontWeight.Bold
+                        )
+                    }
+
+                    if (!food.isCurrentlyOpen) {
+                        Surface(
+                            shape =
+                                RoundedCornerShape(50.dp),
+                            color =
+                                CustomerHomeColors
+                                    .TerracottaSoft
+                        ) {
+                            Text(
+                                text = "Kapalı",
+                                modifier =
+                                    Modifier.padding(
+                                        horizontal = 9.dp,
+                                        vertical = 4.dp
+                                    ),
+                                style =
+                                    MaterialTheme
+                                        .typography
+                                        .labelSmall,
+                                color =
+                                    CustomerHomeColors
+                                        .Terracotta,
+                                fontWeight =
+                                    FontWeight.Bold
+                            )
+                        }
+                    }
                 }
 
                 Spacer(
@@ -304,8 +351,11 @@ private fun PopularFoodCard(
                     fontWeight =
                         FontWeight.Bold,
                     color =
-                        CustomerHomeColors
-                            .Text,
+                        if (food.isCurrentlyOpen) {
+                            CustomerHomeColors.Text
+                        } else {
+                            CustomerHomeColors.TextMuted
+                        },
                     maxLines = 1,
                     overflow =
                         TextOverflow.Ellipsis
@@ -330,6 +380,29 @@ private fun PopularFoodCard(
                     overflow =
                         TextOverflow.Ellipsis
                 )
+
+                if (!food.isCurrentlyOpen) {
+                    Spacer(
+                        modifier =
+                            Modifier.height(8.dp)
+                    )
+
+                    Text(
+                        text = "İşletme şu anda sipariş almıyor",
+                        style =
+                            MaterialTheme
+                                .typography
+                                .labelSmall,
+                        color =
+                            CustomerHomeColors
+                                .Terracotta,
+                        fontWeight =
+                            FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow =
+                            TextOverflow.Ellipsis
+                    )
+                }
 
                 Spacer(
                     modifier =

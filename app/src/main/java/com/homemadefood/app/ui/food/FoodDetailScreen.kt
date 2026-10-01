@@ -91,6 +91,7 @@ fun FoodDetailScreen(
                     FoodDetailCartArea(
                         uiState = uiState,
                         isFoodAvailable = uiState.food.isAvailable,
+                        isBusinessOpen = uiState.food.isCurrentlyOpen,
                         onAddToCartClick = onAddToCartClick,
                         onIncreaseCartClick = onIncreaseCartClick,
                         onDecreaseCartClick = onDecreaseCartClick,
@@ -136,6 +137,7 @@ fun FoodDetailScreen(
                         FoodDetailHero(
                             imageUrl = food.imageUrl,
                             foodName = food.name,
+                            isBusinessOpen = food.isCurrentlyOpen,
                             cartTotalQuantity = cartTotalQuantity,
                             onBackClick = onBackClick,
                             onGoToCartClick = onGoToCartClick
@@ -169,6 +171,12 @@ fun FoodDetailScreen(
                                         fontWeight = FontWeight.ExtraBold
                                     )
                                 )
+                            }
+
+                            if (!food.isCurrentlyOpen) {
+                                Spacer(modifier = Modifier.height(14.dp))
+
+                                FoodDetailBusinessClosedNotice()
                             }
 
                             Spacer(modifier = Modifier.height(12.dp))
@@ -224,7 +232,8 @@ fun FoodDetailScreen(
                             Spacer(modifier = Modifier.height(18.dp))
 
                             BusinessPanel(
-                                businessName = food.businessName
+                                businessName = food.businessName,
+                                isCurrentlyOpen = food.isCurrentlyOpen
                             )
 
                             Spacer(modifier = Modifier.height(20.dp))
@@ -254,6 +263,7 @@ fun FoodDetailScreen(
 private fun FoodDetailHero(
     imageUrl: String,
     foodName: String,
+    isBusinessOpen: Boolean,
     cartTotalQuantity: Int,
     onBackClick: () -> Unit,
     onGoToCartClick: () -> Unit
@@ -269,6 +279,14 @@ private fun FoodDetailHero(
             contentDescription = foodName,
             modifier = Modifier.fillMaxSize()
         )
+
+        if (!isBusinessOpen) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.White.copy(alpha = 0.46f))
+            )
+        }
 
         Surface(
             modifier = Modifier
@@ -302,6 +320,36 @@ private fun FoodDetailHero(
                 .align(Alignment.TopEnd)
                 .padding(end = 16.dp, top = 16.dp)
         )
+    }
+}
+
+@Composable
+private fun FoodDetailBusinessClosedNotice() {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = CustomerHomeColors.TerracottaSoft
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp)
+        ) {
+            Text(
+                text = "İşletme şu anda kapalı",
+                color = CustomerHomeColors.Terracotta,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = "Yemek detaylarını inceleyebilirsiniz ancak işletme yeniden açılana kadar yeni ürün ekleyemez veya sepetteki miktarı artıramazsınız.",
+                color = CustomerHomeColors.TextMuted,
+                style = MaterialTheme.typography.bodySmall.copy(
+                    lineHeight = 19.sp
+                )
+            )
+        }
     }
 }
 
@@ -414,7 +462,8 @@ private fun InfoDivider() {
 
 @Composable
 private fun BusinessPanel(
-    businessName: String
+    businessName: String,
+    isCurrentlyOpen: Boolean
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -461,6 +510,32 @@ private fun BusinessPanel(
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold
                     )
+                )
+            }
+
+            Spacer(modifier = Modifier.size(10.dp))
+
+            Surface(
+                shape = RoundedCornerShape(50.dp),
+                color = if (isCurrentlyOpen) {
+                    CustomerHomeColors.OliveSoft
+                } else {
+                    CustomerHomeColors.TerracottaSoft
+                }
+            ) {
+                Text(
+                    text = if (isCurrentlyOpen) "Açık" else "Kapalı",
+                    modifier = Modifier.padding(
+                        horizontal = 10.dp,
+                        vertical = 6.dp
+                    ),
+                    color = if (isCurrentlyOpen) {
+                        CustomerHomeColors.DeepOlive
+                    } else {
+                        CustomerHomeColors.Terracotta
+                    },
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold
                 )
             }
         }
@@ -525,6 +600,7 @@ private fun FavoriteButton(
 private fun FoodDetailCartArea(
     uiState: FoodDetailUiState,
     isFoodAvailable: Boolean,
+    isBusinessOpen: Boolean,
     onAddToCartClick: () -> Unit,
     onIncreaseCartClick: () -> Unit,
     onDecreaseCartClick: () -> Unit,
@@ -559,6 +635,24 @@ private fun FoodDetailCartArea(
                 }
 
                 uiState.cartQuantity > 0 -> {
+                    if (!isBusinessOpen) {
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 10.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            color = CustomerHomeColors.TerracottaSoft
+                        ) {
+                            Text(
+                                text = "İşletme kapalı. Miktarı azaltabilir veya ürünü sepetten çıkarabilirsiniz.",
+                                modifier = Modifier.padding(10.dp),
+                                color = CustomerHomeColors.Terracotta,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -607,11 +701,19 @@ private fun FoodDetailCartArea(
 
                                 TextButton(
                                     onClick = onIncreaseCartClick,
-                                    enabled = !uiState.isCartActionLoading && uiState.cartQuantity < 50
+                                    enabled =
+                                        !uiState.isCartActionLoading &&
+                                                uiState.cartQuantity < 50 &&
+                                                isFoodAvailable &&
+                                                isBusinessOpen
                                 ) {
                                     Text(
                                         text = "+",
-                                        color = CustomerHomeColors.DeepOlive,
+                                        color = if (isFoodAvailable && isBusinessOpen) {
+                                            CustomerHomeColors.DeepOlive
+                                        } else {
+                                            CustomerHomeColors.TextMuted
+                                        },
                                         fontSize = 24.sp,
                                         fontWeight = FontWeight.Bold
                                     )
@@ -645,7 +747,10 @@ private fun FoodDetailCartArea(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(54.dp),
-                        enabled = isFoodAvailable && !uiState.isCartActionLoading,
+                        enabled =
+                            isFoodAvailable &&
+                                    isBusinessOpen &&
+                                    !uiState.isCartActionLoading,
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = CustomerHomeColors.Terracotta,
@@ -662,10 +767,10 @@ private fun FoodDetailCartArea(
                             )
                         } else {
                             Text(
-                                text = if (isFoodAvailable) {
-                                    "Sepete Ekle"
-                                } else {
-                                    "Satışta Değil"
+                                text = when {
+                                    !isFoodAvailable -> "Satışta Değil"
+                                    !isBusinessOpen -> "İşletme Kapalı"
+                                    else -> "Sepete Ekle"
                                 },
                                 fontWeight = FontWeight.Bold
                             )

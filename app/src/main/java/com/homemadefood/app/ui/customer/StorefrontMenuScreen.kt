@@ -236,6 +236,7 @@ private fun StorefrontLoadedContent(
             StorefrontHero(
                 businessName = menu.businessName,
                 businessImageUrl = menu.businessImageUrl,
+                isCurrentlyOpen = menu.isCurrentlyOpen,
                 cartTotalQuantity = cartTotalQuantity,
                 onBackClick = onBackClick,
                 onCartClick = onCartClick
@@ -253,7 +254,8 @@ private fun StorefrontLoadedContent(
                 city = menu.city,
                 district = menu.district,
                 availableFoodCount = menu.availableFoodCount,
-                availableCategoryCount = menu.availableCategoryCount
+                availableCategoryCount = menu.availableCategoryCount,
+                isCurrentlyOpen = menu.isCurrentlyOpen
             )
         }
 
@@ -328,6 +330,7 @@ private fun StorefrontLoadedContent(
                         category = category,
                         showDivider =
                             index < menu.categories.lastIndex,
+                        isCurrentlyOpen = menu.isCurrentlyOpen,
                         onFoodClick = onFoodClick
                     )
                 }
@@ -369,6 +372,7 @@ private fun StorefrontSimpleTopBar(
 private fun StorefrontHero(
     businessName: String,
     businessImageUrl: String?,
+    isCurrentlyOpen: Boolean,
     cartTotalQuantity: Int,
     onBackClick: () -> Unit,
     onCartClick: () -> Unit
@@ -427,6 +431,16 @@ private fun StorefrontHero(
                     )
                 )
         )
+
+        if (!isCurrentlyOpen) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        CustomerHomeColors.Cream.copy(alpha = 0.38f)
+                    )
+            )
+        }
 
         Row(
             modifier = Modifier
@@ -494,7 +508,8 @@ private fun StorefrontBusinessInfo(
     city: String,
     district: String,
     availableFoodCount: Int,
-    availableCategoryCount: Int
+    availableCategoryCount: Int,
+    isCurrentlyOpen: Boolean
 ) {
     val location =
         listOf(
@@ -517,11 +532,76 @@ private fun StorefrontBusinessInfo(
         Text(
             text = businessName,
             style = MaterialTheme.typography.headlineSmall,
-            color = CustomerHomeColors.Text,
+            color =
+                if (isCurrentlyOpen) {
+                    CustomerHomeColors.Text
+                } else {
+                    CustomerHomeColors.TextMuted
+                },
             fontWeight = FontWeight.Bold,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
         )
+
+        Spacer(
+            modifier = Modifier.height(9.dp)
+        )
+
+        Surface(
+            shape = RoundedCornerShape(50.dp),
+            color =
+                if (isCurrentlyOpen) {
+                    CustomerHomeColors.OliveSoft
+                } else {
+                    CustomerHomeColors.TerracottaSoft
+                }
+        ) {
+            Text(
+                text =
+                    if (isCurrentlyOpen) {
+                        "Açık"
+                    } else {
+                        "Kapalı"
+                    },
+                modifier = Modifier.padding(
+                    horizontal = 11.dp,
+                    vertical = 6.dp
+                ),
+                style = MaterialTheme.typography.labelMedium,
+                color =
+                    if (isCurrentlyOpen) {
+                        CustomerHomeColors.DeepOlive
+                    } else {
+                        CustomerHomeColors.Terracotta
+                    },
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        if (!isCurrentlyOpen) {
+            Spacer(
+                modifier = Modifier.height(9.dp)
+            )
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = CustomerHomeColors.TerracottaSoft
+                    .copy(alpha = 0.72f)
+            ) {
+                Text(
+                    text =
+                        "Bu işletme şu anda sipariş almıyor. Menüyü inceleyebilirsiniz.",
+                    modifier = Modifier.padding(
+                        horizontal = 12.dp,
+                        vertical = 9.dp
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = CustomerHomeColors.Terracotta,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
 
         Spacer(
             modifier = Modifier.height(9.dp)
@@ -784,6 +864,7 @@ private fun StorefrontCategoryChip(
 private fun StorefrontMenuCategorySection(
     category: ProducerStorefrontMenuCategoryResponse,
     showDivider: Boolean,
+    isCurrentlyOpen: Boolean,
     onFoodClick: (Int) -> Unit
 ) {
     Column(
@@ -827,6 +908,7 @@ private fun StorefrontMenuCategorySection(
 
             StorefrontMenuFoodCard(
                 food = food,
+                isCurrentlyOpen = isCurrentlyOpen,
                 onClick = {
                     onFoodClick(food.id)
                 }
@@ -858,6 +940,7 @@ private fun StorefrontMenuCategorySection(
 @Composable
 private fun StorefrontMenuFoodCard(
     food: ProducerStorefrontMenuFoodResponse,
+    isCurrentlyOpen: Boolean,
     onClick: () -> Unit
 ) {
     Surface(
@@ -865,8 +948,18 @@ private fun StorefrontMenuFoodCard(
             .fillMaxWidth()
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(18.dp),
-        color = CustomerHomeColors.Surface,
-        shadowElevation = 2.dp,
+        color =
+            if (isCurrentlyOpen) {
+                CustomerHomeColors.Surface
+            } else {
+                CustomerHomeColors.SurfaceSoft
+            },
+        shadowElevation =
+            if (isCurrentlyOpen) {
+                2.dp
+            } else {
+                0.dp
+            },
         border = BorderStroke(
             width = 1.dp,
             color = CustomerHomeColors.Outline.copy(alpha = 0.55f)
@@ -896,11 +989,38 @@ private fun StorefrontMenuFoodCard(
                 Text(
                     text = food.name,
                     style = MaterialTheme.typography.titleMedium,
-                    color = CustomerHomeColors.Text,
+                    color =
+                        if (isCurrentlyOpen) {
+                            CustomerHomeColors.Text
+                        } else {
+                            CustomerHomeColors.TextMuted
+                        },
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+
+                if (!isCurrentlyOpen) {
+                    Spacer(
+                        modifier = Modifier.height(5.dp)
+                    )
+
+                    Surface(
+                        shape = RoundedCornerShape(50.dp),
+                        color = CustomerHomeColors.TerracottaSoft
+                    ) {
+                        Text(
+                            text = "İşletme kapalı",
+                            modifier = Modifier.padding(
+                                horizontal = 8.dp,
+                                vertical = 4.dp
+                            ),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = CustomerHomeColors.Terracotta,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
 
                 if (food.description.isNotBlank()) {
                     Spacer(

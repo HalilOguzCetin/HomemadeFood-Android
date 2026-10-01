@@ -13,5 +13,6 @@ data class FoodResponse(
     val preparationTimeMinutes: Int,
     val imageUrl: String,
     val isAvailable: Boolean,
+    val isCurrentlyOpen: Boolean = false,
     val createdAt: String
 )

@@ -44,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
@@ -1637,6 +1638,9 @@ private fun ExploreFoodCard(
     food: DiscoverFoodResponse,
     onClick: () -> Unit
 ) {
+    val isOpen =
+        food.isCurrentlyOpen
+
     Card(
         modifier =
             Modifier
@@ -1653,14 +1657,23 @@ private fun ExploreFoodCard(
             CardDefaults
                 .cardColors(
                     containerColor =
-                        CustomerHomeColors
-                            .Surface
+                        if (isOpen) {
+                            CustomerHomeColors
+                                .Surface
+                        } else {
+                            CustomerHomeColors
+                                .SurfaceSoft
+                        }
                 ),
         elevation =
             CardDefaults
                 .cardElevation(
                     defaultElevation =
-                        1.dp
+                        if (isOpen) {
+                            1.dp
+                        } else {
+                            0.dp
+                        }
                 )
     ) {
         Row(
@@ -1675,7 +1688,9 @@ private fun ExploreFoodCard(
                 imageUrl =
                     food.imageUrl,
                 contentDescription =
-                    "${food.name} yemek görseli"
+                    "${food.name} yemek görseli",
+                isMuted =
+                    !isOpen
             )
 
             Spacer(
@@ -1691,24 +1706,54 @@ private fun ExploreFoodCard(
                         1f
                     )
             ) {
-                Text(
-                    text =
-                        food.name,
-                    style =
-                        MaterialTheme
-                            .typography
-                            .titleMedium,
-                    fontWeight =
-                        FontWeight.Bold,
-                    color =
-                        CustomerHomeColors
-                            .Text,
-                    maxLines =
-                        1,
-                    overflow =
-                        TextOverflow
-                            .Ellipsis
-                )
+                Row(
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    horizontalArrangement =
+                        Arrangement.SpaceBetween,
+                    verticalAlignment =
+                        Alignment.CenterVertically
+                ) {
+                    Text(
+                        text =
+                            food.name,
+                        modifier =
+                            Modifier.weight(
+                                1f
+                            ),
+                        style =
+                            MaterialTheme
+                                .typography
+                                .titleMedium,
+                        fontWeight =
+                            FontWeight.Bold,
+                        color =
+                            if (isOpen) {
+                                CustomerHomeColors
+                                    .Text
+                            } else {
+                                CustomerHomeColors
+                                    .TextMuted
+                            },
+                        maxLines =
+                            1,
+                        overflow =
+                            TextOverflow
+                                .Ellipsis
+                    )
+
+                    Spacer(
+                        modifier =
+                            Modifier.width(
+                                8.dp
+                            )
+                    )
+
+                    ExploreAvailabilityChip(
+                        isOpen =
+                            isOpen
+                    )
+                }
 
                 Spacer(
                     modifier =
@@ -1757,8 +1802,13 @@ private fun ExploreFoodCard(
                                 .typography
                                 .labelMedium,
                         color =
-                            CustomerHomeColors
-                                .DeepOlive
+                            if (isOpen) {
+                                CustomerHomeColors
+                                    .DeepOlive
+                            } else {
+                                CustomerHomeColors
+                                    .TextMuted
+                            }
                     )
 
                     Text(
@@ -1773,9 +1823,25 @@ private fun ExploreFoodCard(
                         fontWeight =
                             FontWeight.Bold,
                         color =
-                            CustomerHomeColors
-                                .Terracotta
+                            if (isOpen) {
+                                CustomerHomeColors
+                                    .Terracotta
+                            } else {
+                                CustomerHomeColors
+                                    .TextMuted
+                            }
                     )
+                }
+
+                if (!isOpen) {
+                    Spacer(
+                        modifier =
+                            Modifier.height(
+                                8.dp
+                            )
+                    )
+
+                    ExploreClosedWarning()
                 }
             }
 
@@ -1789,8 +1855,13 @@ private fun ExploreFoodCard(
             Text(
                 text = "›",
                 color =
-                    CustomerHomeColors
-                        .Terracotta,
+                    if (isOpen) {
+                        CustomerHomeColors
+                            .Terracotta
+                    } else {
+                        CustomerHomeColors
+                            .TextMuted
+                    },
                 style =
                     MaterialTheme
                         .typography
@@ -1807,6 +1878,9 @@ private fun ExploreStorefrontCard(
     categoryFiltered: Boolean,
     onClick: () -> Unit
 ) {
+    val isOpen =
+        storefront.isCurrentlyOpen
+
     Card(
         modifier =
             Modifier
@@ -1823,14 +1897,23 @@ private fun ExploreStorefrontCard(
             CardDefaults
                 .cardColors(
                     containerColor =
-                        CustomerHomeColors
-                            .Surface
+                        if (isOpen) {
+                            CustomerHomeColors
+                                .Surface
+                        } else {
+                            CustomerHomeColors
+                                .SurfaceSoft
+                        }
                 ),
         elevation =
             CardDefaults
                 .cardElevation(
                     defaultElevation =
-                        1.dp
+                        if (isOpen) {
+                            1.dp
+                        } else {
+                            0.dp
+                        }
                 )
     ) {
         Row(
@@ -1846,7 +1929,9 @@ private fun ExploreStorefrontCard(
                     storefront
                         .businessImageUrl,
                 contentDescription =
-                    "${storefront.businessName} işletme görseli"
+                    "${storefront.businessName} işletme görseli",
+                isMuted =
+                    !isOpen
             )
 
             Spacer(
@@ -1866,7 +1951,9 @@ private fun ExploreStorefrontCard(
                     modifier =
                         Modifier.fillMaxWidth(),
                     horizontalArrangement =
-                        Arrangement.SpaceBetween
+                        Arrangement.SpaceBetween,
+                    verticalAlignment =
+                        Alignment.CenterVertically
                 ) {
                     Text(
                         text =
@@ -1883,13 +1970,84 @@ private fun ExploreStorefrontCard(
                         fontWeight =
                             FontWeight.Bold,
                         color =
-                            CustomerHomeColors
-                                .Text,
+                            if (isOpen) {
+                                CustomerHomeColors
+                                    .Text
+                            } else {
+                                CustomerHomeColors
+                                    .TextMuted
+                            },
                         maxLines =
                             1,
                         overflow =
                             TextOverflow
                                 .Ellipsis
+                    )
+
+                    Spacer(
+                        modifier =
+                            Modifier.width(
+                                8.dp
+                            )
+                    )
+
+                    ExploreAvailabilityChip(
+                        isOpen =
+                            isOpen
+                    )
+                }
+
+                Spacer(
+                    modifier =
+                        Modifier.height(
+                            3.dp
+                        )
+                )
+
+                Row(
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    horizontalArrangement =
+                        Arrangement.SpaceBetween,
+                    verticalAlignment =
+                        Alignment.CenterVertically
+                ) {
+                    Text(
+                        text =
+                            listOf(
+                                storefront
+                                    .district,
+                                storefront.city
+                            )
+                                .filter {
+                                    it.isNotBlank()
+                                }
+                                .joinToString(
+                                    " / "
+                                ),
+                        modifier =
+                            Modifier.weight(
+                                1f
+                            ),
+                        style =
+                            MaterialTheme
+                                .typography
+                                .bodySmall,
+                        color =
+                            CustomerHomeColors
+                                .TextMuted,
+                        maxLines =
+                            1,
+                        overflow =
+                            TextOverflow
+                                .Ellipsis
+                    )
+
+                    Spacer(
+                        modifier =
+                            Modifier.width(
+                                8.dp
+                            )
                     )
 
                     Text(
@@ -1917,44 +2075,15 @@ private fun ExploreStorefrontCard(
                                 .typography
                                 .labelMedium,
                         color =
-                            CustomerHomeColors
-                                .Gold
+                            if (isOpen) {
+                                CustomerHomeColors
+                                    .Gold
+                            } else {
+                                CustomerHomeColors
+                                    .TextMuted
+                            }
                     )
                 }
-
-                Spacer(
-                    modifier =
-                        Modifier.height(
-                            3.dp
-                        )
-                )
-
-                Text(
-                    text =
-                        listOf(
-                            storefront
-                                .district,
-                            storefront.city
-                        )
-                            .filter {
-                                it.isNotBlank()
-                            }
-                            .joinToString(
-                                " / "
-                            ),
-                    style =
-                        MaterialTheme
-                            .typography
-                            .bodySmall,
-                    color =
-                        CustomerHomeColors
-                            .TextMuted,
-                    maxLines =
-                        1,
-                    overflow =
-                        TextOverflow
-                            .Ellipsis
-                )
 
                 Spacer(
                     modifier =
@@ -1983,8 +2112,13 @@ private fun ExploreStorefrontCard(
                                 .typography
                                 .labelMedium,
                         color =
-                            CustomerHomeColors
-                                .DeepOlive
+                            if (isOpen) {
+                                CustomerHomeColors
+                                    .DeepOlive
+                            } else {
+                                CustomerHomeColors
+                                    .TextMuted
+                            }
                     )
 
                     Text(
@@ -2001,9 +2135,25 @@ private fun ExploreStorefrontCard(
                             FontWeight
                                 .SemiBold,
                         color =
-                            CustomerHomeColors
-                                .Terracotta
+                            if (isOpen) {
+                                CustomerHomeColors
+                                    .Terracotta
+                            } else {
+                                CustomerHomeColors
+                                    .TextMuted
+                            }
                     )
+                }
+
+                if (!isOpen) {
+                    Spacer(
+                        modifier =
+                            Modifier.height(
+                                8.dp
+                            )
+                    )
+
+                    ExploreClosedWarning()
                 }
             }
 
@@ -2017,8 +2167,13 @@ private fun ExploreStorefrontCard(
             Text(
                 text = "›",
                 color =
-                    CustomerHomeColors
-                        .Terracotta,
+                    if (isOpen) {
+                        CustomerHomeColors
+                            .Terracotta
+                    } else {
+                        CustomerHomeColors
+                            .TextMuted
+                    },
                 style =
                     MaterialTheme
                         .typography
@@ -2029,9 +2184,95 @@ private fun ExploreStorefrontCard(
 }
 
 @Composable
+private fun ExploreAvailabilityChip(
+    isOpen: Boolean
+) {
+    Surface(
+        shape =
+            RoundedCornerShape(
+                50.dp
+            ),
+        color =
+            if (isOpen) {
+                CustomerHomeColors
+                    .OliveSoft
+            } else {
+                CustomerHomeColors
+                    .TerracottaSoft
+            }
+    ) {
+        Text(
+            text =
+                if (isOpen) {
+                    "Açık"
+                } else {
+                    "Kapalı"
+                },
+            modifier =
+                Modifier.padding(
+                    horizontal = 8.dp,
+                    vertical = 4.dp
+                ),
+            style =
+                MaterialTheme
+                    .typography
+                    .labelSmall,
+            color =
+                if (isOpen) {
+                    CustomerHomeColors
+                        .DeepOlive
+                } else {
+                    CustomerHomeColors
+                        .Terracotta
+                },
+            fontWeight =
+                FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+private fun ExploreClosedWarning() {
+    Surface(
+        modifier =
+            Modifier.fillMaxWidth(),
+        shape =
+            RoundedCornerShape(
+                10.dp
+            ),
+        color =
+            CustomerHomeColors
+                .TerracottaSoft
+                .copy(
+                    alpha = 0.65f
+                )
+    ) {
+        Text(
+            text =
+                "Şu anda sipariş almıyor",
+            modifier =
+                Modifier.padding(
+                    horizontal = 10.dp,
+                    vertical = 6.dp
+                ),
+            style =
+                MaterialTheme
+                    .typography
+                    .labelSmall,
+            color =
+                CustomerHomeColors
+                    .Terracotta,
+            fontWeight =
+                FontWeight.SemiBold
+        )
+    }
+}
+
+@Composable
 private fun ExploreImage(
     imageUrl: String?,
-    contentDescription: String
+    contentDescription: String,
+    isMuted: Boolean = false
 ) {
     val resolvedUrl =
         ApiConfig.resolveMediaUrl(
@@ -2040,9 +2281,17 @@ private fun ExploreImage(
 
     Surface(
         modifier =
-            Modifier.size(
-                88.dp
-            ),
+            Modifier
+                .size(
+                    88.dp
+                )
+                .alpha(
+                    if (isMuted) {
+                        0.48f
+                    } else {
+                        1f
+                    }
+                ),
         shape =
             RoundedCornerShape(
                 15.dp

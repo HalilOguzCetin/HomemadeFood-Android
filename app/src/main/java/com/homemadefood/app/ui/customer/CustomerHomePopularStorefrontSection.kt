@@ -231,19 +231,57 @@ private fun PopularStorefrontCard(
                 )
 
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(7.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    HomeStorefrontInfoPill(
-                        text = "${storefront.availableFoodCount} yemek"
-                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(7.dp)
+                    ) {
+                        HomeStorefrontInfoPill(
+                            text = "${storefront.availableFoodCount} yemek"
+                        )
 
-                    storefront
-                        .minimumPreparationTimeMinutes
-                        ?.let { minutes ->
-                            HomeStorefrontInfoPill(
-                                text = "$minutes dk"
-                            )
-                        }
+                        storefront
+                            .minimumPreparationTimeMinutes
+                            ?.let { minutes ->
+                                HomeStorefrontInfoPill(
+                                    text = "$minutes dk"
+                                )
+                            }
+                    }
+
+                    Surface(
+                        shape = RoundedCornerShape(50.dp),
+                        color =
+                            if (storefront.isCurrentlyOpen) {
+                                CustomerHomeColors.OliveSoft
+                            } else {
+                                CustomerHomeColors.TerracottaSoft
+                            }
+                    ) {
+                        Text(
+                            text =
+                                if (storefront.isCurrentlyOpen) {
+                                    "Açık"
+                                } else {
+                                    "Kapalı"
+                                },
+                            modifier =
+                                Modifier.padding(
+                                    horizontal = 9.dp,
+                                    vertical = 5.dp
+                                ),
+                            style = MaterialTheme.typography.labelSmall,
+                            color =
+                                if (storefront.isCurrentlyOpen) {
+                                    CustomerHomeColors.DeepOlive
+                                } else {
+                                    CustomerHomeColors.Terracotta
+                                },
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
         }

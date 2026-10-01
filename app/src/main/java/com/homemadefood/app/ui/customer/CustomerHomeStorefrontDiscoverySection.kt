@@ -39,91 +39,41 @@ import com.homemadefood.app.data.model.ProducerStorefrontSummaryResponse
 import com.homemadefood.app.data.remote.ApiConfig
 import java.util.Locale
 
-private const val DISCOVERY_TAB_NEARBY =
-    "nearby"
-
-private const val DISCOVERY_TAB_CITY =
-    "city"
+private const val DISCOVERY_TAB_NEARBY = "nearby"
+private const val DISCOVERY_TAB_CITY = "city"
 
 @Composable
 fun CustomerHomeStorefrontDiscoverySection(
-    storefronts:
-    List<ProducerStorefrontSummaryResponse>,
-
-    nearbyStorefronts:
-    List<NearbyProducerStorefrontResponse>,
-
-    cityStorefronts:
-    List<DiscoverProducerStorefrontResponse>,
-
-    selectedDeliveryAddressId:
-    Int?,
-
-    searchQuery:
-    String,
-
-    selectedCategoryId:
-    Int?,
-
-    isStorefrontsLoading:
-    Boolean,
-
-    isNearbyStorefrontsLoading:
-    Boolean,
-
-    isCityStorefrontsLoading:
-    Boolean,
-
-    storefrontErrorMessage:
-    String?,
-
-    nearbyStorefrontErrorMessage:
-    String?,
-
-    cityStorefrontErrorMessage:
-    String?,
-
-    onRetryStorefrontsClick:
-        () -> Unit,
-
-    onRetryNearbyStorefrontsClick:
-        () -> Unit,
-
-    onRetryCityStorefrontsClick:
-        () -> Unit,
-
-    onAddAddressClick:
-        () -> Unit,
-
-    onStorefrontClick:
-        (Int) -> Unit,
-
+    storefronts: List<ProducerStorefrontSummaryResponse>,
+    nearbyStorefronts: List<NearbyProducerStorefrontResponse>,
+    cityStorefronts: List<DiscoverProducerStorefrontResponse>,
+    selectedDeliveryAddressId: Int?,
+    searchQuery: String,
+    selectedCategoryId: Int?,
+    isStorefrontsLoading: Boolean,
+    isNearbyStorefrontsLoading: Boolean,
+    isCityStorefrontsLoading: Boolean,
+    storefrontErrorMessage: String?,
+    nearbyStorefrontErrorMessage: String?,
+    cityStorefrontErrorMessage: String?,
+    onRetryStorefrontsClick: () -> Unit,
+    onRetryNearbyStorefrontsClick: () -> Unit,
+    onRetryCityStorefrontsClick: () -> Unit,
+    onAddAddressClick: () -> Unit,
+    onStorefrontClick: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val isFiltered =
         searchQuery.isNotBlank() ||
                 selectedCategoryId != null
 
-    var selectedTab by
-    rememberSaveable {
-        mutableStateOf(
-            DISCOVERY_TAB_NEARBY
-        )
+    var selectedTab by rememberSaveable {
+        mutableStateOf(DISCOVERY_TAB_NEARBY)
     }
 
-    /*
-     * Adres kaldırılırsa global işletmelere düşmüyoruz.
-     * İki yerel sekme de adres gerektirir.
-     */
-    LaunchedEffect(
-        selectedDeliveryAddressId
-    ) {
-        if (
-            selectedDeliveryAddressId ==
-            null
-        ) {
-            selectedTab =
-                DISCOVERY_TAB_NEARBY
+    LaunchedEffect(selectedDeliveryAddressId) {
+        if (selectedDeliveryAddressId == null) {
+            selectedTab = DISCOVERY_TAB_NEARBY
         }
     }
 
@@ -137,23 +87,13 @@ fun CustomerHomeStorefrontDiscoverySection(
                 } else {
                     "İşletmeleri Keşfet"
                 },
-
-            style =
-                MaterialTheme
-                    .typography
-                    .titleLarge,
-
-            fontWeight =
-                FontWeight.Bold,
-
-            color =
-                CustomerHomeColors
-                    .DeepOlive
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = CustomerHomeColors.DeepOlive
         )
 
         Spacer(
-            modifier =
-                Modifier.height(4.dp)
+            modifier = Modifier.height(4.dp)
         )
 
         Text(
@@ -168,71 +108,39 @@ fun CustomerHomeStorefrontDiscoverySection(
                     else ->
                         "Yakınınızdaki veya şehrinizde öne çıkan ev mutfaklarını keşfedin"
                 },
-
-            style =
-                MaterialTheme
-                    .typography
-                    .bodyMedium,
-
-            color =
-                CustomerHomeColors
-                    .TextMuted
+            style = MaterialTheme.typography.bodyMedium,
+            color = CustomerHomeColors.TextMuted
         )
 
         if (!isFiltered) {
             Spacer(
-                modifier =
-                    Modifier.height(14.dp)
+                modifier = Modifier.height(14.dp)
             )
 
             DiscoveryTabs(
-                selectedTab =
-                    selectedTab,
-
+                selectedTab = selectedTab,
                 onNearbyClick = {
-                    selectedTab =
-                        DISCOVERY_TAB_NEARBY
+                    selectedTab = DISCOVERY_TAB_NEARBY
                 },
-
                 onCityClick = {
-                    selectedTab =
-                        DISCOVERY_TAB_CITY
+                    selectedTab = DISCOVERY_TAB_CITY
                 }
             )
         }
 
         Spacer(
-            modifier =
-                Modifier.height(14.dp)
+            modifier = Modifier.height(14.dp)
         )
 
-        /*
-         * Arama/kategori davranışını bu revizyonda değiştirmiyoruz.
-         * H8E yalnız Home keşif sekmelerindeki global
-         * "Tüm İşletmeler" kullanımını kaldırır.
-         */
         if (isFiltered) {
             NormalStorefrontContent(
-                storefronts =
-                    storefronts,
-
-                isLoading =
-                    isStorefrontsLoading,
-
-                errorMessage =
-                    storefrontErrorMessage,
-
-                categoryFiltered =
-                    selectedCategoryId != null,
-
-                searchActive =
-                    searchQuery.isNotBlank(),
-
-                onRetryClick =
-                    onRetryStorefrontsClick,
-
-                onStorefrontClick =
-                    onStorefrontClick
+                storefronts = storefronts,
+                isLoading = isStorefrontsLoading,
+                errorMessage = storefrontErrorMessage,
+                categoryFiltered = selectedCategoryId != null,
+                searchActive = searchQuery.isNotBlank(),
+                onRetryClick = onRetryStorefrontsClick,
+                onStorefrontClick = onStorefrontClick
             )
 
             return@Column
@@ -241,58 +149,30 @@ fun CustomerHomeStorefrontDiscoverySection(
         when (selectedTab) {
             DISCOVERY_TAB_CITY -> {
                 CityStorefrontContent(
-                    storefronts =
-                        cityStorefronts,
-
+                    storefronts = cityStorefronts,
                     hasDeliveryAddress =
-                        selectedDeliveryAddressId !=
-                                null,
-
-                    isLoading =
-                        isCityStorefrontsLoading,
-
-                    errorMessage =
-                        cityStorefrontErrorMessage,
-
-                    onRetryClick =
-                        onRetryCityStorefrontsClick,
-
-                    onAddAddressClick =
-                        onAddAddressClick,
-
-                    onStorefrontClick =
-                        onStorefrontClick
+                        selectedDeliveryAddressId != null,
+                    isLoading = isCityStorefrontsLoading,
+                    errorMessage = cityStorefrontErrorMessage,
+                    onRetryClick = onRetryCityStorefrontsClick,
+                    onAddAddressClick = onAddAddressClick,
+                    onStorefrontClick = onStorefrontClick
                 )
             }
 
             else -> {
                 NearbyStorefrontContent(
-                    storefronts =
-                        nearbyStorefronts,
-
+                    storefronts = nearbyStorefronts,
                     hasDeliveryAddress =
-                        selectedDeliveryAddressId !=
-                                null,
-
-                    isLoading =
-                        isNearbyStorefrontsLoading,
-
-                    errorMessage =
-                        nearbyStorefrontErrorMessage,
-
-                    onRetryClick =
-                        onRetryNearbyStorefrontsClick,
-
-                    onAddAddressClick =
-                        onAddAddressClick,
-
+                        selectedDeliveryAddressId != null,
+                    isLoading = isNearbyStorefrontsLoading,
+                    errorMessage = nearbyStorefrontErrorMessage,
+                    onRetryClick = onRetryNearbyStorefrontsClick,
+                    onAddAddressClick = onAddAddressClick,
                     onShowCityClick = {
-                        selectedTab =
-                            DISCOVERY_TAB_CITY
+                        selectedTab = DISCOVERY_TAB_CITY
                     },
-
-                    onStorefrontClick =
-                        onStorefrontClick
+                    onStorefrontClick = onStorefrontClick
                 )
             }
         }
@@ -306,52 +186,27 @@ private fun DiscoveryTabs(
     onCityClick: () -> Unit
 ) {
     Surface(
-        modifier =
-            Modifier.fillMaxWidth(),
-
-        shape =
-            RoundedCornerShape(
-                16.dp
-            ),
-
-        color =
-            CustomerHomeColors
-                .SurfaceSoft
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = CustomerHomeColors.SurfaceSoft
     ) {
         Row(
-            modifier =
-                Modifier.padding(
-                    4.dp
-                )
+            modifier = Modifier.padding(4.dp)
         ) {
             DiscoveryTab(
-                text =
-                    "Sana Yakın",
-
+                text = "Sana Yakın",
                 selected =
-                    selectedTab ==
-                            DISCOVERY_TAB_NEARBY,
-
-                onClick =
-                    onNearbyClick,
-
-                modifier =
-                    Modifier.weight(1f)
+                    selectedTab == DISCOVERY_TAB_NEARBY,
+                onClick = onNearbyClick,
+                modifier = Modifier.weight(1f)
             )
 
             DiscoveryTab(
-                text =
-                    "Şehrimde",
-
+                text = "Şehrimde",
                 selected =
-                    selectedTab ==
-                            DISCOVERY_TAB_CITY,
-
-                onClick =
-                    onCityClick,
-
-                modifier =
-                    Modifier.weight(1f)
+                    selectedTab == DISCOVERY_TAB_CITY,
+                onClick = onCityClick,
+                modifier = Modifier.weight(1f)
             )
         }
     }
@@ -366,53 +221,34 @@ private fun DiscoveryTab(
 ) {
     Surface(
         modifier =
-            modifier
-                .clickable(
-                    onClick = onClick
-                ),
-
-        shape =
-            RoundedCornerShape(
-                13.dp
+            modifier.clickable(
+                onClick = onClick
             ),
-
+        shape = RoundedCornerShape(13.dp),
         color =
             if (selected) {
-                CustomerHomeColors
-                    .DeepOlive
+                CustomerHomeColors.DeepOlive
             } else {
-                androidx.compose.ui.graphics.Color
-                    .Transparent
+                androidx.compose.ui.graphics.Color.Transparent
             }
     ) {
         Box(
             modifier =
                 Modifier.padding(
-                    horizontal = 10.dp,
+                    horizontal = 12.dp,
                     vertical = 10.dp
                 ),
-
-            contentAlignment =
-                Alignment.Center
+            contentAlignment = Alignment.Center
         ) {
             Text(
                 text = text,
-
-                style =
-                    MaterialTheme
-                        .typography
-                        .labelLarge,
-
-                fontWeight =
-                    FontWeight.SemiBold,
-
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
                 color =
                     if (selected) {
-                        CustomerHomeColors
-                            .Surface
+                        CustomerHomeColors.Surface
                     } else {
-                        CustomerHomeColors
-                            .DeepOlive
+                        CustomerHomeColors.DeepOlive
                     }
             )
         }
@@ -420,45 +256,99 @@ private fun DiscoveryTab(
 }
 
 @Composable
+private fun NormalStorefrontContent(
+    storefronts: List<ProducerStorefrontSummaryResponse>,
+    isLoading: Boolean,
+    errorMessage: String?,
+    categoryFiltered: Boolean,
+    searchActive: Boolean,
+    onRetryClick: () -> Unit,
+    onStorefrontClick: (Int) -> Unit
+) {
+    when {
+        isLoading -> {
+            DiscoveryLoading()
+        }
+
+        errorMessage != null -> {
+            DiscoveryError(
+                message = errorMessage,
+                onRetryClick = onRetryClick
+            )
+        }
+
+        storefronts.isEmpty() -> {
+            DiscoveryInfoCard(
+                title = "İşletme bulunamadı",
+                description =
+                    when {
+                        searchActive ->
+                            "Aramanıza uygun işletme bulunamadı."
+
+                        categoryFiltered ->
+                            "Bu kategoride yemek sunan işletme bulunamadı."
+
+                        else ->
+                            "Şu anda gösterilebilecek işletme bulunmuyor."
+                    }
+            )
+        }
+
+        else -> {
+            Column(
+                verticalArrangement =
+                    Arrangement.spacedBy(10.dp)
+            ) {
+                storefronts.forEach { storefront ->
+                    CompactStorefrontCard(
+                        businessName =
+                            storefront.businessName,
+                        businessImageUrl =
+                            storefront.businessImageUrl,
+                        rating =
+                            storefront.rating,
+                        district =
+                            storefront.district,
+                        city =
+                            storefront.city,
+                        foodCount =
+                            storefront.availableFoodCount,
+                        preparationMinutes =
+                            storefront.minimumPreparationTimeMinutes,
+                        distanceKm = null,
+                        isCurrentlyOpen =
+                            storefront.isCurrentlyOpen,
+                        onClick = {
+                            onStorefrontClick(
+                                storefront.producerProfileId
+                            )
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun NearbyStorefrontContent(
-    storefronts:
-    List<NearbyProducerStorefrontResponse>,
-
-    hasDeliveryAddress:
-    Boolean,
-
-    isLoading:
-    Boolean,
-
-    errorMessage:
-    String?,
-
-    onRetryClick:
-        () -> Unit,
-
-    onAddAddressClick:
-        () -> Unit,
-
-    onShowCityClick:
-        () -> Unit,
-
-    onStorefrontClick:
-        (Int) -> Unit
+    storefronts: List<NearbyProducerStorefrontResponse>,
+    hasDeliveryAddress: Boolean,
+    isLoading: Boolean,
+    errorMessage: String?,
+    onRetryClick: () -> Unit,
+    onAddAddressClick: () -> Unit,
+    onShowCityClick: () -> Unit,
+    onStorefrontClick: (Int) -> Unit
 ) {
     when {
         !hasDeliveryAddress -> {
             DiscoveryInfoCard(
-                title =
-                    "Teslimat adresi gerekli",
-
+                title = "Teslimat adresi gerekli",
                 description =
-                    "Yakındaki işletmeleri görmek için bir teslimat adresi seçin veya ekleyin.",
-
-                actionText =
-                    "Adres Ekle",
-
-                onActionClick =
-                    onAddAddressClick
+                    "Yakınınızdaki işletmeleri görebilmek için teslimat adresi seçin veya yeni bir adres ekleyin.",
+                actionText = "Adres Ekle",
+                onActionClick = onAddAddressClick
             )
         }
 
@@ -468,76 +358,51 @@ private fun NearbyStorefrontContent(
 
         errorMessage != null -> {
             DiscoveryError(
-                message =
-                    errorMessage,
-
-                onRetryClick =
-                    onRetryClick
+                message = errorMessage,
+                onRetryClick = onRetryClick
             )
         }
 
         storefronts.isEmpty() -> {
             DiscoveryInfoCard(
-                title =
-                    "15 km içinde işletme bulunamadı",
-
+                title = "Yakınınızda işletme bulunamadı",
                 description =
-                    "Yakınınızda uygun işletme görünmüyor. Şehrinizdeki diğer işletmelere göz atabilirsiniz.",
-
-                actionText =
-                    "Şehrimdeki İşletmeleri Gör",
-
-                onActionClick =
-                    onShowCityClick
+                    "Teslimat adresinize yakın uygun işletme bulunamadı. Şehrinizdeki diğer işletmelere göz atabilirsiniz.",
+                actionText = "Şehrimdeki İşletmeler",
+                onActionClick = onShowCityClick
             )
         }
 
         else -> {
             Column(
                 verticalArrangement =
-                    Arrangement.spacedBy(
-                        10.dp
-                    )
+                    Arrangement.spacedBy(10.dp)
             ) {
-                storefronts.forEach {
-                        storefront ->
-
+                storefronts.forEach { storefront ->
                     CompactStorefrontCard(
-                        producerProfileId =
-                            storefront
-                                .producerProfileId,
-
                         businessName =
-                            storefront
-                                .businessName,
-
+                            storefront.businessName,
                         businessImageUrl =
-                            storefront
-                                .businessImageUrl,
-
+                            storefront.businessImageUrl,
                         rating =
                             storefront.rating,
-
-                        city =
-                            storefront.city,
-
                         district =
                             storefront.district,
-
+                        city =
+                            storefront.city,
                         foodCount =
-                            storefront
-                                .availableFoodCount,
-
+                            storefront.availableFoodCount,
                         preparationMinutes =
-                            storefront
-                                .minimumPreparationTimeMinutes,
-
+                            storefront.minimumPreparationTimeMinutes,
                         distanceKm =
-                            storefront
-                                .distanceKm,
-
-                        onClick =
-                            onStorefrontClick
+                            storefront.distanceKm,
+                        isCurrentlyOpen =
+                            storefront.isCurrentlyOpen,
+                        onClick = {
+                            onStorefrontClick(
+                                storefront.producerProfileId
+                            )
+                        }
                     )
                 }
             }
@@ -547,41 +412,22 @@ private fun NearbyStorefrontContent(
 
 @Composable
 private fun CityStorefrontContent(
-    storefronts:
-    List<DiscoverProducerStorefrontResponse>,
-
-    hasDeliveryAddress:
-    Boolean,
-
-    isLoading:
-    Boolean,
-
-    errorMessage:
-    String?,
-
-    onRetryClick:
-        () -> Unit,
-
-    onAddAddressClick:
-        () -> Unit,
-
-    onStorefrontClick:
-        (Int) -> Unit
+    storefronts: List<DiscoverProducerStorefrontResponse>,
+    hasDeliveryAddress: Boolean,
+    isLoading: Boolean,
+    errorMessage: String?,
+    onRetryClick: () -> Unit,
+    onAddAddressClick: () -> Unit,
+    onStorefrontClick: (Int) -> Unit
 ) {
     when {
         !hasDeliveryAddress -> {
             DiscoveryInfoCard(
-                title =
-                    "Teslimat adresi gerekli",
-
+                title = "Teslimat adresi gerekli",
                 description =
-                    "Şehrinizdeki işletmeleri gösterebilmemiz için bir teslimat adresi seçin veya ekleyin.",
-
-                actionText =
-                    "Adres Ekle",
-
-                onActionClick =
-                    onAddAddressClick
+                    "Şehrinizdeki işletmeleri gösterebilmek için teslimat adresi seçin veya yeni bir adres ekleyin.",
+                actionText = "Adres Ekle",
+                onActionClick = onAddAddressClick
             )
         }
 
@@ -591,195 +437,49 @@ private fun CityStorefrontContent(
 
         errorMessage != null -> {
             DiscoveryError(
-                message =
-                    errorMessage,
-
-                onRetryClick =
-                    onRetryClick
+                message = errorMessage,
+                onRetryClick = onRetryClick
             )
         }
 
         storefronts.isEmpty() -> {
             DiscoveryInfoCard(
-                title =
-                    "Şehrinizde işletme bulunamadı",
-
+                title = "Şehrinizde işletme bulunamadı",
                 description =
-                    "Teslimat adresinizin bulunduğu şehirde şu anda uygun ve aktif işletme görünmüyor."
+                    "Seçili teslimat adresinizin şehrinde şu anda uygun işletme bulunmuyor."
             )
         }
 
         else -> {
             Column(
                 verticalArrangement =
-                    Arrangement.spacedBy(
-                        10.dp
-                    )
+                    Arrangement.spacedBy(10.dp)
             ) {
-                storefronts.forEach {
-                        storefront ->
-
+                storefronts.forEach { storefront ->
                     CompactStorefrontCard(
-                        producerProfileId =
-                            storefront
-                                .producerProfileId,
-
                         businessName =
-                            storefront
-                                .businessName,
-
+                            storefront.businessName,
                         businessImageUrl =
-                            storefront
-                                .businessImageUrl,
-
+                            storefront.businessImageUrl,
                         rating =
                             storefront.rating,
-
-                        city =
-                            storefront.city,
-
                         district =
                             storefront.district,
-
-                        foodCount =
-                            storefront
-                                .availableFoodCount,
-
-                        preparationMinutes =
-                            storefront
-                                .minimumPreparationTimeMinutes,
-
-                        distanceKm =
-                            storefront
-                                .distanceKm,
-
-                        onClick =
-                            onStorefrontClick
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun NormalStorefrontContent(
-    storefronts:
-    List<ProducerStorefrontSummaryResponse>,
-
-    isLoading:
-    Boolean,
-
-    errorMessage:
-    String?,
-
-    categoryFiltered:
-    Boolean,
-
-    searchActive:
-    Boolean,
-
-    onRetryClick:
-        () -> Unit,
-
-    onStorefrontClick:
-        (Int) -> Unit
-) {
-    when {
-        isLoading -> {
-            DiscoveryLoading()
-        }
-
-        errorMessage != null &&
-                storefronts.isEmpty() -> {
-
-            DiscoveryError(
-                message =
-                    errorMessage,
-
-                onRetryClick =
-                    onRetryClick
-            )
-        }
-
-        storefronts.isEmpty() -> {
-            DiscoveryInfoCard(
-                title =
-                    when {
-                        searchActive ->
-                            "İşletme bulunamadı"
-
-                        categoryFiltered ->
-                            "Bu kategoride işletme bulunamadı"
-
-                        else ->
-                            "Aktif işletme bulunamadı"
-                    },
-
-                description =
-                    when {
-                        searchActive ->
-                            "Arama kelimenizi değiştirerek tekrar deneyebilirsiniz."
-
-                        categoryFiltered ->
-                            "Bu kategoride şu anda aktif yemek sunan bir işletme bulunmuyor."
-
-                        else ->
-                            "Şu anda listelenecek aktif işletme bulunmuyor."
-                    }
-            )
-        }
-
-        else -> {
-            Column(
-                verticalArrangement =
-                    Arrangement.spacedBy(
-                        10.dp
-                    )
-            ) {
-                storefronts.forEach {
-                        storefront ->
-
-                    CompactStorefrontCard(
-                        producerProfileId =
-                            storefront
-                                .producerProfileId,
-
-                        businessName =
-                            storefront
-                                .businessName,
-
-                        businessImageUrl =
-                            storefront
-                                .businessImageUrl,
-
-                        rating =
-                            storefront.rating,
-
                         city =
                             storefront.city,
-
-                        district =
-                            storefront.district,
-
                         foodCount =
-                            if (categoryFiltered) {
-                                storefront
-                                    .matchingFoodCount
-                            } else {
-                                storefront
-                                    .availableFoodCount
-                            },
-
+                            storefront.availableFoodCount,
                         preparationMinutes =
-                            storefront
-                                .minimumPreparationTimeMinutes,
-
+                            storefront.minimumPreparationTimeMinutes,
                         distanceKm =
-                            null,
-
-                        onClick =
-                            onStorefrontClick
+                            storefront.distanceKm,
+                        isCurrentlyOpen =
+                            storefront.isCurrentlyOpen,
+                        onClick = {
+                            onStorefrontClick(
+                                storefront.producerProfileId
+                            )
+                        }
                     )
                 }
             }
@@ -789,139 +489,142 @@ private fun NormalStorefrontContent(
 
 @Composable
 private fun CompactStorefrontCard(
-    producerProfileId: Int,
     businessName: String,
     businessImageUrl: String?,
     rating: Double,
-    city: String,
     district: String,
+    city: String,
     foodCount: Int,
     preparationMinutes: Int?,
     distanceKm: Double?,
-    onClick: (Int) -> Unit
+    isCurrentlyOpen: Boolean,
+    onClick: () -> Unit
 ) {
     Card(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clickable {
-                    onClick(
-                        producerProfileId
-                    )
-                },
-
-        shape =
-            RoundedCornerShape(
-                20.dp
-            ),
-
+                .clickable(
+                    onClick = onClick
+                ),
+        shape = RoundedCornerShape(18.dp),
         colors =
             CardDefaults.cardColors(
                 containerColor =
-                    CustomerHomeColors
-                        .Surface
+                    if (isCurrentlyOpen) {
+                        CustomerHomeColors.Surface
+                    } else {
+                        CustomerHomeColors.SurfaceSoft
+                    }
             ),
-
         elevation =
             CardDefaults.cardElevation(
                 defaultElevation =
-                    2.dp
+                    if (isCurrentlyOpen) {
+                        2.dp
+                    } else {
+                        0.dp
+                    }
             )
     ) {
         Row(
             modifier =
-                Modifier.padding(
-                    10.dp
-                ),
-
+                Modifier.padding(12.dp),
             verticalAlignment =
                 Alignment.CenterVertically
         ) {
-            CompactStorefrontImage(
-                businessImageUrl =
-                    businessImageUrl,
+            Box {
+                CompactStorefrontImage(
+                    businessImageUrl =
+                        businessImageUrl,
+                    businessName =
+                        businessName
+                )
 
-                businessName =
-                    businessName
-            )
+                if (!isCurrentlyOpen) {
+                    Surface(
+                        modifier =
+                            Modifier
+                                .matchParentSize(),
+                        shape =
+                            RoundedCornerShape(16.dp),
+                        color =
+                            CustomerHomeColors
+                                .Surface
+                                .copy(alpha = 0.55f)
+                    ) {}
+                }
+            }
 
             Spacer(
-                modifier =
-                    Modifier.width(
-                        12.dp
-                    )
+                modifier = Modifier.width(12.dp)
             )
 
             Column(
-                modifier =
-                    Modifier.weight(1f)
+                modifier = Modifier.weight(1f)
             ) {
                 Row(
                     modifier =
                         Modifier.fillMaxWidth(),
-
                     horizontalArrangement =
                         Arrangement.SpaceBetween,
-
                     verticalAlignment =
                         Alignment.CenterVertically
                 ) {
                     Text(
-                        text =
-                            businessName,
-
-                        modifier =
-                            Modifier.weight(1f),
-
+                        text = businessName,
+                        modifier = Modifier.weight(1f),
                         style =
                             MaterialTheme
                                 .typography
                                 .titleSmall,
-
                         fontWeight =
                             FontWeight.Bold,
-
                         color =
-                            CustomerHomeColors
-                                .Text,
-
+                            if (isCurrentlyOpen) {
+                                CustomerHomeColors.Text
+                            } else {
+                                CustomerHomeColors.TextMuted
+                            },
                         maxLines = 1,
-
                         overflow =
-                            TextOverflow
-                                .Ellipsis
+                            TextOverflow.Ellipsis
                     )
 
                     Spacer(
-                        modifier =
-                            Modifier.width(
-                                8.dp
-                            )
+                        modifier = Modifier.width(8.dp)
                     )
 
                     Text(
                         text =
-                            "★ ${String.format(Locale.US, "%.1f", rating)}",
-
+                            if (rating > 0.0) {
+                                "★ ${
+                                    String.format(
+                                        Locale.US,
+                                        "%.1f",
+                                        rating
+                                    )
+                                }"
+                            } else {
+                                "Yeni"
+                            },
                         style =
                             MaterialTheme
                                 .typography
                                 .labelMedium,
-
                         color =
-                            CustomerHomeColors
-                                .Terracotta,
-
+                            if (isCurrentlyOpen) {
+                                CustomerHomeColors.Terracotta
+                            } else {
+                                CustomerHomeColors.TextMuted
+                            },
                         fontWeight =
                             FontWeight.SemiBold
                     )
                 }
 
                 Spacer(
-                    modifier =
-                        Modifier.height(
-                            5.dp
-                        )
+                    modifier = Modifier.height(5.dp)
                 )
 
                 Text(
@@ -933,73 +636,145 @@ private fun CompactStorefrontCard(
                             .filter {
                                 it.isNotBlank()
                             }
-                            .joinToString(
-                                " • "
-                            ),
-
+                            .joinToString(" • "),
                     style =
                         MaterialTheme
                             .typography
                             .bodySmall,
-
                     color =
                         CustomerHomeColors
                             .TextMuted,
-
                     maxLines = 1,
-
                     overflow =
-                        TextOverflow
-                            .Ellipsis
+                        TextOverflow.Ellipsis
                 )
 
                 Spacer(
-                    modifier =
-                        Modifier.height(
-                            7.dp
-                        )
+                    modifier = Modifier.height(7.dp)
                 )
 
                 Row(
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement =
-                        Arrangement.spacedBy(
-                            8.dp
-                        ),
-
+                        Arrangement.SpaceBetween,
                     verticalAlignment =
                         Alignment.CenterVertically
                 ) {
-                    DiscoveryMiniPill(
-                        text =
-                            "$foodCount yemek"
+                    Row(
+                        modifier =
+                            Modifier.weight(1f),
+                        horizontalArrangement =
+                            Arrangement.spacedBy(8.dp),
+                        verticalAlignment =
+                            Alignment.CenterVertically
+                    ) {
+                        DiscoveryMiniPill(
+                            text = "$foodCount yemek"
+                        )
+
+                        preparationMinutes
+                            ?.takeIf {
+                                it > 0
+                            }
+                            ?.let { minutes ->
+                                DiscoveryMiniPill(
+                                    text = "$minutes dk"
+                                )
+                            }
+
+                        distanceKm
+                            ?.let { km ->
+                                DiscoveryMiniPill(
+                                    text =
+                                        if (km < 1.0) {
+                                            "${(km * 1000).toInt()} m"
+                                        } else {
+                                            "${
+                                                String.format(
+                                                    Locale.US,
+                                                    "%.1f",
+                                                    km
+                                                )
+                                            } km"
+                                        }
+                                )
+                            }
+                    }
+
+                    Spacer(
+                        modifier = Modifier.width(8.dp)
                     )
 
-                    preparationMinutes
-                        ?.takeIf {
-                            it > 0
-                        }
-                        ?.let {
-                                minutes ->
+                    Surface(
+                        shape =
+                            RoundedCornerShape(50.dp),
+                        color =
+                            if (isCurrentlyOpen) {
+                                CustomerHomeColors.OliveSoft
+                            } else {
+                                CustomerHomeColors.TerracottaSoft
+                            }
+                    ) {
+                        Text(
+                            text =
+                                if (isCurrentlyOpen) {
+                                    "Açık"
+                                } else {
+                                    "Kapalı"
+                                },
+                            modifier =
+                                Modifier.padding(
+                                    horizontal = 10.dp,
+                                    vertical = 5.dp
+                                ),
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .labelSmall,
+                            color =
+                                if (isCurrentlyOpen) {
+                                    CustomerHomeColors.DeepOlive
+                                } else {
+                                    CustomerHomeColors.Terracotta
+                                },
+                            fontWeight =
+                                FontWeight.Bold
+                        )
+                    }
+                }
 
-                            DiscoveryMiniPill(
-                                text =
-                                    "$minutes dk"
-                            )
-                        }
+                if (!isCurrentlyOpen) {
+                    Spacer(
+                        modifier = Modifier.height(8.dp)
+                    )
 
-                    distanceKm
-                        ?.let {
-                                km ->
-
-                            DiscoveryMiniPill(
-                                text =
-                                    if (km < 1.0) {
-                                        "${(km * 1000).toInt()} m"
-                                    } else {
-                                        "${String.format(Locale.US, "%.1f", km)} km"
-                                    }
-                            )
-                        }
+                    Surface(
+                        modifier =
+                            Modifier.fillMaxWidth(),
+                        shape =
+                            RoundedCornerShape(10.dp),
+                        color =
+                            CustomerHomeColors
+                                .TerracottaSoft
+                                .copy(alpha = 0.65f)
+                    ) {
+                        Text(
+                            text = "Şu anda sipariş almıyor",
+                            modifier =
+                                Modifier.padding(
+                                    horizontal = 10.dp,
+                                    vertical = 7.dp
+                                ),
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .labelSmall,
+                            color =
+                                CustomerHomeColors.Terracotta,
+                            fontWeight =
+                                FontWeight.SemiBold
+                        )
+                    }
                 }
             }
         }
@@ -1019,28 +794,16 @@ private fun CompactStorefrontImage(
     Surface(
         modifier =
             Modifier
-                .size(
-                    76.dp
-                )
+                .size(76.dp)
                 .clip(
-                    RoundedCornerShape(
-                        16.dp
-                    )
+                    RoundedCornerShape(16.dp)
                 ),
-
         shape =
-            RoundedCornerShape(
-                16.dp
-            ),
-
+            RoundedCornerShape(16.dp),
         color =
-            CustomerHomeColors
-                .SurfaceSoft
+            CustomerHomeColors.SurfaceSoft
     ) {
-        if (
-            resolvedImageUrl
-                .isNullOrBlank()
-        ) {
+        if (resolvedImageUrl.isNullOrBlank()) {
             Box(
                 contentAlignment =
                     Alignment.Center
@@ -1051,15 +814,12 @@ private fun CompactStorefrontImage(
                             .trim()
                             .take(1)
                             .uppercase(),
-
                     style =
                         MaterialTheme
                             .typography
                             .titleLarge,
-
                     fontWeight =
                         FontWeight.Bold,
-
                     color =
                         CustomerHomeColors
                             .DeepOlive
@@ -1067,15 +827,11 @@ private fun CompactStorefrontImage(
             }
         } else {
             AsyncImage(
-                model =
-                    resolvedImageUrl,
-
+                model = resolvedImageUrl,
                 contentDescription =
                     "$businessName işletme görseli",
-
                 modifier =
                     Modifier.fillMaxWidth(),
-
                 contentScale =
                     ContentScale.Crop
             )
@@ -1089,31 +845,23 @@ private fun DiscoveryMiniPill(
 ) {
     Surface(
         shape =
-            RoundedCornerShape(
-                50.dp
-            ),
-
+            RoundedCornerShape(50.dp),
         color =
-            CustomerHomeColors
-                .SurfaceSoft
+            CustomerHomeColors.SurfaceSoft
     ) {
         Text(
             text = text,
-
             modifier =
                 Modifier.padding(
                     horizontal = 8.dp,
                     vertical = 4.dp
                 ),
-
             style =
                 MaterialTheme
                     .typography
                     .labelSmall,
-
             color =
-                CustomerHomeColors
-                    .DeepOlive
+                CustomerHomeColors.DeepOlive
         )
     }
 }
@@ -1124,17 +872,13 @@ private fun DiscoveryLoading() {
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(
-                    vertical = 28.dp
-                ),
-
+                .padding(vertical = 28.dp),
         contentAlignment =
             Alignment.Center
     ) {
         CircularProgressIndicator(
             color =
-                CustomerHomeColors
-                    .Terracotta
+                CustomerHomeColors.Terracotta
         )
     }
 }
@@ -1145,17 +889,10 @@ private fun DiscoveryError(
     onRetryClick: () -> Unit
 ) {
     DiscoveryInfoCard(
-        title =
-            "İşletmeler yüklenemedi",
-
-        description =
-            message,
-
-        actionText =
-            "Tekrar Dene",
-
-        onActionClick =
-            onRetryClick
+        title = "İşletmeler yüklenemedi",
+        description = message,
+        actionText = "Tekrar Dene",
+        onActionClick = onRetryClick
     )
 }
 
@@ -1167,60 +904,39 @@ private fun DiscoveryInfoCard(
     onActionClick: (() -> Unit)? = null
 ) {
     Surface(
-        modifier =
-            Modifier.fillMaxWidth(),
-
-        shape =
-            RoundedCornerShape(
-                18.dp
-            ),
-
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
         color =
-            CustomerHomeColors
-                .SurfaceSoft
+            CustomerHomeColors.SurfaceSoft
     ) {
         Column(
             modifier =
-                Modifier.padding(
-                    16.dp
-                )
+                Modifier.padding(16.dp)
         ) {
             Text(
-                text =
-                    title,
-
+                text = title,
                 style =
                     MaterialTheme
                         .typography
                         .titleSmall,
-
                 fontWeight =
                     FontWeight.Bold,
-
                 color =
-                    CustomerHomeColors
-                        .DeepOlive
+                    CustomerHomeColors.DeepOlive
             )
 
             Spacer(
-                modifier =
-                    Modifier.height(
-                        5.dp
-                    )
+                modifier = Modifier.height(5.dp)
             )
 
             Text(
-                text =
-                    description,
-
+                text = description,
                 style =
                     MaterialTheme
                         .typography
                         .bodySmall,
-
                 color =
-                    CustomerHomeColors
-                        .TextMuted
+                    CustomerHomeColors.TextMuted
             )
 
             if (
@@ -1228,24 +944,17 @@ private fun DiscoveryInfoCard(
                 onActionClick != null
             ) {
                 Spacer(
-                    modifier =
-                        Modifier.height(
-                            8.dp
-                        )
+                    modifier = Modifier.height(8.dp)
                 )
 
                 TextButton(
-                    onClick =
-                        onActionClick
+                    onClick = onActionClick
                 ) {
                     Text(
-                        text =
-                            actionText,
-
+                        text = actionText,
                         color =
                             CustomerHomeColors
                                 .Terracotta,
-
                         fontWeight =
                             FontWeight.SemiBold
                     )

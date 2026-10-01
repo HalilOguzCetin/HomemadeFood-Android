@@ -313,12 +313,18 @@ private fun NavGraphBuilder.customerHomeDestination(
                     ) {
                         cartViewModel
                             .loadCart()
+
                         customerHomeViewModel
                             .loadHomeFavorites()
 
-
                         customerHomeViewModel
                             .loadDeliveryAddresses()
+
+                        customerHomeViewModel
+                            .loadStorefronts()
+
+                        customerHomeViewModel
+                            .loadPopularStorefronts()
                     }
                 }
 
@@ -1181,6 +1187,9 @@ private fun NavGraphBuilder.storefrontMenuDestination(
 
                         cartViewModel
                             .loadCart()
+
+                        storefrontMenuViewModel
+                            .loadMenu()
                     }
                 }
 

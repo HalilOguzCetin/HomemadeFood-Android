@@ -13,6 +13,8 @@ data class PopularProducerStorefrontResponse(
     val matchingFoodCount: Int,
     val minimumPreparationTimeMinutes: Int? = null,
 
+    val isCurrentlyOpen: Boolean = false,
+
     val popularityScore: Double = 0.0,
     val deliveredOrderCount30Days: Int = 0,
     val distinctCustomerCount30Days: Int = 0,

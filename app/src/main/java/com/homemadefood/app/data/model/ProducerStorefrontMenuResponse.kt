@@ -6,6 +6,7 @@ data class ProducerStorefrontMenuResponse(
     val description: String,
     val businessImageUrl: String? = null,
     val rating: Double = 0.0,
+    val isCurrentlyOpen: Boolean = false,
     val city: String,
     val district: String,
     val availableFoodCount: Int,

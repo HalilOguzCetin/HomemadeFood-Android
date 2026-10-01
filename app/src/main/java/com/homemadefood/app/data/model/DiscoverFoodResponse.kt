@@ -16,6 +16,7 @@ data class DiscoverFoodResponse(
 
     val imageUrl: String,
     val isAvailable: Boolean,
+    val isCurrentlyOpen: Boolean = false,
 
     val createdAt: String,
 

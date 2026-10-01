@@ -427,6 +427,14 @@ class FoodDetailViewModel(
                 return@launch
             }
 
+            if (!food.isCurrentlyOpen) {
+                showCartError(
+                    "Bu işletme şu anda kapalı. Yeni ürün sepete eklenemez."
+                )
+
+                return@launch
+            }
+
             _uiState.value =
                 _uiState.value.copy(
                     isCartActionLoading = true,
@@ -479,11 +487,31 @@ class FoodDetailViewModel(
     }
 
     fun increaseCartQuantity() {
+        val currentState =
+            _uiState.value
+
         val currentQuantity =
-            _uiState.value.cartQuantity
+            currentState.cartQuantity
 
         if (currentQuantity < 1) {
             addToCart()
+            return
+        }
+
+        val food =
+            currentState.food
+
+        if (food?.isAvailable != true) {
+            showCartError(
+                "Bu yemek şu anda satışta değil. Miktar artırılamaz."
+            )
+            return
+        }
+
+        if (!food.isCurrentlyOpen) {
+            showCartError(
+                "İşletme şu anda kapalı. Miktar artırılamaz."
+            )
             return
         }
 

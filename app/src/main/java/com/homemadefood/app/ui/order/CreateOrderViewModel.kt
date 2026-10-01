@@ -286,6 +286,14 @@ class CreateOrderViewModel(
                 return
             }
 
+            !cart.isCurrentlyOpen -> {
+                showError(
+                    "İşletme şu anda kapalı. Sipariş oluşturamazsınız."
+                )
+
+                return
+            }
+
             selectedAddressId == null -> {
                 showError(
                     "Lütfen bir teslimat adresi seçin."
@@ -327,6 +335,52 @@ class CreateOrderViewModel(
                 )
 
             try {
+                val latestCartResponse =
+                    cartRepository.getCart()
+
+                val latestCartBody =
+                    latestCartResponse.body()
+
+                if (
+                    !latestCartResponse.isSuccessful ||
+                    latestCartBody?.success != true ||
+                    latestCartBody.data == null
+                ) {
+                    showError(
+                        parseErrorMessage(
+                            latestCartResponse
+                                .errorBody()
+                                ?.string()
+                        ) ?: "Sepet durumu doğrulanamadı."
+                    )
+
+                    return@launch
+                }
+
+                val latestCart =
+                    latestCartBody.data
+
+                _uiState.value =
+                    _uiState.value.copy(
+                        cart = latestCart
+                    )
+
+                if (latestCart.items.isEmpty()) {
+                    showError(
+                        "Sipariş oluşturmak için sepetinizde ürün bulunmalıdır."
+                    )
+
+                    return@launch
+                }
+
+                if (!latestCart.isCurrentlyOpen) {
+                    showError(
+                        "İşletme şu anda kapalı. Sipariş oluşturamazsınız."
+                    )
+
+                    return@launch
+                }
+
                 val response =
                     orderRepository.createOrder(
                         addressId = selectedAddressId,

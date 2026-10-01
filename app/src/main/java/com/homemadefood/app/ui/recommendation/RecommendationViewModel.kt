@@ -325,7 +325,7 @@ class RecommendationViewModel(
                                             .recommendations
                                             .isEmpty()
                                     ) {
-                                        "Arama ölçütlerine uygun üretici bulunamadı."
+                                        "Şu anda açık ve arama ölçütlerinize uygun üretici bulunamadı."
                                     } else {
                                         null
                                     }
@@ -457,14 +457,30 @@ class RecommendationViewModel(
                                 null
                         )
                 } else {
-                    showError(
-                        parseErrorMessage(
+                    val error =
+                        parseErrorPayload(
                             response
                                 .errorBody()
                                 ?.string()
                         )
-                            ?: "Öneri seçilemedi."
-                    )
+
+                    if (
+                        isAvailabilityChangedError(
+                            code = error.code,
+                            message = error.message
+                        )
+                    ) {
+                        handleAvailabilityChanged(
+                            foodId = foodId,
+                            backendMessage =
+                                error.message
+                        )
+                    } else {
+                        showError(
+                            error.message
+                                ?: "Öneri seçilemedi."
+                        )
+                    }
                 }
 
             } catch (_: IOException) {
@@ -604,14 +620,30 @@ class RecommendationViewModel(
                                 null
                         )
                 } else {
-                    showError(
-                        parseErrorMessage(
+                    val error =
+                        parseErrorPayload(
                             response
                                 .errorBody()
                                 ?.string()
                         )
-                            ?: "Öneri sepete eklenemedi."
-                    )
+
+                    if (
+                        isAvailabilityChangedError(
+                            code = error.code,
+                            message = error.message
+                        )
+                    ) {
+                        handleAvailabilityChanged(
+                            foodId = selectedFoodId,
+                            backendMessage =
+                                error.message
+                        )
+                    } else {
+                        showError(
+                            error.message
+                                ?: "Öneri sepete eklenemedi."
+                        )
+                    }
                 }
 
             } catch (_: IOException) {
@@ -649,20 +681,148 @@ class RecommendationViewModel(
             )
     }
 
-    private fun parseErrorMessage(
+    private fun handleAvailabilityChanged(
+        foodId: Int,
+        backendMessage: String?
+    ) {
+        val currentState =
+            _uiState.value
+
+        val updatedRecommendations =
+            currentState
+                .recommendations
+                .filterNot {
+                    it.foodId == foodId
+                }
+
+        val selectedFoodWasClosed =
+            currentState.selectedFoodId == foodId ||
+                    currentState
+                        .selectedRecommendation
+                        ?.foodId == foodId
+
+        val message =
+            buildString {
+                append(
+                    backendMessage
+                        ?.takeIf {
+                            it.isNotBlank()
+                        }
+                        ?: "Seçilen işletme şu anda kapalı."
+                )
+
+                append(
+                    " Öneri güncel listeden kaldırıldı. Güncel açık işletmeleri görmek için yeniden arama yapın."
+                )
+            }
+
+        _uiState.value =
+            currentState.copy(
+                isSearching = false,
+                isAddingToCart = false,
+                selectingFoodId = null,
+                recommendations =
+                    updatedRecommendations,
+                selectedFoodId =
+                    if (selectedFoodWasClosed) {
+                        null
+                    } else {
+                        currentState.selectedFoodId
+                    },
+                selectedRecommendation =
+                    if (selectedFoodWasClosed) {
+                        null
+                    } else {
+                        currentState.selectedRecommendation
+                    },
+                addedToCartFoodId =
+                    if (
+                        currentState.addedToCartFoodId ==
+                        foodId
+                    ) {
+                        null
+                    } else {
+                        currentState.addedToCartFoodId
+                    },
+                cartMessage = null,
+                errorMessage = message,
+                actionMessage =
+                    if (
+                        updatedRecommendations
+                            .isEmpty()
+                    ) {
+                        "Bu aramadaki uygun açık işletmeler tükendi. Tekrar arama yapın."
+                    } else {
+                        null
+                    }
+            )
+    }
+
+    private fun isAvailabilityChangedError(
+        code: String?,
+        message: String?
+    ): Boolean {
+        val normalizedCode =
+            code
+                ?.trim()
+                ?.uppercase()
+
+        val normalizedMessage =
+            message
+                ?.lowercase()
+
+        return normalizedCode ==
+                "RECOMMENDATION_CANDIDATE_NOT_FOUND" ||
+                (
+                        normalizedMessage
+                            ?.contains("işletme") == true &&
+                                normalizedMessage
+                                    .contains("kapalı")
+                        )
+    }
+
+    private fun parseErrorPayload(
         errorJson: String?
-    ): String? {
+    ): ApiErrorPayload {
 
         if (errorJson.isNullOrBlank()) {
-            return null
+            return ApiErrorPayload()
         }
 
         return runCatching {
-            JSONObject(errorJson)
-                .optString("message")
-                .takeIf {
-                    it.isNotBlank()
-                }
-        }.getOrNull()
+            val json =
+                JSONObject(errorJson)
+
+            ApiErrorPayload(
+                code =
+                    json
+                        .optString("code")
+                        .takeIf {
+                            it.isNotBlank()
+                        },
+                message =
+                    json
+                        .optString("message")
+                        .takeIf {
+                            it.isNotBlank()
+                        }
+            )
+        }.getOrElse {
+            ApiErrorPayload()
+        }
     }
+
+    private fun parseErrorMessage(
+        errorJson: String?
+    ): String? {
+        return parseErrorPayload(
+            errorJson
+        ).message
+    }
+
+    private data class ApiErrorPayload(
+        val code: String? = null,
+        val message: String? = null
+    )
+
 }

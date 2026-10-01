@@ -22,6 +22,7 @@ data class PopularFoodResponse(
 
     val imageUrl: String,
     val isAvailable: Boolean,
+    val isCurrentlyOpen: Boolean = true,
 
     val createdAt: String
 )

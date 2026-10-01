@@ -17,6 +17,8 @@ data class DiscoverProducerStorefrontResponse(
 
     val minimumPreparationTimeMinutes: Int? = null,
 
+    val isCurrentlyOpen: Boolean = false,
+
     val distanceKm: Double = 0.0,
     val popularityScore: Double = 0.0
 )

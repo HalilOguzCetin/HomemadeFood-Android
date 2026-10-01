@@ -24,6 +24,7 @@ fun ProducerHomeScreen(
     onApplicationStatusClick: () -> Unit,
     onCustomerModeClick: () -> Unit,
     onProfileClick: () -> Unit,
+    onAvailabilityClick: () -> Unit,
     onFoodsClick: () -> Unit,
     onOrdersClick: () -> Unit,
     onReviewsClick: () -> Unit,
@@ -74,9 +75,17 @@ fun ProducerHomeScreen(
         ProducerMenuCard(
             title = "İşletme Profilim",
             description =
-                "İşletme bilgilerinizi, günlük kapasitenizi ve sipariş alma durumunuzu yönetin.",
+                "İşletme bilgilerinizi ve günlük kapasitenizi yönetin.",
             buttonText = "Profili Görüntüle",
             onClick = onProfileClick
+        )
+
+        ProducerMenuCard(
+            title = "Çalışma Saatleri",
+            description =
+                "Haftalık programınızı ve işletmenin açık/kapalı durumunu yönetin.",
+            buttonText = "Çalışma Saatlerini Yönet",
+            onClick = onAvailabilityClick
         )
 
         ProducerMenuCard(

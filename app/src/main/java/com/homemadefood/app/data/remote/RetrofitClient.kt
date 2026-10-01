@@ -199,6 +199,14 @@ object RetrofitClient {
         )
     }
 
+    val producerAvailabilityApiService:
+            ProducerAvailabilityApiService by lazy {
+
+        retrofit.create(
+            ProducerAvailabilityApiService::class.java
+        )
+    }
+
     val storefrontApiService:
             StorefrontApiService by lazy {
 

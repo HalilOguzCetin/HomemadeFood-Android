@@ -134,6 +134,46 @@ class CartViewModel(
             return
         }
 
+        val currentCart =
+            _uiState.value.cart
+
+        val currentItem =
+            currentCart
+                ?.items
+                ?.firstOrNull { item ->
+                    item.cartItemId == cartItemId
+                }
+
+        val isIncreasing =
+            currentItem != null &&
+                    newQuantity > currentItem.quantity
+
+        if (
+            isIncreasing &&
+            currentCart?.isCurrentlyOpen == false
+        ) {
+            _uiState.value =
+                _uiState.value.copy(
+                    errorMessage =
+                        "İşletme şu anda kapalı. Ürün miktarı artırılamaz."
+                )
+
+            return
+        }
+
+        if (
+            isIncreasing &&
+            currentItem?.isAvailable == false
+        ) {
+            _uiState.value =
+                _uiState.value.copy(
+                    errorMessage =
+                        "Bu yemek şu anda satışta değil. Ürün miktarı artırılamaz."
+                )
+
+            return
+        }
+
         viewModelScope.launch {
             val isLoggedIn =
                 sessionManager

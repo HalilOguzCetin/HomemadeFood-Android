@@ -12,5 +12,8 @@ data class NearbyProducerStorefrontResponse(
     val availableCategoryCount: Int,
     val matchingFoodCount: Int,
     val minimumPreparationTimeMinutes: Int? = null,
+
+    val isCurrentlyOpen: Boolean = false,
+
     val distanceKm: Double
 )

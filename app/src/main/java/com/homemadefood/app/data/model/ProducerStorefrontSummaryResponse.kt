@@ -11,5 +11,7 @@ data class ProducerStorefrontSummaryResponse(
     val availableFoodCount: Int,
     val availableCategoryCount: Int,
     val matchingFoodCount: Int,
-    val minimumPreparationTimeMinutes: Int? = null
+    val minimumPreparationTimeMinutes: Int? = null,
+
+    val isCurrentlyOpen: Boolean = false
 )

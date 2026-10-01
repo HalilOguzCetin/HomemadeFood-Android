@@ -122,6 +122,12 @@ fun RecommendationScreen(
                         }
 
                         item(
+                            key = "recommendation_availability_info"
+                        ) {
+                            RecommendationAvailabilityInfoCard()
+                        }
+
+                        item(
                             key = "recommendation_search_form"
                         ) {
                             RecommendationSearchCard(
@@ -487,13 +493,86 @@ private fun RecommendationIntroCard() {
 
             Text(
                 text =
-                    "Aradığınız yemek, miktar ve teslimat adresine göre sistem; puan, mesafe, hazırlama süresi ve üretici kapasitesini değerlendirerek en uygun ilk üç seçeneği sıralar.",
+                    "Aradığınız yemek, miktar ve teslimat adresine göre sistem; yalnızca şu anda sipariş alan açık işletmeleri değerlendirir ve puan, mesafe, hazırlama süresi ile üretici kapasitesine göre en uygun ilk üç seçeneği sıralar.",
                 style =
                     MaterialTheme.typography
                         .bodyMedium,
                 color =
                     Color.White.copy(alpha = 0.84f)
             )
+        }
+    }
+}
+
+@Composable
+private fun RecommendationAvailabilityInfoCard() {
+    Surface(
+        modifier =
+            Modifier.fillMaxWidth(),
+        shape =
+            RoundedCornerShape(16.dp),
+        color =
+            CustomerHomeColors.OliveSoft,
+        border =
+            BorderStroke(
+                width = 1.dp,
+                color =
+                    CustomerHomeColors
+                        .DeepOlive
+                        .copy(alpha = 0.16f)
+            )
+    ) {
+        Row(
+            modifier =
+                Modifier.padding(
+                    horizontal = 14.dp,
+                    vertical = 12.dp
+                ),
+            horizontalArrangement =
+                Arrangement.spacedBy(10.dp),
+            verticalAlignment =
+                Alignment.Top
+        ) {
+            Text(
+                text = "●",
+                color =
+                    CustomerHomeColors.DeepOlive,
+                style =
+                    MaterialTheme.typography
+                        .labelLarge
+            )
+
+            Column(
+                modifier =
+                    Modifier.weight(1f)
+            ) {
+                Text(
+                    text =
+                        "Yalnızca açık işletmeler önerilir",
+                    style =
+                        MaterialTheme.typography
+                            .labelLarge,
+                    color =
+                        CustomerHomeColors.DeepOlive,
+                    fontWeight =
+                        FontWeight.Bold
+                )
+
+                Spacer(
+                    modifier =
+                        Modifier.height(3.dp)
+                )
+
+                Text(
+                    text =
+                        "Bir işletme aramadan sonra kapanırsa seçim veya sepete ekleme sistem tarafından engellenir. Bu durumda güncel öneriler için tekrar arama yapabilirsiniz.",
+                    style =
+                        MaterialTheme.typography
+                            .bodySmall,
+                    color =
+                        CustomerHomeColors.TextMuted
+                )
+            }
         }
     }
 }

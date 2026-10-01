@@ -160,8 +160,38 @@ fun CreateOrderScreen(
 
                         if (cart != null && cart.businessName.isNotBlank()) {
                             BusinessSummaryCard(
-                                businessName = cart.businessName
+                                businessName = cart.businessName,
+                                isCurrentlyOpen = cart.isCurrentlyOpen
                             )
+
+                            Spacer(Modifier.height(14.dp))
+                        }
+
+                        if (cart != null && !cart.isCurrentlyOpen) {
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                color = CustomerHomeColors.TerracottaSoft
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(14.dp)
+                                ) {
+                                    Text(
+                                        text = "İşletme şu anda kapalı",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        color = CustomerHomeColors.Terracotta,
+                                        fontWeight = FontWeight.Bold
+                                    )
+
+                                    Spacer(Modifier.height(4.dp))
+
+                                    Text(
+                                        text = "Sepetiniz korunur ancak işletme yeniden açılana kadar bu siparişi oluşturamazsınız.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = CustomerHomeColors.TextMuted
+                                    )
+                                }
+                            }
 
                             Spacer(Modifier.height(14.dp))
                         }
@@ -224,11 +254,13 @@ fun CreateOrderScreen(
                     CheckoutBottomBar(
                         totalQuantity = cart?.totalQuantity ?: 0,
                         totalPrice = cart?.totalPrice ?: 0.0,
+                        isCurrentlyOpen = cart?.isCurrentlyOpen == true,
                         isCreatingOrder = uiState.isCreatingOrder,
                         phoneVerificationRequired = phoneVerificationRequired,
                         phoneVerificationLoading = isPhoneVerificationLoading,
                         enabled =
                             cart != null &&
+                                    cart.isCurrentlyOpen &&
                                     cart.items.isNotEmpty() &&
                                     uiState.selectedAddressId != null,
                         onCreateOrderClick = onCreateOrderClick
@@ -416,7 +448,8 @@ private fun AddressSelectionRow(
 
 @Composable
 private fun BusinessSummaryCard(
-    businessName: String
+    businessName: String,
+    isCurrentlyOpen: Boolean
 ) {
     SectionCard {
         Row(
@@ -454,11 +487,44 @@ private fun BusinessSummaryCard(
                 Text(
                     text = businessName,
                     style = MaterialTheme.typography.titleMedium,
-                    color = CustomerHomeColors.DeepOlive,
+                    color =
+                        if (isCurrentlyOpen) {
+                            CustomerHomeColors.DeepOlive
+                        } else {
+                            CustomerHomeColors.TextMuted
+                        },
                     fontWeight = FontWeight.Bold,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
+
+                Spacer(Modifier.height(6.dp))
+
+                Surface(
+                    shape = RoundedCornerShape(50.dp),
+                    color =
+                        if (isCurrentlyOpen) {
+                            CustomerHomeColors.OliveSoft
+                        } else {
+                            CustomerHomeColors.TerracottaSoft
+                        }
+                ) {
+                    Text(
+                        text = if (isCurrentlyOpen) "Açık" else "Kapalı",
+                        modifier = Modifier.padding(
+                            horizontal = 10.dp,
+                            vertical = 4.dp
+                        ),
+                        style = MaterialTheme.typography.labelSmall,
+                        color =
+                            if (isCurrentlyOpen) {
+                                CustomerHomeColors.DeepOlive
+                            } else {
+                                CustomerHomeColors.Terracotta
+                            },
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
     }
@@ -825,6 +891,7 @@ private fun PhoneVerificationSection(
 private fun CheckoutBottomBar(
     totalQuantity: Int,
     totalPrice: Double,
+    isCurrentlyOpen: Boolean,
     isCreatingOrder: Boolean,
     phoneVerificationRequired: Boolean,
     phoneVerificationLoading: Boolean,
@@ -881,6 +948,7 @@ private fun CheckoutBottomBar(
                     .height(54.dp),
                 enabled =
                     enabled &&
+                            isCurrentlyOpen &&
                             !isCreatingOrder &&
                             !phoneVerificationRequired &&
                             !phoneVerificationLoading,
@@ -902,7 +970,12 @@ private fun CheckoutBottomBar(
                     )
                 } else {
                     Text(
-                        text = "Siparişi Oluştur",
+                        text =
+                            if (isCurrentlyOpen) {
+                                "Siparişi Oluştur"
+                            } else {
+                                "İşletme Kapalı"
+                            },
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
