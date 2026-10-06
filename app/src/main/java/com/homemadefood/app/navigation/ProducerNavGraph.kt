@@ -275,6 +275,11 @@ private fun NavGraphBuilder.producerFoodsDestination(
                 )
             },
 
+            onAvailabilityToggle = { food ->
+                producerFoodsViewModel
+                    .toggleFoodAvailability(food)
+            },
+
             modifier = Modifier.fillMaxSize()
         )
     }
@@ -345,6 +350,26 @@ private fun NavGraphBuilder.createFoodDestination(
             onPreparationTimeChange = { value ->
                 createFoodViewModel
                     .onPreparationTimeChange(value)
+            },
+
+            onUnitTypeSelected = { value ->
+                createFoodViewModel
+                    .onUnitTypeSelected(value)
+            },
+
+            onDailyCapacityChange = { value ->
+                createFoodViewModel
+                    .onDailyCapacityChange(value)
+            },
+
+            onMinimumOrderLeadTimeChange = { value ->
+                createFoodViewModel
+                    .onMinimumOrderLeadTimeChange(value)
+            },
+
+            onAllergenToggle = { value ->
+                createFoodViewModel
+                    .onAllergenToggle(value)
             },
 
             onImageSelected = { uri ->
@@ -459,6 +484,26 @@ private fun NavGraphBuilder.editFoodDestination(
             onPreparationTimeChange = { value ->
                 editFoodViewModel
                     .onPreparationTimeChange(value)
+            },
+
+            onUnitTypeSelected = { value ->
+                editFoodViewModel
+                    .onUnitTypeSelected(value)
+            },
+
+            onDailyCapacityChange = { value ->
+                editFoodViewModel
+                    .onDailyCapacityChange(value)
+            },
+
+            onMinimumOrderLeadTimeChange = { value ->
+                editFoodViewModel
+                    .onMinimumOrderLeadTimeChange(value)
+            },
+
+            onAllergenToggle = { value ->
+                editFoodViewModel
+                    .onAllergenToggle(value)
             },
 
             onImageSelected = { uri ->

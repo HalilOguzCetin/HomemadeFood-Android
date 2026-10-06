@@ -3,6 +3,7 @@ package com.homemadefood.app.ui.producer
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.homemadefood.app.data.local.SessionManager
+import com.homemadefood.app.data.model.FoodProductionOptions
 import com.homemadefood.app.data.repository.CategoryRepository
 import com.homemadefood.app.data.repository.ProducerFoodRepository
 import com.homemadefood.app.data.remote.ApiErrorParser
@@ -114,6 +115,18 @@ class EditFoodViewModel(
                                 food
                                     .preparationTimeMinutes
                                     .toString(),
+                            selectedUnitType =
+                                food.unitType,
+                            dailyCapacity =
+                                food.dailyCapacity
+                                    .toString(),
+                            minimumOrderLeadTimeMinutes =
+                                food
+                                    .minimumOrderLeadTimeMinutes
+                                    .toString(),
+                            selectedAllergenCodes =
+                                food.allergenCodes
+                                    .toSet(),
                             imageUrl = food.imageUrl,
                             selectedImageUri = null,
                             isAvailable = food.isAvailable,
@@ -315,6 +328,101 @@ class EditFoodViewModel(
             )
     }
 
+    fun onUnitTypeSelected(
+        value: String
+    ) {
+        val normalized =
+            FoodProductionOptions.unitTypes
+                .firstOrNull {
+                    it.backendValue.equals(
+                        value,
+                        ignoreCase = true
+                    )
+                }
+                ?.backendValue
+                ?: return
+
+        _uiState.value =
+            _uiState.value.copy(
+                selectedUnitType = normalized,
+                errorMessage = null,
+                successMessage = null
+            )
+    }
+
+    fun onDailyCapacityChange(
+        value: String
+    ) {
+        _uiState.value =
+            _uiState.value.copy(
+                dailyCapacity =
+                    value.filter {
+                        it.isDigit()
+                    }.take(5),
+                errorMessage = null,
+                successMessage = null
+            )
+    }
+
+    fun onMinimumOrderLeadTimeChange(
+        value: String
+    ) {
+        _uiState.value =
+            _uiState.value.copy(
+                minimumOrderLeadTimeMinutes =
+                    value.filter {
+                        it.isDigit()
+                    }.take(5),
+                errorMessage = null,
+                successMessage = null
+            )
+    }
+
+    fun onAllergenToggle(
+        allergenCode: String
+    ) {
+        val normalized =
+            FoodProductionOptions.allergens
+                .firstOrNull {
+                    it.backendValue.equals(
+                        allergenCode,
+                        ignoreCase = true
+                    )
+                }
+                ?.backendValue
+                ?: return
+
+        val current =
+            _uiState.value
+                .selectedAllergenCodes
+
+        val updated =
+            if (
+                current.any {
+                    it.equals(
+                        normalized,
+                        ignoreCase = true
+                    )
+                }
+            ) {
+                current.filterNot {
+                    it.equals(
+                        normalized,
+                        ignoreCase = true
+                    )
+                }.toSet()
+            } else {
+                current + normalized
+            }
+
+        _uiState.value =
+            _uiState.value.copy(
+                selectedAllergenCodes = updated,
+                errorMessage = null,
+                successMessage = null
+            )
+    }
+
     fun onImageSelected(
         uriString: String
     ) {
@@ -390,6 +498,19 @@ class EditFoodViewModel(
                 .preparationTimeMinutes
                 .toIntOrNull()
 
+        val dailyCapacity =
+            currentState
+                .dailyCapacity
+                .toIntOrNull()
+
+        val minimumOrderLeadTime =
+            currentState
+                .minimumOrderLeadTimeMinutes
+                .toIntOrNull()
+
+        val unitType =
+            currentState.selectedUnitType
+
         when {
             foodId == null || foodId <= 0 -> {
                 showError(
@@ -444,6 +565,35 @@ class EditFoodViewModel(
                     preparationTime <= 0 -> {
                 showError(
                     "Geçerli bir hazırlama süresi girmelisiniz."
+                )
+                return
+            }
+
+            FoodProductionOptions.unitTypes
+                .none {
+                    it.backendValue.equals(
+                        unitType,
+                        ignoreCase = true
+                    )
+                } -> {
+                showError(
+                    "Geçerli bir satış birimi seçmelisiniz."
+                )
+                return
+            }
+
+            dailyCapacity == null ||
+                    dailyCapacity !in 1..10000 -> {
+                showError(
+                    "Günlük kapasite 1 ile 10000 arasında olmalıdır."
+                )
+                return
+            }
+
+            minimumOrderLeadTime == null ||
+                    minimumOrderLeadTime !in 0..10080 -> {
+                showError(
+                    "Minimum sipariş ön süresi 0 ile 10080 dakika arasında olmalıdır."
                 )
                 return
             }
@@ -542,7 +692,16 @@ class EditFoodViewModel(
                                 preparationTime,
                             isAvailable =
                                 currentState.isAvailable,
-                            image = imagePart
+                            image = imagePart,
+                            unitType = unitType,
+                            dailyCapacity =
+                                dailyCapacity,
+                            minimumOrderLeadTimeMinutes =
+                                minimumOrderLeadTime,
+                            allergenCodes =
+                                currentState
+                                    .selectedAllergenCodes
+                                    .toList()
                         )
 
                 val responseBody =
@@ -566,6 +725,18 @@ class EditFoodViewModel(
                                 updatedFood.categoryName,
                             imageUrl = updatedFood.imageUrl,
                             ingredients = updatedFood.ingredients,
+                            selectedUnitType =
+                                updatedFood.unitType,
+                            dailyCapacity =
+                                updatedFood.dailyCapacity
+                                    .toString(),
+                            minimumOrderLeadTimeMinutes =
+                                updatedFood
+                                    .minimumOrderLeadTimeMinutes
+                                    .toString(),
+                            selectedAllergenCodes =
+                                updatedFood.allergenCodes
+                                    .toSet(),
                             selectedImageUri = null,
                             successMessage =
                                 "Yemek fotoğrafı ve bilgileri başarıyla güncellendi.",

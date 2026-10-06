@@ -31,8 +31,17 @@ data class AdminApplicationsUiState(
                 ProducerApplicationStatus.PENDING ->
                     "Bekleyen üretici başvurusu bulunmuyor."
 
+                ProducerApplicationStatus.UNDER_REVIEW ->
+                    "İncelenen üretici başvurusu bulunmuyor."
+
+                ProducerApplicationStatus.ADDITIONAL_DOCUMENT_REQUIRED ->
+                    "Ek bilgi veya belge beklenen üretici başvurusu bulunmuyor."
+
                 ProducerApplicationStatus.APPROVED ->
                     "Onaylanmış üretici başvurusu bulunmuyor."
+
+                ProducerApplicationStatus.SUSPENDED ->
+                    "Askıya alınmış üretici başvurusu bulunmuyor."
 
                 ProducerApplicationStatus.REJECTED ->
                     "Reddedilmiş üretici başvurusu bulunmuyor."

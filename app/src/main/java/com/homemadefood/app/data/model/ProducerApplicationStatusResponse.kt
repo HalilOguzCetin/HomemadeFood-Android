@@ -30,5 +30,7 @@ data class ProducerApplicationStatusResponse(
     val createdAt: String,
     val approvedAt: String?,
     val rejectedAt: String?,
-    val rejectionReason: String?
+    val rejectionReason: String?,
+
+    val compliance: ProducerComplianceResponse? = null
 )

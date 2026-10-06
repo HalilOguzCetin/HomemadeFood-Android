@@ -2,6 +2,7 @@ package com.homemadefood.app.data.repository
 
 import com.homemadefood.app.data.model.ApiResponse
 import com.homemadefood.app.data.model.FoodResponse
+import com.homemadefood.app.data.model.UpdateFoodAvailabilityRequest
 import com.homemadefood.app.data.remote.ProducerFoodApiService
 import com.homemadefood.app.data.remote.RetrofitClient
 import okhttp3.MediaType.Companion.toMediaType
@@ -47,7 +48,11 @@ class ProducerFoodRepository(
         ingredients: String,
         price: Double,
         preparationTimeMinutes: Int,
-        image: MultipartBody.Part
+        image: MultipartBody.Part,
+        unitType: String = "Portion",
+        dailyCapacity: Int = 1,
+        minimumOrderLeadTimeMinutes: Int = 0,
+        allergenCodes: List<String> = emptyList()
     ): Response<
             ApiResponse<FoodResponse>
             > {
@@ -86,12 +91,36 @@ class ProducerFoodRepository(
                             plainTextMediaType
                         ),
 
+                unitType =
+                    unitType.toRequestBody(
+                        plainTextMediaType
+                    ),
+
+                dailyCapacity =
+                    dailyCapacity
+                        .toString()
+                        .toRequestBody(
+                            plainTextMediaType
+                        ),
+
                 preparationTimeMinutes =
                     preparationTimeMinutes
                         .toString()
                         .toRequestBody(
                             plainTextMediaType
                         ),
+
+                minimumOrderLeadTimeMinutes =
+                    minimumOrderLeadTimeMinutes
+                        .toString()
+                        .toRequestBody(
+                            plainTextMediaType
+                        ),
+
+                allergenCodes =
+                    createAllergenParts(
+                        allergenCodes
+                    ),
 
                 image = image
             )
@@ -106,7 +135,11 @@ class ProducerFoodRepository(
         price: Double,
         preparationTimeMinutes: Int,
         isAvailable: Boolean,
-        image: MultipartBody.Part?
+        image: MultipartBody.Part?,
+        unitType: String = "Portion",
+        dailyCapacity: Int = 1,
+        minimumOrderLeadTimeMinutes: Int = 0,
+        allergenCodes: List<String> = emptyList()
     ): Response<
             ApiResponse<FoodResponse>
             > {
@@ -147,12 +180,36 @@ class ProducerFoodRepository(
                             plainTextMediaType
                         ),
 
+                unitType =
+                    unitType.toRequestBody(
+                        plainTextMediaType
+                    ),
+
+                dailyCapacity =
+                    dailyCapacity
+                        .toString()
+                        .toRequestBody(
+                            plainTextMediaType
+                        ),
+
                 preparationTimeMinutes =
                     preparationTimeMinutes
                         .toString()
                         .toRequestBody(
                             plainTextMediaType
                         ),
+
+                minimumOrderLeadTimeMinutes =
+                    minimumOrderLeadTimeMinutes
+                        .toString()
+                        .toRequestBody(
+                            plainTextMediaType
+                        ),
+
+                allergenCodes =
+                    createAllergenParts(
+                        allergenCodes
+                    ),
 
                 isAvailable =
                     isAvailable
@@ -163,5 +220,37 @@ class ProducerFoodRepository(
 
                 image = image
             )
+    }
+
+    suspend fun updateFoodAvailability(
+        foodId: Int,
+        isAvailable: Boolean
+    ): Response<
+            ApiResponse<FoodResponse>
+            > {
+
+        return producerFoodApiService
+            .updateFoodAvailability(
+                foodId = foodId,
+                request =
+                    UpdateFoodAvailabilityRequest(
+                        isAvailable = isAvailable
+                    )
+            )
+    }
+
+    private fun createAllergenParts(
+        allergenCodes: List<String>
+    ): List<MultipartBody.Part> {
+        return allergenCodes
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .distinct()
+            .map { code ->
+                MultipartBody.Part.createFormData(
+                    "AllergenCodes",
+                    code
+                )
+            }
     }
 }

@@ -4,6 +4,8 @@ import com.homemadefood.app.data.model.ApiResponse
 import com.homemadefood.app.data.model.ProducerApplicationRequest
 import com.homemadefood.app.data.model.ProducerApplicationStatusResponse
 import com.homemadefood.app.data.model.ProducerApplicationSubmitResponse
+import com.homemadefood.app.data.model.ProducerComplianceResponse
+import com.homemadefood.app.data.model.UpdateProducerComplianceRequest
 import com.homemadefood.app.data.remote.ProducerApiService
 import com.homemadefood.app.data.remote.RetrofitClient
 import okhttp3.MediaType.Companion.toMediaType
@@ -134,6 +136,32 @@ class ProducerRepository(
 
         return producerApiService
             .getMyApplication()
+    }
+
+
+    suspend fun getMyCompliance():
+            Response<
+                    ApiResponse<
+                            ProducerComplianceResponse
+                            >
+                    > {
+
+        return producerApiService
+            .getMyCompliance()
+    }
+
+    suspend fun updateMyCompliance(
+        request: UpdateProducerComplianceRequest
+    ): Response<
+            ApiResponse<
+                    ProducerComplianceResponse
+                    >
+            > {
+
+        return producerApiService
+            .updateMyCompliance(
+                request = request
+            )
     }
 
     suspend fun getMyProfile():

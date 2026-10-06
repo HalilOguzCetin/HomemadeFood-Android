@@ -8,6 +8,7 @@ import com.homemadefood.app.data.model.AdminUserListItemResponse
 import com.homemadefood.app.data.model.ApiResponse
 import com.homemadefood.app.data.model.RecommendationPerformanceResponse
 import com.homemadefood.app.data.model.RejectProducerApplicationRequest
+import com.homemadefood.app.data.model.UpdateProducerApplicationStatusRequest
 import com.homemadefood.app.data.model.UpdateUserStatusRequest
 import retrofit2.Response
 import retrofit2.http.Body
@@ -56,6 +57,21 @@ interface AdminApiService {
 
         @Body
         request: RejectProducerApplicationRequest
+    ): Response<ApiResponse<Any?>>
+
+
+    @Headers(
+        "X-HomemadeFood-Requires-Auth: true"
+    )
+    @PATCH(
+        "api/Admin/producer-applications/{id}/status"
+    )
+    suspend fun updateProducerApplicationStatus(
+        @Path("id")
+        producerProfileId: Int,
+
+        @Body
+        request: UpdateProducerApplicationStatusRequest
     ): Response<ApiResponse<Any?>>
 
     @Headers(

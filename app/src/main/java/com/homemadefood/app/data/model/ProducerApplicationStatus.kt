@@ -9,9 +9,24 @@ enum class ProducerApplicationStatus(
         displayName = "Bekleyen"
     ),
 
+    UNDER_REVIEW(
+        backendValue = "UnderReview",
+        displayName = "İnceleniyor"
+    ),
+
+    ADDITIONAL_DOCUMENT_REQUIRED(
+        backendValue = "AdditionalDocumentRequired",
+        displayName = "Ek Belge Gerekli"
+    ),
+
     APPROVED(
         backendValue = "Approved",
         displayName = "Onaylanan"
+    ),
+
+    SUSPENDED(
+        backendValue = "Suspended",
+        displayName = "Askıya Alındı"
     ),
 
     REJECTED(
@@ -34,7 +49,6 @@ enum class ProducerApplicationStatus(
             }
         }
 
-
         fun detailDisplayNameFor(
             value: String?
         ): String {
@@ -44,8 +58,17 @@ enum class ProducerApplicationStatus(
                 PENDING ->
                     "Onay Bekliyor"
 
+                UNDER_REVIEW ->
+                    "İnceleniyor"
+
+                ADDITIONAL_DOCUMENT_REQUIRED ->
+                    "Ek Bilgi / Belge Gerekli"
+
                 APPROVED ->
                     "Onaylandı"
+
+                SUSPENDED ->
+                    "Askıya Alındı"
 
                 REJECTED ->
                     "Reddedildi"

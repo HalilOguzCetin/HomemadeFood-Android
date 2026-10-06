@@ -41,5 +41,7 @@ data class AdminProducerApplicationResponse(
     val rejectedAt: String?,
     val rejectedByAdminId: Int?,
 
-    val rejectionReason: String?
+    val rejectionReason: String?,
+
+    val compliance: ProducerComplianceResponse? = null
 )

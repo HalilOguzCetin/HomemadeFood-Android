@@ -8,16 +8,23 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.homemadefood.app.data.model.FoodResponse
 import com.homemadefood.app.ui.components.AppEmptyState
@@ -32,6 +39,7 @@ fun ProducerFoodsScreen(
     onRetryClick: () -> Unit,
     onAddFoodClick: () -> Unit,
     onEditFoodClick: (Int) -> Unit,
+    onAvailabilityToggle: (FoodResponse) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -55,6 +63,17 @@ fun ProducerFoodsScreen(
         )
 
         Spacer(
+            modifier = Modifier.height(6.dp)
+        )
+
+        Text(
+            text =
+                "Yemeklerinizi düzenleyebilir, satıştan kaldırabilir veya yeniden satışa açabilirsiniz.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Spacer(
             modifier = Modifier.height(14.dp)
         )
 
@@ -63,6 +82,23 @@ fun ProducerFoodsScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Yeni Yemek Ekle")
+        }
+
+        if (
+            uiState.actionMessage != null ||
+            uiState.actionErrorMessage != null
+        ) {
+            Spacer(
+                modifier = Modifier.height(12.dp)
+            )
+
+            ProducerFoodActionMessage(
+                message =
+                    uiState.actionErrorMessage
+                        ?: uiState.actionMessage.orEmpty(),
+                isError =
+                    uiState.actionErrorMessage != null
+            )
         }
 
         Spacer(
@@ -108,10 +144,18 @@ fun ProducerFoodsScreen(
                     ) { food ->
                         ProducerFoodCard(
                             food = food,
-
+                            isUpdating =
+                                uiState.updatingFoodId == food.id,
+                            isAnyFoodUpdating =
+                                uiState.updatingFoodId != null,
                             onEditClick = {
                                 onEditFoodClick(
                                     food.id
+                                )
+                            },
+                            onAvailabilityToggle = {
+                                onAvailabilityToggle(
+                                    food
                                 )
                             }
                         )
@@ -129,9 +173,42 @@ fun ProducerFoodsScreen(
 }
 
 @Composable
+private fun ProducerFoodActionMessage(
+    message: String,
+    isError: Boolean
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        color =
+            if (isError) {
+                MaterialTheme.colorScheme.errorContainer
+            } else {
+                MaterialTheme.colorScheme.primaryContainer
+            }
+    ) {
+        Text(
+            text = message,
+            modifier = Modifier.padding(12.dp),
+            color =
+                if (isError) {
+                    MaterialTheme.colorScheme.onErrorContainer
+                } else {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                },
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium
+        )
+    }
+}
+
+@Composable
 private fun ProducerFoodCard(
     food: FoodResponse,
-    onEditClick: () -> Unit
+    isUpdating: Boolean,
+    isAnyFoodUpdating: Boolean,
+    onEditClick: () -> Unit,
+    onAvailabilityToggle: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth()
@@ -150,28 +227,47 @@ private fun ProducerFoodCard(
             ) {
                 Text(
                     text = food.name,
+                    modifier = Modifier.weight(1f),
                     style =
                         MaterialTheme.typography.titleLarge
                 )
 
-                Text(
-                    text =
-                        if (food.isAvailable) {
-                            "Satışta"
-                        } else {
-                            "Satışta Değil"
-                        },
+                Spacer(
+                    modifier = Modifier.padding(horizontal = 4.dp)
+                )
 
+                Surface(
+                    shape = RoundedCornerShape(50.dp),
                     color =
                         if (food.isAvailable) {
-                            MaterialTheme.colorScheme.primary
+                            MaterialTheme.colorScheme.primaryContainer
                         } else {
-                            MaterialTheme.colorScheme.error
-                        },
-
-                    style =
-                        MaterialTheme.typography.titleSmall
-                )
+                            MaterialTheme.colorScheme.errorContainer
+                        }
+                ) {
+                    Text(
+                        text =
+                            if (food.isAvailable) {
+                                "Satışta"
+                            } else {
+                                "Satışta Değil"
+                            },
+                        modifier =
+                            Modifier.padding(
+                                horizontal = 10.dp,
+                                vertical = 5.dp
+                            ),
+                        color =
+                            if (food.isAvailable) {
+                                MaterialTheme.colorScheme.onPrimaryContainer
+                            } else {
+                                MaterialTheme.colorScheme.onErrorContainer
+                            },
+                        style =
+                            MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
 
             Spacer(
@@ -215,15 +311,69 @@ private fun ProducerFoodCard(
                 value = food.categoryName
             )
 
+            if (!food.isAvailable) {
+                Spacer(
+                    modifier = Modifier.height(10.dp)
+                )
+
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp),
+                    color =
+                        MaterialTheme.colorScheme.errorContainer
+                            .copy(alpha = 0.65f)
+                ) {
+                    Text(
+                        text =
+                            "Bu yemek müşterilere satışa kapalıdır. Tekrar satışa açabilirsiniz.",
+                        modifier = Modifier.padding(10.dp),
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
+
             Spacer(
                 modifier = Modifier.height(14.dp)
             )
 
             Button(
                 onClick = onEditClick,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isUpdating
             ) {
                 Text("Yemeği Düzenle")
+            }
+
+            Spacer(
+                modifier = Modifier.height(8.dp)
+            )
+
+            OutlinedButton(
+                onClick = onAvailabilityToggle,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isAnyFoodUpdating
+            ) {
+                if (isUpdating) {
+                    CircularProgressIndicator(
+                        strokeWidth = 2.dp,
+                        modifier = Modifier.size(18.dp)
+                    )
+
+                    Spacer(
+                        modifier = Modifier.width(8.dp)
+                    )
+
+                    Text("Güncelleniyor...")
+                } else {
+                    Text(
+                        if (food.isAvailable) {
+                            "Satıştan Kaldır"
+                        } else {
+                            "Tekrar Satışa Aç"
+                        }
+                    )
+                }
             }
         }
     }

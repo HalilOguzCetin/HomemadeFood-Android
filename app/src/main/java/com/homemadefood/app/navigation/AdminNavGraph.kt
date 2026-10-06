@@ -168,6 +168,19 @@ private fun NavGraphBuilder.adminApplicationsDestination(
                     )
             },
 
+            onStatusChangeClick = {
+                    producerProfileId,
+                    targetStatus,
+                    reviewNote ->
+
+                adminApplicationsViewModel
+                    .updateApplicationStatus(
+                        producerProfileId = producerProfileId,
+                        targetStatus = targetStatus,
+                        reviewNote = reviewNote
+                    )
+            },
+
             onRejectClick = {
                     producerProfileId,
                     reason ->

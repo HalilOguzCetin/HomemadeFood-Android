@@ -2,6 +2,7 @@ package com.homemadefood.app.ui.customer
 
 import com.homemadefood.app.data.model.ProducerApplicationStatus
 import com.homemadefood.app.data.model.ProducerApplicationStatusResponse
+import com.homemadefood.app.data.model.ProducerComplianceResponse
 import com.homemadefood.app.ui.address.SelectedLocation
 
 data class CustomerProducerApplicationUiState(
@@ -41,17 +42,51 @@ data class CustomerProducerApplicationUiState(
 
     val dailyCapacityText: String = "",
 
+    val isComplianceLoading: Boolean = false,
+    val isComplianceSaving: Boolean = false,
+
+    val compliance:
+    ProducerComplianceResponse? = null,
+
+    val isComplianceFormVisible: Boolean = false,
+
+    val complianceTaxStatus: String = "NotDeclared",
+    val complianceTaxNumber: String = "",
+    val complianceTaxExemptionCertificateNumber: String = "",
+    val complianceFoodBusinessRegistrationNumber: String = "",
+
     val errorMessage: String? = null,
     val successMessage: String? = null
 ) {
-    val isRejected: Boolean
+    val applicationStatus: ProducerApplicationStatus?
         get() =
             ProducerApplicationStatus
                 .fromBackendValue(
                     application
                         ?.verificationStatus
-                ) ==
+                )
+
+    val isRejected: Boolean
+        get() =
+            applicationStatus ==
                     ProducerApplicationStatus.REJECTED
+
+    val requiresAdditionalComplianceInformation: Boolean
+        get() =
+            applicationStatus ==
+                    ProducerApplicationStatus
+                        .ADDITIONAL_DOCUMENT_REQUIRED
+
+    val canEditCompliance: Boolean
+        get() =
+            application != null &&
+                    (
+                            applicationStatus ==
+                                    ProducerApplicationStatus.PENDING ||
+                                    applicationStatus ==
+                                    ProducerApplicationStatus
+                                        .ADDITIONAL_DOCUMENT_REQUIRED
+                            )
 
     val fullAddress: String
         get() = buildFullAddress()
@@ -68,6 +103,12 @@ data class CustomerProducerApplicationUiState(
             !isLoading &&
                     !isSubmitting &&
                     !isResolvingAddress
+
+    val canSaveCompliance: Boolean
+        get() =
+            canEditCompliance &&
+                    !isComplianceLoading &&
+                    !isComplianceSaving
 
     fun buildFullAddress(): String {
         val parts =

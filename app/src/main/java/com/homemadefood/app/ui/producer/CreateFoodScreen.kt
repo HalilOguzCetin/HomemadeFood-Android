@@ -47,6 +47,10 @@ fun CreateFoodScreen(
     onIngredientsChange: (String) -> Unit,
     onPriceChange: (String) -> Unit,
     onPreparationTimeChange: (String) -> Unit,
+    onUnitTypeSelected: (String) -> Unit,
+    onDailyCapacityChange: (String) -> Unit,
+    onMinimumOrderLeadTimeChange: (String) -> Unit,
+    onAllergenToggle: (String) -> Unit,
 
     onImageSelected: (String) -> Unit,
     onRemoveImage: () -> Unit,
@@ -290,6 +294,27 @@ fun CreateFoodScreen(
                         KeyboardType.Number
                 ),
             singleLine = true,
+            enabled = !uiState.isSaving,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        FoodProductionFields(
+            selectedUnitType =
+                uiState.selectedUnitType,
+            dailyCapacity =
+                uiState.dailyCapacity,
+            minimumOrderLeadTimeMinutes =
+                uiState.minimumOrderLeadTimeMinutes,
+            selectedAllergenCodes =
+                uiState.selectedAllergenCodes,
+            onUnitTypeSelected =
+                onUnitTypeSelected,
+            onDailyCapacityChange =
+                onDailyCapacityChange,
+            onMinimumOrderLeadTimeChange =
+                onMinimumOrderLeadTimeChange,
+            onAllergenToggle =
+                onAllergenToggle,
             enabled = !uiState.isSaving,
             modifier = Modifier.fillMaxWidth()
         )

@@ -66,6 +66,13 @@ fun CustomerProducerApplicationScreen(
     onSubmitClick: () -> Unit,
     onShowReapplicationFormClick: () -> Unit,
     onHideReapplicationFormClick: () -> Unit,
+    onShowComplianceFormClick: () -> Unit,
+    onHideComplianceFormClick: () -> Unit,
+    onComplianceTaxStatusChange: (String) -> Unit,
+    onComplianceTaxNumberChange: (String) -> Unit,
+    onComplianceTaxExemptionCertificateNumberChange: (String) -> Unit,
+    onComplianceFoodBusinessRegistrationNumberChange: (String) -> Unit,
+    onSaveComplianceClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     CustomerHomeTheme {
@@ -215,6 +222,28 @@ fun CustomerProducerApplicationScreen(
                                 application = application,
                                 onShowReapplicationFormClick =
                                     onShowReapplicationFormClick
+                            )
+
+                            Spacer(
+                                modifier = Modifier.height(14.dp)
+                            )
+
+                            ProducerComplianceSection(
+                                uiState = uiState,
+                                onShowComplianceFormClick =
+                                    onShowComplianceFormClick,
+                                onHideComplianceFormClick =
+                                    onHideComplianceFormClick,
+                                onTaxStatusChange =
+                                    onComplianceTaxStatusChange,
+                                onTaxNumberChange =
+                                    onComplianceTaxNumberChange,
+                                onTaxExemptionNumberChange =
+                                    onComplianceTaxExemptionCertificateNumberChange,
+                                onFoodRegistrationNumberChange =
+                                    onComplianceFoodBusinessRegistrationNumberChange,
+                                onSaveClick =
+                                    onSaveComplianceClick
                             )
                         }
                     }
@@ -1293,11 +1322,31 @@ private fun ProducerApplicationStatusContent(
     when (status) {
         ProducerApplicationStatus.PENDING -> {
             ProducerApplicationStatusMessage(
-                title = "Başvurunuz İnceleniyor",
+                title = "Başvurunuz Alındı",
                 message =
-                    "Başvurunuz yönetici incelemesindedir. Sonuçlandığında başvuru durumunuz burada güncellenecektir.",
+                    "Başvurunuz sıraya alındı. Yönetici incelemesine geçtiğinde durumunuz burada güncellenecektir.",
                 type =
                     ProducerStatusMessageType.Pending
+            )
+        }
+
+        ProducerApplicationStatus.UNDER_REVIEW -> {
+            ProducerApplicationStatusMessage(
+                title = "Başvurunuz İnceleniyor",
+                message =
+                    "Başvurunuz yönetici tarafından manuel olarak inceleniyor.",
+                type =
+                    ProducerStatusMessageType.Pending
+            )
+        }
+
+        ProducerApplicationStatus.ADDITIONAL_DOCUMENT_REQUIRED -> {
+            ProducerApplicationStatusMessage(
+                title = "Ek Bilgi / Belge Gerekli",
+                message =
+                    "Başvurunuzun devam edebilmesi için ek bilgi veya belge gerekiyor. Uyumluluk bilgilerinizi güncelledikten sonra başvurunuz yeniden inceleme sırasına alınacaktır.",
+                type =
+                    ProducerStatusMessageType.Rejected
             )
         }
 
@@ -1308,6 +1357,16 @@ private fun ProducerApplicationStatusContent(
                     "Üretici yetkiniz aktif edildi. Artık aynı hesabınız üzerinden üretici moduna geçebilirsiniz.",
                 type =
                     ProducerStatusMessageType.Approved
+            )
+        }
+
+        ProducerApplicationStatus.SUSPENDED -> {
+            ProducerApplicationStatusMessage(
+                title = "Üretici Yetkiniz Askıya Alındı",
+                message =
+                    "Üretici yetkiniz geçici olarak askıya alındı. İnceleme tamamlanana kadar yeni sipariş işlemleri kullanılamaz.",
+                type =
+                    ProducerStatusMessageType.Rejected
             )
         }
 
@@ -1370,13 +1429,641 @@ private fun ProducerApplicationStatusContent(
 }
 
 @Composable
+private fun ProducerComplianceSection(
+    uiState: CustomerProducerApplicationUiState,
+    onShowComplianceFormClick: () -> Unit,
+    onHideComplianceFormClick: () -> Unit,
+    onTaxStatusChange: (String) -> Unit,
+    onTaxNumberChange: (String) -> Unit,
+    onTaxExemptionNumberChange: (String) -> Unit,
+    onFoodRegistrationNumberChange: (String) -> Unit,
+    onSaveClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        color = CustomerHomeColors.Surface,
+        shadowElevation = 2.dp,
+        border =
+            BorderStroke(
+                1.dp,
+                CustomerHomeColors.Outline
+            )
+    ) {
+        Column(
+            modifier = Modifier.padding(18.dp)
+        ) {
+            Text(
+                text = "Uyumluluk ve Resmî Bilgiler",
+                style =
+                    MaterialTheme.typography
+                        .titleLarge,
+                color = CustomerHomeColors.DeepOlive,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(
+                modifier = Modifier.height(5.dp)
+            )
+
+            Text(
+                text =
+                    "Vergi ve gıda kayıt bilgilerinizi burada beyan edebilirsiniz. Şu anda resmî kurum doğrulama servisleri bağlı değildir; gönderilen bilgiler manuel incelemeye alınır.",
+                style =
+                    MaterialTheme.typography
+                        .bodyMedium,
+                color = CustomerHomeColors.TextMuted
+            )
+
+            Spacer(
+                modifier = Modifier.height(14.dp)
+            )
+
+            if (uiState.isComplianceLoading) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(28.dp),
+                        color = CustomerHomeColors.DeepOlive,
+                        strokeWidth = 3.dp
+                    )
+                }
+
+                return@Column
+            }
+
+            val compliance = uiState.compliance
+
+            if (compliance == null) {
+                Text(
+                    text =
+                        "Uyumluluk kaydı henüz yüklenemedi. Ekranı yenileyerek tekrar deneyebilirsiniz.",
+                    style =
+                        MaterialTheme.typography
+                            .bodyMedium,
+                    color = CustomerHomeColors.TextMuted
+                )
+
+                return@Column
+            }
+
+            if (uiState.requiresAdditionalComplianceInformation) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    color = CustomerHomeColors.TerracottaSoft
+                ) {
+                    Column(
+                        modifier = Modifier.padding(14.dp)
+                    ) {
+                        Text(
+                            text = "Ek bilgi gerekiyor",
+                            color = CustomerHomeColors.Terracotta,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        Spacer(
+                            modifier = Modifier.height(4.dp)
+                        )
+
+                        Text(
+                            text =
+                                compliance.reviewNote
+                                    ?.takeIf { it.isNotBlank() }
+                                    ?: "Yönetici başvurunuz için ek uyumluluk bilgisi istedi. Bilgileri güncellediğinizde başvurunuz tekrar inceleme sırasına alınacaktır.",
+                            style =
+                                MaterialTheme.typography
+                                    .bodySmall,
+                            color = CustomerHomeColors.Text
+                        )
+                    }
+                }
+
+                Spacer(
+                    modifier = Modifier.height(14.dp)
+                )
+            }
+
+            if (uiState.isComplianceFormVisible) {
+                ProducerComplianceForm(
+                    uiState = uiState,
+                    onTaxStatusChange =
+                        onTaxStatusChange,
+                    onTaxNumberChange =
+                        onTaxNumberChange,
+                    onTaxExemptionNumberChange =
+                        onTaxExemptionNumberChange,
+                    onFoodRegistrationNumberChange =
+                        onFoodRegistrationNumberChange,
+                    onSaveClick = onSaveClick,
+                    onCancelClick =
+                        onHideComplianceFormClick
+                )
+
+                return@Column
+            }
+
+            ApplicationInformationRow(
+                title = "Vergi durumu",
+                value =
+                    producerTaxStatusDisplayName(
+                        compliance.taxStatus
+                    )
+            )
+
+            if (!compliance.taxNumber.isNullOrBlank()) {
+                ApplicationInformationRow(
+                    title = "Vergi / kimlik no",
+                    value = compliance.taxNumber!!
+                )
+            }
+
+            if (
+                !compliance
+                    .taxExemptionCertificateNumber
+                    .isNullOrBlank()
+            ) {
+                ApplicationInformationRow(
+                    title = "Esnaf muafiyeti belge no",
+                    value =
+                        compliance
+                            .taxExemptionCertificateNumber!!
+                )
+            }
+
+            ApplicationInformationRow(
+                title = "Gıda işletmesi kayıt durumu",
+                value =
+                    producerFoodRegistrationStatusDisplayName(
+                        compliance.foodRegistrationStatus
+                    )
+            )
+
+            if (
+                !compliance
+                    .foodBusinessRegistrationNumber
+                    .isNullOrBlank()
+            ) {
+                ApplicationInformationRow(
+                    title = "Gıda işletmesi kayıt no",
+                    value =
+                        compliance
+                            .foodBusinessRegistrationNumber!!
+                )
+            }
+
+            ApplicationInformationRow(
+                title = "Ödeme hesabı",
+                value =
+                    producerPaymentStatusDisplayName(
+                        compliance.paymentAccountStatus
+                    )
+            )
+
+            ApplicationInformationRow(
+                title = "Platform uyumluluk durumu",
+                value =
+                    producerComplianceStatusDisplayName(
+                        compliance.complianceStatus
+                    )
+            )
+
+            ApplicationInformationRow(
+                title = "Resmî doğrulama",
+                value =
+                    if (compliance.isOfficiallyVerified) {
+                        "Doğrulandı"
+                    } else {
+                        "Henüz resmî entegrasyonla doğrulanmadı"
+                    }
+            )
+
+            if (!compliance.reviewNote.isNullOrBlank()) {
+                Spacer(
+                    modifier = Modifier.height(6.dp)
+                )
+
+                Text(
+                    text = "İnceleme notu",
+                    style =
+                        MaterialTheme.typography
+                            .labelLarge,
+                    color = CustomerHomeColors.DeepOlive,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(
+                    modifier = Modifier.height(3.dp)
+                )
+
+                Text(
+                    text = compliance.reviewNote!!,
+                    style =
+                        MaterialTheme.typography
+                            .bodyMedium,
+                    color = CustomerHomeColors.TextMuted
+                )
+            }
+
+            Spacer(
+                modifier = Modifier.height(14.dp)
+            )
+
+            when {
+                uiState.canEditCompliance -> {
+                    Button(
+                        onClick =
+                            onShowComplianceFormClick,
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .height(52.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors =
+                            ButtonDefaults.buttonColors(
+                                containerColor =
+                                    if (
+                                        uiState
+                                            .requiresAdditionalComplianceInformation
+                                    ) {
+                                        CustomerHomeColors.Terracotta
+                                    } else {
+                                        CustomerHomeColors.DeepOlive
+                                    },
+                                contentColor = Color.White
+                            )
+                    ) {
+                        Text(
+                            text =
+                                if (
+                                    uiState
+                                        .requiresAdditionalComplianceInformation
+                                ) {
+                                    "Eksik Bilgileri Güncelle"
+                                } else {
+                                    "Uyumluluk Bilgilerini Düzenle"
+                                },
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                uiState.applicationStatus ==
+                        ProducerApplicationStatus.UNDER_REVIEW -> {
+                    Text(
+                        text =
+                            "Başvurunuz incelenirken bu bilgiler geçici olarak düzenlemeye kapalıdır. Yönetici ek bilgi isterse yeniden düzenleyebilirsiniz.",
+                        style =
+                            MaterialTheme.typography
+                                .bodySmall,
+                        color = CustomerHomeColors.TextMuted
+                    )
+                }
+
+                else -> {
+                    Text(
+                        text =
+                            "Bu bilgiler başvurunuzun kayıtlı uyumluluk özetidir. Resmî servis entegrasyonları bağlandığında doğrulama durumu ayrıca güncellenecektir.",
+                        style =
+                            MaterialTheme.typography
+                                .bodySmall,
+                        color = CustomerHomeColors.TextMuted
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProducerComplianceForm(
+    uiState: CustomerProducerApplicationUiState,
+    onTaxStatusChange: (String) -> Unit,
+    onTaxNumberChange: (String) -> Unit,
+    onTaxExemptionNumberChange: (String) -> Unit,
+    onFoodRegistrationNumberChange: (String) -> Unit,
+    onSaveClick: () -> Unit,
+    onCancelClick: () -> Unit
+) {
+    Text(
+        text = "Vergi Durumu",
+        style = MaterialTheme.typography.titleMedium,
+        color = CustomerHomeColors.DeepOlive,
+        fontWeight = FontWeight.Bold
+    )
+
+    Spacer(
+        modifier = Modifier.height(8.dp)
+    )
+
+    ComplianceTaxChoice(
+        label = "Henüz beyan etmedim",
+        value = "NotDeclared",
+        selectedValue = uiState.complianceTaxStatus,
+        enabled = !uiState.isComplianceSaving,
+        onSelected = onTaxStatusChange
+    )
+
+    Spacer(
+        modifier = Modifier.height(7.dp)
+    )
+
+    ComplianceTaxChoice(
+        label = "Vergi mükellefiyim",
+        value = "Taxpayer",
+        selectedValue = uiState.complianceTaxStatus,
+        enabled = !uiState.isComplianceSaving,
+        onSelected = onTaxStatusChange
+    )
+
+    Spacer(
+        modifier = Modifier.height(7.dp)
+    )
+
+    ComplianceTaxChoice(
+        label = "Esnaf vergi muafiyeti kapsamında",
+        value = "TradesmanExemption",
+        selectedValue = uiState.complianceTaxStatus,
+        enabled = !uiState.isComplianceSaving,
+        onSelected = onTaxStatusChange
+    )
+
+    Spacer(
+        modifier = Modifier.height(7.dp)
+    )
+
+    ComplianceTaxChoice(
+        label = "Vergi işlemlerimi tamamlıyorum",
+        value = "PendingSetup",
+        selectedValue = uiState.complianceTaxStatus,
+        enabled = !uiState.isComplianceSaving,
+        onSelected = onTaxStatusChange
+    )
+
+    if (uiState.complianceTaxStatus == "Taxpayer") {
+        Spacer(
+            modifier = Modifier.height(12.dp)
+        )
+
+        OutlinedTextField(
+            value = uiState.complianceTaxNumber,
+            onValueChange = onTaxNumberChange,
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !uiState.isComplianceSaving,
+            label = {
+                Text("Vergi / T.C. Kimlik Numarası")
+            },
+            supportingText = {
+                Text("10 veya 11 haneli numara")
+            },
+            keyboardOptions =
+                KeyboardOptions(
+                    keyboardType = KeyboardType.Number
+                ),
+            singleLine = true
+        )
+    }
+
+    if (
+        uiState.complianceTaxStatus ==
+        "TradesmanExemption"
+    ) {
+        Spacer(
+            modifier = Modifier.height(12.dp)
+        )
+
+        OutlinedTextField(
+            value =
+                uiState
+                    .complianceTaxExemptionCertificateNumber,
+            onValueChange =
+                onTaxExemptionNumberChange,
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !uiState.isComplianceSaving,
+            label = {
+                Text("Esnaf Muafiyeti Belge Numarası")
+            },
+            supportingText = {
+                Text("Belgenizde yer alan numarayı girin")
+            },
+            singleLine = true
+        )
+    }
+
+    Spacer(
+        modifier = Modifier.height(16.dp)
+    )
+
+    Text(
+        text = "Gıda İşletmesi Bilgisi",
+        style = MaterialTheme.typography.titleMedium,
+        color = CustomerHomeColors.DeepOlive,
+        fontWeight = FontWeight.Bold
+    )
+
+    Spacer(
+        modifier = Modifier.height(8.dp)
+    )
+
+    OutlinedTextField(
+        value =
+            uiState
+                .complianceFoodBusinessRegistrationNumber,
+        onValueChange =
+            onFoodRegistrationNumberChange,
+        modifier = Modifier.fillMaxWidth(),
+        enabled = !uiState.isComplianceSaving,
+        label = {
+            Text("Gıda İşletmesi Kayıt No (opsiyonel)")
+        },
+        supportingText = {
+            Text(
+                "Numara girerseniz doğrulanmış sayılmaz; manuel incelemeye gönderilir."
+            )
+        },
+        singleLine = true
+    )
+
+    Spacer(
+        modifier = Modifier.height(14.dp)
+    )
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        color = CustomerHomeColors.SurfaceSoft
+    ) {
+        Text(
+            text =
+                "Ödeme hesabı ve resmî kurum doğrulamaları için altyapı hazırdır ancak gerçek sağlayıcılar henüz bağlı değildir. Bu ekranda yalnızca beyan ve manuel inceleme yapılır.",
+            modifier = Modifier.padding(12.dp),
+            style =
+                MaterialTheme.typography
+                    .bodySmall,
+            color = CustomerHomeColors.TextMuted
+        )
+    }
+
+    Spacer(
+        modifier = Modifier.height(16.dp)
+    )
+
+    Button(
+        onClick = onSaveClick,
+        enabled = uiState.canSaveCompliance,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(54.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors =
+            ButtonDefaults.buttonColors(
+                containerColor = CustomerHomeColors.DeepOlive,
+                contentColor = Color.White
+            )
+    ) {
+        if (uiState.isComplianceSaving) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(20.dp),
+                color = Color.White,
+                strokeWidth = 2.dp
+            )
+
+            Spacer(
+                modifier = Modifier.size(9.dp)
+            )
+
+            Text("Kaydediliyor...")
+        } else {
+            Text(
+                text = "Bilgileri İncelemeye Gönder",
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+
+    Spacer(
+        modifier = Modifier.height(8.dp)
+    )
+
+    OutlinedButton(
+        onClick = onCancelClick,
+        enabled = !uiState.isComplianceSaving,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(50.dp),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Text("Vazgeç")
+    }
+}
+
+@Composable
+private fun ComplianceTaxChoice(
+    label: String,
+    value: String,
+    selectedValue: String,
+    enabled: Boolean,
+    onSelected: (String) -> Unit
+) {
+    val selected = value == selectedValue
+
+    if (selected) {
+        Button(
+            onClick = { onSelected(value) },
+            enabled = enabled,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(14.dp),
+            colors =
+                ButtonDefaults.buttonColors(
+                    containerColor = CustomerHomeColors.OliveSoft,
+                    contentColor = CustomerHomeColors.DeepOlive
+                )
+        ) {
+            Text(
+                text = "✓  $label",
+                fontWeight = FontWeight.Bold
+            )
+        }
+    } else {
+        OutlinedButton(
+            onClick = { onSelected(value) },
+            enabled = enabled,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(14.dp),
+            border =
+                BorderStroke(
+                    1.dp,
+                    CustomerHomeColors.Outline
+                )
+        ) {
+            Text(
+                text = label,
+                color = CustomerHomeColors.Text
+            )
+        }
+    }
+}
+
+private fun producerTaxStatusDisplayName(
+    value: String
+): String {
+    return when (value.trim()) {
+        "Taxpayer" -> "Vergi mükellefi"
+        "TradesmanExemption" -> "Esnaf vergi muafiyeti"
+        "PendingSetup" -> "Vergi işlemleri tamamlanıyor"
+        else -> "Henüz beyan edilmedi"
+    }
+}
+
+private fun producerFoodRegistrationStatusDisplayName(
+    value: String
+): String {
+    return when (value.trim()) {
+        "ManualReview" -> "Manuel incelemede"
+        "Verified" -> "Doğrulandı"
+        "Rejected" -> "Uygun bulunmadı"
+        "Expired" -> "Süresi doldu"
+        else -> "Henüz beyan edilmedi"
+    }
+}
+
+private fun producerPaymentStatusDisplayName(
+    value: String
+): String {
+    return when (value.trim()) {
+        "ManualReview" -> "Manuel incelemede"
+        "Verified" -> "Doğrulandı"
+        "Rejected" -> "Uygun bulunmadı"
+        else -> "Henüz yapılandırılmadı"
+    }
+}
+
+private fun producerComplianceStatusDisplayName(
+    value: String
+): String {
+    return when (value.trim()) {
+        "ManualReview" -> "Manuel incelemede"
+        "Compliant" -> "Uygun"
+        "AdditionalActionRequired" -> "Ek işlem gerekli"
+        "Suspended" -> "Askıya alındı"
+        else -> "Altyapı hazır / resmî doğrulama bağlı değil"
+    }
+}
+
+@Composable
 private fun ProducerStatusBadge(
     status: ProducerApplicationStatus?,
     rawStatus: String
 ) {
     val background =
         when (status) {
-            ProducerApplicationStatus.PENDING ->
+            ProducerApplicationStatus.PENDING,
+            ProducerApplicationStatus.UNDER_REVIEW ->
                 CustomerHomeColors
                     .SurfaceSoft
 
@@ -1384,6 +2071,8 @@ private fun ProducerStatusBadge(
                 CustomerHomeColors
                     .OliveSoft
 
+            ProducerApplicationStatus.ADDITIONAL_DOCUMENT_REQUIRED,
+            ProducerApplicationStatus.SUSPENDED,
             ProducerApplicationStatus.REJECTED ->
                 CustomerHomeColors
                     .TerracottaSoft
@@ -1395,7 +2084,8 @@ private fun ProducerStatusBadge(
 
     val foreground =
         when (status) {
-            ProducerApplicationStatus.PENDING ->
+            ProducerApplicationStatus.PENDING,
+            ProducerApplicationStatus.UNDER_REVIEW ->
                 CustomerHomeColors
                     .TextMuted
 
@@ -1403,6 +2093,8 @@ private fun ProducerStatusBadge(
                 CustomerHomeColors
                     .DeepOlive
 
+            ProducerApplicationStatus.ADDITIONAL_DOCUMENT_REQUIRED,
+            ProducerApplicationStatus.SUSPENDED,
             ProducerApplicationStatus.REJECTED ->
                 CustomerHomeColors
                     .Terracotta

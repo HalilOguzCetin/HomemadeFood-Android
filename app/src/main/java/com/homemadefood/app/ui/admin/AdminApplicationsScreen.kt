@@ -55,6 +55,8 @@ fun AdminApplicationsScreen(
     onStatusSelected:
         (ProducerApplicationStatus) -> Unit,
     onApproveClick: (Int) -> Unit,
+    onStatusChangeClick:
+        (Int, ProducerApplicationStatus, String?) -> Unit,
     onRejectClick: (Int, String) -> Unit,
     onClearMessage: () -> Unit,
     modifier: Modifier = Modifier
@@ -67,6 +69,21 @@ fun AdminApplicationsScreen(
     }
 
     var rejectReason by remember {
+        mutableStateOf("")
+    }
+
+    var selectedApplicationForStatusChange by
+    remember {
+        mutableStateOf<
+                AdminProducerApplicationResponse?
+                >(null)
+    }
+
+    var targetStatusForChange by remember {
+        mutableStateOf<ProducerApplicationStatus?>(null)
+    }
+
+    var statusReviewNote by remember {
         mutableStateOf("")
     }
 
@@ -223,6 +240,12 @@ fun AdminApplicationsScreen(
                                 )
                             },
 
+                            onStatusChangeClick = { targetStatus ->
+                                statusReviewNote = ""
+                                targetStatusForChange = targetStatus
+                                selectedApplicationForStatusChange = application
+                            },
+
                             onRejectClick = {
                                 rejectReason = ""
 
@@ -287,6 +310,46 @@ fun AdminApplicationsScreen(
                 }
             )
         }
+
+    val statusTarget = targetStatusForChange
+
+    if (
+        selectedApplicationForStatusChange != null &&
+        statusTarget != null
+    ) {
+        StatusChangeDialog(
+            application =
+                selectedApplicationForStatusChange!!,
+            targetStatus = statusTarget,
+            reviewNote = statusReviewNote,
+            isUpdating =
+                uiState.updatingApplicationId != null,
+            onReviewNoteChange = { value ->
+                if (value.length <= 1000) {
+                    statusReviewNote = value
+                }
+            },
+            onConfirmClick = {
+                onStatusChangeClick(
+                    selectedApplicationForStatusChange!!
+                        .producerProfileId,
+                    statusTarget,
+                    statusReviewNote
+                        .trim()
+                        .takeIf { it.isNotBlank() }
+                )
+
+                selectedApplicationForStatusChange = null
+                targetStatusForChange = null
+                statusReviewNote = ""
+            },
+            onDismissClick = {
+                selectedApplicationForStatusChange = null
+                targetStatusForChange = null
+                statusReviewNote = ""
+            }
+        )
+    }
 }
 
 @Composable
@@ -300,7 +363,10 @@ private fun ApplicationStatusTabs(
     val statuses =
         listOf(
             ProducerApplicationStatus.PENDING,
+            ProducerApplicationStatus.UNDER_REVIEW,
+            ProducerApplicationStatus.ADDITIONAL_DOCUMENT_REQUIRED,
             ProducerApplicationStatus.APPROVED,
+            ProducerApplicationStatus.SUSPENDED,
             ProducerApplicationStatus.REJECTED
         )
 
@@ -350,6 +416,8 @@ private fun AdminApplicationCard(
     isUpdating: Boolean,
     isAnyApplicationUpdating: Boolean,
     onApproveClick: () -> Unit,
+    onStatusChangeClick:
+        (ProducerApplicationStatus) -> Unit,
     onRejectClick: () -> Unit
 ) {
     Card(
@@ -476,8 +544,11 @@ private fun AdminApplicationCard(
             )
 
             when (selectedStatus) {
-                ProducerApplicationStatus.PENDING -> {
-                    // Ek durum bilgisi yok.
+                ProducerApplicationStatus.PENDING,
+                ProducerApplicationStatus.UNDER_REVIEW,
+                ProducerApplicationStatus.ADDITIONAL_DOCUMENT_REQUIRED,
+                ProducerApplicationStatus.SUSPENDED -> {
+                    // Bu durumlar için tarih bazlı ek alan henüz yok.
                 }
 
                 ProducerApplicationStatus.APPROVED -> {
@@ -594,6 +665,102 @@ private fun AdminApplicationCard(
                             application.longitude
             )
 
+            application.compliance?.let { compliance ->
+                Spacer(
+                    modifier = Modifier.height(12.dp)
+                )
+
+                HorizontalDivider()
+
+                Spacer(
+                    modifier = Modifier.height(12.dp)
+                )
+
+                Text(
+                    text = "Uyumluluk / Doğrulama",
+                    style =
+                        MaterialTheme.typography
+                            .titleMedium
+                )
+
+                Spacer(
+                    modifier = Modifier.height(8.dp)
+                )
+
+                AdminApplicationInformation(
+                    title = "Vergi durumu",
+                    value = translateTaxStatus(
+                        compliance.taxStatus
+                    )
+                )
+
+                AdminApplicationInformation(
+                    title = "Vergi numarası",
+                    value =
+                        compliance.taxNumber
+                            ?.takeIf { it.isNotBlank() }
+                            ?: "-"
+                )
+
+                AdminApplicationInformation(
+                    title = "Esnaf muafiyet belgesi",
+                    value =
+                        compliance
+                            .taxExemptionCertificateNumber
+                            ?.takeIf { it.isNotBlank() }
+                            ?: "-"
+                )
+
+                AdminApplicationInformation(
+                    title = "Gıda işletmesi kayıt no",
+                    value =
+                        compliance
+                            .foodBusinessRegistrationNumber
+                            ?.takeIf { it.isNotBlank() }
+                            ?: "-"
+                )
+
+                AdminApplicationInformation(
+                    title = "Gıda kayıt durumu",
+                    value = translateFoodRegistrationStatus(
+                        compliance.foodRegistrationStatus
+                    )
+                )
+
+                AdminApplicationInformation(
+                    title = "Ödeme hesabı",
+                    value = translatePaymentAccountStatus(
+                        compliance.paymentAccountStatus
+                    )
+                )
+
+                AdminApplicationInformation(
+                    title = "Uyumluluk durumu",
+                    value = translateComplianceStatus(
+                        compliance.complianceStatus
+                    )
+                )
+
+                AdminApplicationInformation(
+                    title = "Resmî doğrulama",
+                    value =
+                        if (compliance.isOfficiallyVerified) {
+                            "Doğrulandı"
+                        } else {
+                            "Henüz doğrulanmadı"
+                        }
+                )
+
+                compliance.reviewNote
+                    ?.takeIf { it.isNotBlank() }
+                    ?.let { note ->
+                        AdminApplicationInformation(
+                            title = "Uyumluluk inceleme notu",
+                            value = note
+                        )
+                    }
+            }
+
             if (
                 selectedStatus ==
                 ProducerApplicationStatus.REJECTED
@@ -639,8 +806,8 @@ private fun AdminApplicationCard(
             }
 
             if (
-                selectedStatus ==
-                ProducerApplicationStatus.PENDING
+                selectedStatus !=
+                ProducerApplicationStatus.REJECTED
             ) {
                 Spacer(
                     modifier = Modifier.height(18.dp)
@@ -652,48 +819,302 @@ private fun AdminApplicationCard(
                             Modifier
                                 .fillMaxWidth()
                                 .padding(8.dp),
-
-                        contentAlignment =
-                            Alignment.Center
+                        contentAlignment = Alignment.Center
                     ) {
                         CircularProgressIndicator()
                     }
                 } else {
-                    Button(
-                        onClick =
-                            onApproveClick,
+                    when (selectedStatus) {
+                        ProducerApplicationStatus.PENDING -> {
+                            AdminStatusActionButton(
+                                text = "İncelemeye Al",
+                                enabled = !isAnyApplicationUpdating,
+                                onClick = {
+                                    onStatusChangeClick(
+                                        ProducerApplicationStatus.UNDER_REVIEW
+                                    )
+                                }
+                            )
 
-                        enabled =
-                            !isAnyApplicationUpdating,
+                            AdminStatusActionButton(
+                                text = "Ek Bilgi / Belge İste",
+                                enabled = !isAnyApplicationUpdating,
+                                outlined = true,
+                                onClick = {
+                                    onStatusChangeClick(
+                                        ProducerApplicationStatus.ADDITIONAL_DOCUMENT_REQUIRED
+                                    )
+                                }
+                            )
 
-                        modifier =
-                            Modifier.fillMaxWidth()
-                    ) {
-                        Text("Onayla")
-                    }
+                            AdminStatusActionButton(
+                                text = "Onayla",
+                                enabled = !isAnyApplicationUpdating,
+                                onClick = onApproveClick
+                            )
 
-                    Spacer(
-                        modifier =
-                            Modifier.height(8.dp)
-                    )
+                            AdminStatusActionButton(
+                                text = "Reddet",
+                                enabled = !isAnyApplicationUpdating,
+                                outlined = true,
+                                onClick = onRejectClick
+                            )
+                        }
 
-                    OutlinedButton(
-                        onClick =
-                            onRejectClick,
+                        ProducerApplicationStatus.UNDER_REVIEW -> {
+                            AdminStatusActionButton(
+                                text = "Ek Bilgi / Belge İste",
+                                enabled = !isAnyApplicationUpdating,
+                                outlined = true,
+                                onClick = {
+                                    onStatusChangeClick(
+                                        ProducerApplicationStatus.ADDITIONAL_DOCUMENT_REQUIRED
+                                    )
+                                }
+                            )
 
-                        enabled =
-                            !isAnyApplicationUpdating,
+                            AdminStatusActionButton(
+                                text = "Onayla",
+                                enabled = !isAnyApplicationUpdating,
+                                onClick = {
+                                    onStatusChangeClick(
+                                        ProducerApplicationStatus.APPROVED
+                                    )
+                                }
+                            )
 
-                        modifier =
-                            Modifier.fillMaxWidth()
-                    ) {
-                        Text("Reddet")
+                            AdminStatusActionButton(
+                                text = "Reddet",
+                                enabled = !isAnyApplicationUpdating,
+                                outlined = true,
+                                onClick = onRejectClick
+                            )
+                        }
+
+                        ProducerApplicationStatus.ADDITIONAL_DOCUMENT_REQUIRED -> {
+                            AdminStatusActionButton(
+                                text = "Yeniden İncelemeye Al",
+                                enabled = !isAnyApplicationUpdating,
+                                onClick = {
+                                    onStatusChangeClick(
+                                        ProducerApplicationStatus.UNDER_REVIEW
+                                    )
+                                }
+                            )
+
+                            AdminStatusActionButton(
+                                text = "Onayla",
+                                enabled = !isAnyApplicationUpdating,
+                                onClick = {
+                                    onStatusChangeClick(
+                                        ProducerApplicationStatus.APPROVED
+                                    )
+                                }
+                            )
+
+                            AdminStatusActionButton(
+                                text = "Reddet",
+                                enabled = !isAnyApplicationUpdating,
+                                outlined = true,
+                                onClick = onRejectClick
+                            )
+                        }
+
+                        ProducerApplicationStatus.APPROVED -> {
+                            AdminStatusActionButton(
+                                text = "Üreticiyi Askıya Al",
+                                enabled = !isAnyApplicationUpdating,
+                                outlined = true,
+                                onClick = {
+                                    onStatusChangeClick(
+                                        ProducerApplicationStatus.SUSPENDED
+                                    )
+                                }
+                            )
+                        }
+
+                        ProducerApplicationStatus.SUSPENDED -> {
+                            AdminStatusActionButton(
+                                text = "İncelemeye Al",
+                                enabled = !isAnyApplicationUpdating,
+                                onClick = {
+                                    onStatusChangeClick(
+                                        ProducerApplicationStatus.UNDER_REVIEW
+                                    )
+                                }
+                            )
+
+                            AdminStatusActionButton(
+                                text = "Tekrar Onayla",
+                                enabled = !isAnyApplicationUpdating,
+                                onClick = {
+                                    onStatusChangeClick(
+                                        ProducerApplicationStatus.APPROVED
+                                    )
+                                }
+                            )
+
+                            AdminStatusActionButton(
+                                text = "Reddet",
+                                enabled = !isAnyApplicationUpdating,
+                                outlined = true,
+                                onClick = onRejectClick
+                            )
+                        }
+
+                        ProducerApplicationStatus.REJECTED -> Unit
                     }
                 }
             }
         }
     }
 }
+
+@Composable
+private fun AdminStatusActionButton(
+    text: String,
+    enabled: Boolean,
+    outlined: Boolean = false,
+    onClick: () -> Unit
+) {
+    if (outlined) {
+        OutlinedButton(
+            onClick = onClick,
+            enabled = enabled,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(text)
+        }
+    } else {
+        Button(
+            onClick = onClick,
+            enabled = enabled,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(text)
+        }
+    }
+
+    Spacer(
+        modifier = Modifier.height(8.dp)
+    )
+}
+
+@Composable
+private fun StatusChangeDialog(
+    application: AdminProducerApplicationResponse,
+    targetStatus: ProducerApplicationStatus,
+    reviewNote: String,
+    isUpdating: Boolean,
+    onReviewNoteChange: (String) -> Unit,
+    onConfirmClick: () -> Unit,
+    onDismissClick: () -> Unit
+) {
+    val noteRequired =
+        targetStatus == ProducerApplicationStatus.ADDITIONAL_DOCUMENT_REQUIRED ||
+                targetStatus == ProducerApplicationStatus.SUSPENDED ||
+                targetStatus == ProducerApplicationStatus.REJECTED
+
+    AlertDialog(
+        onDismissRequest = {
+            if (!isUpdating) {
+                onDismissClick()
+            }
+        },
+        title = {
+            Text(
+                text = ProducerApplicationStatus.detailDisplayNameFor(targetStatus.backendValue)
+            )
+        },
+        text = {
+            Column {
+                Text(
+                    text =
+                        "${application.businessName.ifBlank { "İşletme" }} başvurusu için yeni durum: ${ProducerApplicationStatus.detailDisplayNameFor(targetStatus.backendValue)}"
+                )
+
+                Spacer(Modifier.height(12.dp))
+
+                OutlinedTextField(
+                    value = reviewNote,
+                    onValueChange = onReviewNoteChange,
+                    label = {
+                        Text(
+                            if (noteRequired) {
+                                "İnceleme notu (zorunlu)"
+                            } else {
+                                "İnceleme notu (isteğe bağlı)"
+                            }
+                        )
+                    },
+                    supportingText = {
+                        Text(
+                            if (noteRequired) {
+                                "En az 10, en fazla 1000 karakter."
+                            } else {
+                                "En fazla 1000 karakter."
+                            }
+                        )
+                    },
+                    enabled = !isUpdating,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onConfirmClick,
+                enabled =
+                    !isUpdating &&
+                            (!noteRequired || reviewNote.trim().length >= 10)
+            ) {
+                Text("Durumu Güncelle")
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismissClick,
+                enabled = !isUpdating
+            ) {
+                Text("Vazgeç")
+            }
+        }
+    )
+}
+
+private fun translateTaxStatus(value: String): String =
+    when (value.trim()) {
+        "Taxpayer" -> "Vergi mükellefi"
+        "TradesmanExemption" -> "Esnaf vergi muafiyeti"
+        "PendingSetup" -> "İşlemler hazırlanıyor"
+        else -> "Beyan edilmedi"
+    }
+
+private fun translateFoodRegistrationStatus(value: String): String =
+    when (value.trim()) {
+        "ManualReview" -> "Manuel incelemede"
+        "Verified" -> "Doğrulandı"
+        "Rejected" -> "Reddedildi"
+        "Expired" -> "Süresi doldu"
+        else -> "Beyan edilmedi"
+    }
+
+private fun translatePaymentAccountStatus(value: String): String =
+    when (value.trim()) {
+        "ManualReview" -> "Manuel incelemede"
+        "Verified" -> "Doğrulandı"
+        "Rejected" -> "Reddedildi"
+        else -> "Henüz yapılandırılmadı"
+    }
+
+private fun translateComplianceStatus(value: String): String =
+    when (value.trim()) {
+        "ManualReview" -> "Manuel incelemede"
+        "Compliant" -> "Uygun"
+        "AdditionalActionRequired" -> "Ek işlem gerekli"
+        "Suspended" -> "Askıya alındı"
+        else -> "Altyapı hazır / resmî doğrulama bağlı değil"
+    }
 
 @Composable
 private fun AdminBusinessImage(
@@ -894,10 +1315,19 @@ private fun applicationScreenDescription(
 ): String {
     return when (status) {
         ProducerApplicationStatus.PENDING ->
-            "Bekleyen başvuruları inceleyebilir, onaylayabilir veya reddedebilirsiniz."
+            "Bekleyen üretici başvurularını görüntüleyebilirsiniz."
+
+        ProducerApplicationStatus.UNDER_REVIEW ->
+            "Manuel incelemeye alınmış üretici başvurularını görüntüleyebilirsiniz."
+
+        ProducerApplicationStatus.ADDITIONAL_DOCUMENT_REQUIRED ->
+            "Ek bilgi veya belge beklenen üretici başvurularını görüntüleyebilirsiniz."
 
         ProducerApplicationStatus.APPROVED ->
             "Onaylanmış üretici başvurularını ve hesap bilgilerini görüntüleyebilirsiniz."
+
+        ProducerApplicationStatus.SUSPENDED ->
+            "Geçici olarak askıya alınmış üretici başvurularını görüntüleyebilirsiniz."
 
         ProducerApplicationStatus.REJECTED ->
             "Reddedilmiş başvuruları ve red nedenlerini görüntüleyebilirsiniz."
@@ -914,8 +1344,17 @@ private fun translateApplicationStatus(
         ProducerApplicationStatus.PENDING ->
             "Onay Bekliyor"
 
+        ProducerApplicationStatus.UNDER_REVIEW ->
+            "İnceleniyor"
+
+        ProducerApplicationStatus.ADDITIONAL_DOCUMENT_REQUIRED ->
+            "Ek Bilgi / Belge Gerekli"
+
         ProducerApplicationStatus.APPROVED ->
             "Onaylandı"
+
+        ProducerApplicationStatus.SUSPENDED ->
+            "Askıya Alındı"
 
         ProducerApplicationStatus.REJECTED ->
             "Reddedildi"
@@ -934,14 +1373,17 @@ private fun applicationStatusColor(
     ProducerApplicationStatus
         .fromBackendValue(status)
 ) {
-    ProducerApplicationStatus.PENDING ->
+    ProducerApplicationStatus.PENDING,
+    ProducerApplicationStatus.UNDER_REVIEW ->
         MaterialTheme.colorScheme.tertiary
+
+    ProducerApplicationStatus.ADDITIONAL_DOCUMENT_REQUIRED,
+    ProducerApplicationStatus.SUSPENDED,
+    ProducerApplicationStatus.REJECTED ->
+        MaterialTheme.colorScheme.error
 
     ProducerApplicationStatus.APPROVED ->
         MaterialTheme.colorScheme.primary
-
-    ProducerApplicationStatus.REJECTED ->
-        MaterialTheme.colorScheme.error
 
     null ->
         MaterialTheme.colorScheme.onSurface

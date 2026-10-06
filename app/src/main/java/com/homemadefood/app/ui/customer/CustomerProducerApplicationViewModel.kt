@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.homemadefood.app.data.local.SessionManager
 import com.homemadefood.app.data.model.ProducerApplicationRequest
+import com.homemadefood.app.data.model.ProducerComplianceResponse
+import com.homemadefood.app.data.model.UpdateProducerComplianceRequest
 import com.homemadefood.app.data.repository.AddressRepository
 import com.homemadefood.app.data.repository.ProducerRepository
 import com.homemadefood.app.data.upload.ProducerBusinessImageMultipartFactory
@@ -38,6 +40,12 @@ class CustomerProducerApplicationViewModel(
         null
 
     private var reverseGeocodeJob: Job? =
+        null
+
+    private var loadComplianceJob: Job? =
+        null
+
+    private var saveComplianceJob: Job? =
         null
 
     private val _uiState =
@@ -94,6 +102,14 @@ class CustomerProducerApplicationViewModel(
                                     isFormVisible = false,
                                     errorMessage = null
                                 )
+
+                            body.data.compliance
+                                ?.let { compliance ->
+                                    applyComplianceToState(
+                                        compliance = compliance
+                                    )
+                                }
+                                ?: loadCompliance()
                         }
 
                         response.code() == 404 -> {
@@ -132,6 +148,357 @@ class CustomerProducerApplicationViewModel(
                     showError(
                         "Başvuru bilgisi yüklenirken bir hata oluştu."
                     )
+                }
+            }
+    }
+
+    fun loadCompliance() {
+        if (_uiState.value.application == null) {
+            return
+        }
+
+        loadComplianceJob?.cancel()
+
+        loadComplianceJob =
+            viewModelScope.launch {
+                _uiState.value =
+                    _uiState.value.copy(
+                        isComplianceLoading = true,
+                        errorMessage = null
+                    )
+
+                try {
+                    val response =
+                        producerRepository
+                            .getMyCompliance()
+
+                    val body = response.body()
+
+                    if (
+                        response.isSuccessful &&
+                        body?.success == true &&
+                        body.data != null
+                    ) {
+                        applyComplianceToState(
+                            compliance = body.data
+                        )
+                    } else {
+                        _uiState.value =
+                            _uiState.value.copy(
+                                isComplianceLoading = false,
+                                errorMessage =
+                                    parseErrorMessage(
+                                        response
+                                            .errorBody()
+                                            ?.string()
+                                    )
+                                        ?: "Uyumluluk bilgileri alınamadı."
+                            )
+                    }
+                } catch (_: IOException) {
+                    _uiState.value =
+                        _uiState.value.copy(
+                            isComplianceLoading = false,
+                            errorMessage =
+                                "Uyumluluk bilgileri için sunucuya bağlanılamadı."
+                        )
+                } catch (_: Exception) {
+                    _uiState.value =
+                        _uiState.value.copy(
+                            isComplianceLoading = false,
+                            errorMessage =
+                                "Uyumluluk bilgileri yüklenirken bir hata oluştu."
+                        )
+                }
+            }
+    }
+
+    fun showComplianceForm() {
+        val current = _uiState.value
+
+        if (!current.canEditCompliance) {
+            return
+        }
+
+        val compliance = current.compliance
+
+        _uiState.value =
+            current.copy(
+                isComplianceFormVisible = true,
+                complianceTaxStatus =
+                    compliance
+                        ?.taxStatus
+                        ?.takeIf { it.isNotBlank() }
+                        ?: "NotDeclared",
+                complianceTaxNumber =
+                    compliance?.taxNumber.orEmpty(),
+                complianceTaxExemptionCertificateNumber =
+                    compliance
+                        ?.taxExemptionCertificateNumber
+                        .orEmpty(),
+                complianceFoodBusinessRegistrationNumber =
+                    compliance
+                        ?.foodBusinessRegistrationNumber
+                        .orEmpty(),
+                errorMessage = null,
+                successMessage = null
+            )
+    }
+
+    fun hideComplianceForm() {
+        if (_uiState.value.isComplianceSaving) {
+            return
+        }
+
+        _uiState.value =
+            _uiState.value.copy(
+                isComplianceFormVisible = false,
+                errorMessage = null
+            )
+    }
+
+    fun updateComplianceTaxStatus(
+        value: String
+    ) {
+        if (
+            value !in setOf(
+                "NotDeclared",
+                "Taxpayer",
+                "TradesmanExemption",
+                "PendingSetup"
+            )
+        ) {
+            return
+        }
+
+        val current = _uiState.value
+
+        _uiState.value =
+            current.copy(
+                complianceTaxStatus = value,
+                complianceTaxNumber =
+                    if (value == "Taxpayer") {
+                        current.complianceTaxNumber
+                    } else {
+                        ""
+                    },
+                complianceTaxExemptionCertificateNumber =
+                    if (value == "TradesmanExemption") {
+                        current
+                            .complianceTaxExemptionCertificateNumber
+                    } else {
+                        ""
+                    },
+                errorMessage = null
+            )
+    }
+
+    fun updateComplianceTaxNumber(
+        value: String
+    ) {
+        if (
+            value.length > 11 ||
+            value.any { !it.isDigit() }
+        ) {
+            return
+        }
+
+        _uiState.value =
+            _uiState.value.copy(
+                complianceTaxNumber = value,
+                errorMessage = null
+            )
+    }
+
+    fun updateComplianceTaxExemptionCertificateNumber(
+        value: String
+    ) {
+        if (value.length > 100) {
+            return
+        }
+
+        _uiState.value =
+            _uiState.value.copy(
+                complianceTaxExemptionCertificateNumber = value,
+                errorMessage = null
+            )
+    }
+
+    fun updateComplianceFoodBusinessRegistrationNumber(
+        value: String
+    ) {
+        if (value.length > 100) {
+            return
+        }
+
+        _uiState.value =
+            _uiState.value.copy(
+                complianceFoodBusinessRegistrationNumber = value,
+                errorMessage = null
+            )
+    }
+
+    fun saveCompliance() {
+        val current = _uiState.value
+
+        if (!current.canSaveCompliance) {
+            return
+        }
+
+        val taxStatus =
+            current.complianceTaxStatus.trim()
+
+        val taxNumber =
+            current.complianceTaxNumber.trim()
+
+        val taxExemptionNumber =
+            current
+                .complianceTaxExemptionCertificateNumber
+                .trim()
+
+        val foodRegistrationNumber =
+            current
+                .complianceFoodBusinessRegistrationNumber
+                .trim()
+
+        when (taxStatus) {
+            "Taxpayer" -> {
+                if (
+                    taxNumber.length !in 10..11 ||
+                    taxNumber.any { !it.isDigit() }
+                ) {
+                    showError(
+                        "Vergi mükellefi seçildiğinde 10 veya 11 haneli vergi / kimlik numarası girilmelidir."
+                    )
+                    return
+                }
+            }
+
+            "TradesmanExemption" -> {
+                if (taxExemptionNumber.length !in 2..100) {
+                    showError(
+                        "Esnaf muafiyeti seçildiğinde muafiyet belge numarası girilmelidir."
+                    )
+                    return
+                }
+            }
+
+            "NotDeclared",
+            "PendingSetup" -> Unit
+
+            else -> {
+                showError(
+                    "Vergi durumu geçerli değil."
+                )
+                return
+            }
+        }
+
+        saveComplianceJob?.cancel()
+
+        saveComplianceJob =
+            viewModelScope.launch {
+                _uiState.value =
+                    _uiState.value.copy(
+                        isComplianceSaving = true,
+                        errorMessage = null,
+                        successMessage = null
+                    )
+
+                try {
+                    val response =
+                        producerRepository
+                            .updateMyCompliance(
+                                request =
+                                    UpdateProducerComplianceRequest(
+                                        taxStatus = taxStatus,
+                                        taxNumber =
+                                            taxNumber
+                                                .takeIf {
+                                                    taxStatus ==
+                                                            "Taxpayer" &&
+                                                            it.isNotBlank()
+                                                },
+                                        taxExemptionCertificateNumber =
+                                            taxExemptionNumber
+                                                .takeIf {
+                                                    taxStatus ==
+                                                            "TradesmanExemption" &&
+                                                            it.isNotBlank()
+                                                },
+                                        foodBusinessRegistrationNumber =
+                                            foodRegistrationNumber
+                                                .takeIf {
+                                                    it.isNotBlank()
+                                                },
+                                        foodRegistrationStatus =
+                                            if (
+                                                foodRegistrationNumber
+                                                    .isBlank()
+                                            ) {
+                                                "NotDeclared"
+                                            } else {
+                                                "ManualReview"
+                                            }
+                                    )
+                            )
+
+                    val body = response.body()
+
+                    if (
+                        response.isSuccessful &&
+                        body?.success == true &&
+                        body.data != null
+                    ) {
+                        applyComplianceToState(
+                            compliance = body.data
+                        )
+
+                        _uiState.value =
+                            _uiState.value.copy(
+                                isComplianceSaving = false,
+                                isComplianceFormVisible = false,
+                                successMessage =
+                                    body.message
+                                        .ifBlank {
+                                            "Uyumluluk bilgileriniz incelemeye gönderildi."
+                                        },
+                                errorMessage = null
+                            )
+
+                        /*
+                         * AdditionalDocumentRequired durumunda backend
+                         * başvuruyu tekrar Pending'e döndürür. Güncel
+                         * state-machine durumunu hemen yeniden alıyoruz.
+                         */
+                        loadApplication()
+                    } else {
+                        _uiState.value =
+                            _uiState.value.copy(
+                                isComplianceSaving = false,
+                                errorMessage =
+                                    parseErrorMessage(
+                                        response
+                                            .errorBody()
+                                            ?.string()
+                                    )
+                                        ?: "Uyumluluk bilgileri kaydedilemedi."
+                            )
+                    }
+                } catch (_: IOException) {
+                    _uiState.value =
+                        _uiState.value.copy(
+                            isComplianceSaving = false,
+                            errorMessage =
+                                "Uyumluluk bilgileri kaydedilirken sunucuya bağlanılamadı."
+                        )
+                } catch (_: Exception) {
+                    _uiState.value =
+                        _uiState.value.copy(
+                            isComplianceSaving = false,
+                            errorMessage =
+                                "Uyumluluk bilgileri kaydedilirken bir hata oluştu."
+                        )
                 }
             }
     }
@@ -828,6 +1195,30 @@ class CustomerProducerApplicationViewModel(
                     )
                 }
             }
+    }
+
+    private fun applyComplianceToState(
+        compliance: ProducerComplianceResponse
+    ) {
+        _uiState.value =
+            _uiState.value.copy(
+                isComplianceLoading = false,
+                compliance = compliance,
+                complianceTaxStatus =
+                    compliance.taxStatus
+                        .takeIf { it.isNotBlank() }
+                        ?: "NotDeclared",
+                complianceTaxNumber =
+                    compliance.taxNumber.orEmpty(),
+                complianceTaxExemptionCertificateNumber =
+                    compliance
+                        .taxExemptionCertificateNumber
+                        .orEmpty(),
+                complianceFoodBusinessRegistrationNumber =
+                    compliance
+                        .foodBusinessRegistrationNumber
+                        .orEmpty()
+            )
     }
 
     fun clearMessages() {

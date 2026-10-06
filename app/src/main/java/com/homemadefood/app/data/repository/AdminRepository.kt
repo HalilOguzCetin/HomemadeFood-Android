@@ -8,6 +8,7 @@ import com.homemadefood.app.data.model.AdminUserListItemResponse
 import com.homemadefood.app.data.model.ApiResponse
 import com.homemadefood.app.data.model.RecommendationPerformanceResponse
 import com.homemadefood.app.data.model.RejectProducerApplicationRequest
+import com.homemadefood.app.data.model.UpdateProducerApplicationStatusRequest
 import com.homemadefood.app.data.model.UpdateUserStatusRequest
 import com.homemadefood.app.data.remote.AdminApiService
 import com.homemadefood.app.data.remote.RetrofitClient
@@ -71,6 +72,32 @@ class AdminRepository(
                     RejectProducerApplicationRequest(
                         reason =
                             reason.trim()
+                    )
+            )
+    }
+
+
+    /*
+     * Üretici başvurusunun yeni state-machine durumunu günceller.
+     * Pending durumu backend tarafından üreticinin yeniden
+     * bilgi/belge gönderme akışında yönetilir.
+     */
+    suspend fun updateProducerApplicationStatus(
+        producerProfileId: Int,
+        status: String,
+        reviewNote: String? = null
+    ): Response<ApiResponse<Any?>> {
+
+        return adminApiService
+            .updateProducerApplicationStatus(
+                producerProfileId = producerProfileId,
+                request =
+                    UpdateProducerApplicationStatusRequest(
+                        status = status.trim(),
+                        reviewNote =
+                            reviewNote
+                                ?.trim()
+                                ?.takeIf { it.isNotBlank() }
                     )
             )
     }

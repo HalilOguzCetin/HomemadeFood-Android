@@ -142,6 +142,58 @@ class AdminApplicationsViewModel(
         )
     }
 
+    fun updateApplicationStatus(
+        producerProfileId: Int,
+        targetStatus: ProducerApplicationStatus,
+        reviewNote: String? = null
+    ) {
+        if (
+            producerProfileId <= 0 ||
+            _uiState.value.updatingApplicationId != null
+        ) {
+            return
+        }
+
+        val normalizedNote =
+            reviewNote
+                ?.trim()
+                ?.takeIf { it.isNotBlank() }
+
+        val requiresReviewNote =
+            targetStatus == ProducerApplicationStatus.ADDITIONAL_DOCUMENT_REQUIRED ||
+                    targetStatus == ProducerApplicationStatus.SUSPENDED ||
+                    targetStatus == ProducerApplicationStatus.REJECTED
+
+        if (
+            requiresReviewNote &&
+            (normalizedNote == null || normalizedNote.length < 10)
+        ) {
+            showActionError(
+                "Bu durum için en az 10 karakterlik inceleme notu gereklidir."
+            )
+            return
+        }
+
+        if ((normalizedNote?.length ?: 0) > 1000) {
+            showActionError(
+                "İnceleme notu en fazla 1000 karakter olabilir."
+            )
+            return
+        }
+
+        updateApplication(
+            producerProfileId = producerProfileId,
+            successMessage =
+                "Üretici başvuru durumu ${targetStatus.displayName.lowercase()} olarak güncellendi."
+        ) {
+            adminRepository.updateProducerApplicationStatus(
+                producerProfileId = producerProfileId,
+                status = targetStatus.backendValue,
+                reviewNote = normalizedNote
+            )
+        }
+    }
+
     fun approveApplication(
         producerProfileId: Int
     ) {

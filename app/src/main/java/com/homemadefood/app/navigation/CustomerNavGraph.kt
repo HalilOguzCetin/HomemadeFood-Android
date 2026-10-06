@@ -1187,9 +1187,6 @@ private fun NavGraphBuilder.storefrontMenuDestination(
 
                         cartViewModel
                             .loadCart()
-
-                        storefrontMenuViewModel
-                            .loadMenu()
                     }
                 }
 
@@ -2759,6 +2756,49 @@ private fun NavGraphBuilder
             onHideReapplicationFormClick = {
                 applicationViewModel
                     .hideReapplicationForm()
+            },
+
+            onShowComplianceFormClick = {
+                applicationViewModel
+                    .showComplianceForm()
+            },
+
+            onHideComplianceFormClick = {
+                applicationViewModel
+                    .hideComplianceForm()
+            },
+
+            onComplianceTaxStatusChange = { value ->
+                applicationViewModel
+                    .updateComplianceTaxStatus(
+                        value = value
+                    )
+            },
+
+            onComplianceTaxNumberChange = { value ->
+                applicationViewModel
+                    .updateComplianceTaxNumber(
+                        value = value
+                    )
+            },
+
+            onComplianceTaxExemptionCertificateNumberChange = { value ->
+                applicationViewModel
+                    .updateComplianceTaxExemptionCertificateNumber(
+                        value = value
+                    )
+            },
+
+            onComplianceFoodBusinessRegistrationNumberChange = { value ->
+                applicationViewModel
+                    .updateComplianceFoodBusinessRegistrationNumber(
+                        value = value
+                    )
+            },
+
+            onSaveComplianceClick = {
+                applicationViewModel
+                    .saveCompliance()
             },
 
             modifier = Modifier.fillMaxSize()

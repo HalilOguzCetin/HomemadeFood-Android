@@ -8,5 +8,11 @@ data class ProducerFoodsUiState(
     val foods: List<FoodResponse> =
         emptyList(),
 
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+
+    val updatingFoodId: Int? = null,
+
+    val actionMessage: String? = null,
+
+    val actionErrorMessage: String? = null
 )

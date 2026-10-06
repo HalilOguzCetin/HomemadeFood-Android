@@ -3,9 +3,12 @@ package com.homemadefood.app.data.remote
 import com.homemadefood.app.data.model.ApiResponse
 import com.homemadefood.app.data.model.ProducerApplicationStatusResponse
 import com.homemadefood.app.data.model.ProducerApplicationSubmitResponse
+import com.homemadefood.app.data.model.ProducerComplianceResponse
+import com.homemadefood.app.data.model.UpdateProducerComplianceRequest
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import retrofit2.Response
+import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Headers
 import retrofit2.http.Multipart
@@ -81,6 +84,30 @@ interface ProducerApiService {
                             ProducerApplicationStatusResponse
                             >
                     >
+
+    @Headers(
+        "X-HomemadeFood-Requires-Auth: true"
+    )
+    @GET("api/Producer/my-compliance")
+    suspend fun getMyCompliance():
+            Response<
+                    ApiResponse<
+                            ProducerComplianceResponse
+                            >
+                    >
+
+    @Headers(
+        "X-HomemadeFood-Requires-Auth: true"
+    )
+    @PUT("api/Producer/my-compliance")
+    suspend fun updateMyCompliance(
+        @Body
+        request: UpdateProducerComplianceRequest
+    ): Response<
+            ApiResponse<
+                    ProducerComplianceResponse
+                    >
+            >
 
     @Headers(
         "X-HomemadeFood-Requires-Auth: true"
