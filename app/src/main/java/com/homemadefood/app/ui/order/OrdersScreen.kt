@@ -37,6 +37,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.homemadefood.app.data.model.OrderResponse
+import com.homemadefood.app.data.model.FoodProductionOptions
 import com.homemadefood.app.data.model.OrderStatus
 import com.homemadefood.app.ui.components.AppEmptyState
 import com.homemadefood.app.ui.components.AppErrorState
@@ -420,7 +421,7 @@ private fun OrderCard(
             ) {
                 Column {
                     Text(
-                        text = "${totalItemCount(order)} ürün",
+                        text = formatOrderUnits(order),
                         style = MaterialTheme.typography.bodyMedium,
                         color = CustomerHomeColors.TextMuted
                     )
@@ -502,6 +503,25 @@ private fun orderMatchesCategory(
         OrderCategory.CANCELLED ->
             orderStatus == OrderStatus.CANCELLED ||
                     orderStatus == OrderStatus.REJECTED
+    }
+}
+
+private fun formatOrderUnits(
+    order: OrderResponse
+): String {
+    if (order.items.isEmpty()) {
+        return "Ürün bulunmuyor"
+    }
+
+    return order.items.joinToString(
+        separator = " • "
+    ) { item ->
+        val unitDisplayName =
+            FoodProductionOptions.unitDisplayName(
+                item.unitType
+            )
+
+        "${item.quantity} $unitDisplayName"
     }
 }
 

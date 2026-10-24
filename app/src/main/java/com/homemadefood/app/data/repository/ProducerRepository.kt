@@ -115,13 +115,6 @@ class ProducerRepository(
                         plainTextMediaType
                     ),
 
-            dailyCapacity =
-                request.dailyCapacity
-                    .toString()
-                    .toRequestBody(
-                        plainTextMediaType
-                    ),
-
             businessImage =
                 businessImage
         )
@@ -192,8 +185,6 @@ class ProducerRepository(
 
         latitude: Double,
         longitude: Double,
-
-        dailyCapacity: Int,
 
         businessImage: MultipartBody.Part?
     ): Response<
@@ -270,12 +261,6 @@ class ProducerRepository(
 
                 longitude =
                     longitude.toString()
-                        .toRequestBody(
-                            plainTextMediaType
-                        ),
-
-                dailyCapacity =
-                    dailyCapacity.toString()
                         .toRequestBody(
                             plainTextMediaType
                         ),

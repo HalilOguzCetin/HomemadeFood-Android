@@ -12,6 +12,7 @@ data class DiscoverFoodResponse(
     val description: String,
 
     val price: Double,
+    val unitType: String = "Portion",
     val preparationTimeMinutes: Int,
 
     val imageUrl: String,

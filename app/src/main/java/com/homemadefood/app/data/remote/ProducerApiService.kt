@@ -63,9 +63,6 @@ interface ProducerApiService {
         @Part("Longitude")
         longitude: RequestBody,
 
-        @Part("DailyCapacity")
-        dailyCapacity: RequestBody,
-
         @Part
         businessImage: MultipartBody.Part?
     ): Response<
@@ -164,9 +161,6 @@ interface ProducerApiService {
 
         @Part("Longitude")
         longitude: RequestBody,
-
-        @Part("DailyCapacity")
-        dailyCapacity: RequestBody,
 
         @Part
         businessImage: MultipartBody.Part?

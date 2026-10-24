@@ -18,7 +18,5 @@ data class AdminUserDetailResponse(
     val businessName: String?,
     val producerVerificationStatus: String?,
     val isProducerApproved: Boolean?,
-    val isProducerAvailable: Boolean?,
-    val dailyCapacity: Int?,
-    val remainingCapacity: Int?
+    val isProducerAvailable: Boolean?
 )

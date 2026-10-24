@@ -59,6 +59,7 @@ import com.homemadefood.app.R
 import com.homemadefood.app.data.model.AddressResponse
 import com.homemadefood.app.data.model.CategoryResponse
 import com.homemadefood.app.data.model.DiscoverFoodResponse
+import com.homemadefood.app.data.model.FoodProductionOptions
 import com.homemadefood.app.data.model.DiscoverProducerStorefrontResponse
 import com.homemadefood.app.data.remote.ApiConfig
 import java.text.NumberFormat
@@ -1814,7 +1815,8 @@ private fun ExploreFoodCard(
                     Text(
                         text =
                             formatExplorePrice(
-                                food.price
+                                price = food.price,
+                                unitType = food.unitType
                             ),
                         style =
                             MaterialTheme
@@ -2489,7 +2491,8 @@ private fun formatDistance(
 }
 
 private fun formatExplorePrice(
-    price: Double
+    price: Double,
+    unitType: String
 ): String {
     val formatter =
         NumberFormat
@@ -2508,9 +2511,13 @@ private fun formatExplorePrice(
         .maximumFractionDigits =
         2
 
+    val unitDisplayName =
+        FoodProductionOptions
+            .unitDisplayName(unitType)
+
     return "${
         formatter.format(
             price
         )
-    } ₺"
+    } ₺ / $unitDisplayName"
 }

@@ -18,6 +18,5 @@ data class UpdateProducerProfileRequest(
     val latitude: Double,
     val longitude: Double,
 
-    val dailyCapacity: Int,
     val isAvailable: Boolean
 )

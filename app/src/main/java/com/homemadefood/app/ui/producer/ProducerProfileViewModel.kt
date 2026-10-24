@@ -172,10 +172,6 @@ class ProducerProfileViewModel(
                 selectedLocation =
                     location,
 
-                dailyCapacityText =
-                    profile.dailyCapacity
-                        .toString(),
-
                 isResolvingAddress = false,
                 locationLookupMessage = null,
 
@@ -269,10 +265,6 @@ class ProducerProfileViewModel(
 
                 selectedLocation =
                     profileLocation(profile),
-
-                dailyCapacityText =
-                    profile.dailyCapacity
-                        .toString(),
 
                 isResolvingAddress = false,
                 locationLookupMessage = null,
@@ -570,31 +562,6 @@ class ProducerProfileViewModel(
             }
     }
 
-    fun updateDailyCapacityText(
-        value: String
-    ) {
-        if (_uiState.value.isSaving) {
-            return
-        }
-
-        if (
-            value.isEmpty() ||
-            value.all {
-                it.isDigit()
-            }
-        ) {
-            if (value.length <= 4) {
-                _uiState.value =
-                    _uiState.value.copy(
-                        dailyCapacityText =
-                            value,
-
-                        errorMessage = null
-                    )
-            }
-        }
-    }
-
     fun saveProfile() {
         val current =
             _uiState.value
@@ -615,10 +582,6 @@ class ProducerProfileViewModel(
 
         val location =
             current.selectedLocation
-
-        val dailyCapacity =
-            current.dailyCapacityText
-                .toIntOrNull()
 
         when {
             businessName.length !in 2..150 -> {
@@ -674,14 +637,6 @@ class ProducerProfileViewModel(
             current.buildingNo.isBlank() -> {
                 showActionError(
                     "Bina numarası boş bırakılamaz."
-                )
-                return
-            }
-
-            dailyCapacity == null ||
-                    dailyCapacity !in 1..1000 -> {
-                showActionError(
-                    "Günlük kapasite 1 ile 1000 arasında olmalıdır."
                 )
                 return
             }
@@ -792,9 +747,6 @@ class ProducerProfileViewModel(
                                 longitude =
                                     location.longitude,
 
-                                dailyCapacity =
-                                    dailyCapacity,
-
                                 businessImage =
                                     businessImagePart
                             )
@@ -904,10 +856,6 @@ class ProducerProfileViewModel(
 
                 selectedLocation =
                     profileLocation(profile),
-
-                dailyCapacityText =
-                    profile.dailyCapacity
-                        .toString(),
             )
     }
 
@@ -957,10 +905,6 @@ class ProducerProfileViewModel(
 
                 selectedLocation =
                     profileLocation(profile),
-
-                dailyCapacityText =
-                    profile.dailyCapacity
-                        .toString(),
 
                 successMessage =
                     message

@@ -864,11 +864,6 @@ private fun NavGraphBuilder.producerProfileDestination(
                 )
             },
 
-            onDailyCapacityChange = { value ->
-                producerProfileViewModel
-                    .updateDailyCapacityText(value)
-            },
-
             onSaveClick = {
                 producerProfileViewModel
                     .saveProfile()

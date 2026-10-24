@@ -62,7 +62,6 @@ fun CustomerProducerApplicationScreen(
     onApartmentNoChange: (String) -> Unit,
     onAddressNoteChange: (String) -> Unit,
     onSelectLocationClick: () -> Unit,
-    onDailyCapacityChange: (String) -> Unit,
     onSubmitClick: () -> Unit,
     onShowReapplicationFormClick: () -> Unit,
     onHideReapplicationFormClick: () -> Unit,
@@ -207,8 +206,6 @@ fun CustomerProducerApplicationScreen(
                                 onAddressNoteChange,
                             onSelectLocationClick =
                                 onSelectLocationClick,
-                            onDailyCapacityChange =
-                                onDailyCapacityChange,
                             onSubmitClick =
                                 onSubmitClick,
                             onCancelClick =
@@ -341,7 +338,6 @@ private fun ProducerApplicationForm(
     onApartmentNoChange: (String) -> Unit,
     onAddressNoteChange: (String) -> Unit,
     onSelectLocationClick: () -> Unit,
-    onDailyCapacityChange: (String) -> Unit,
     onSubmitClick: () -> Unit,
     onCancelClick: () -> Unit,
     showCancelButton: Boolean
@@ -890,58 +886,6 @@ private fun ProducerApplicationForm(
         modifier = Modifier.height(24.dp)
     )
 
-    ProducerApplicationSectionHeader(
-        step = "4",
-        title = "Üretim Kapasitesi",
-        subtitle =
-            "Bir günde hazırlayabileceğiniz toplam ürün miktarını belirtin."
-    )
-
-    Spacer(
-        modifier = Modifier.height(11.dp)
-    )
-
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
-        color = CustomerHomeColors.Surface,
-        shadowElevation = 2.dp,
-        border =
-            BorderStroke(
-                1.dp,
-                CustomerHomeColors.Outline
-            )
-    ) {
-        OutlinedTextField(
-            value = uiState.dailyCapacityText,
-            onValueChange =
-                onDailyCapacityChange,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(17.dp),
-            label = {
-                Text("Günlük Kapasite *")
-            },
-            placeholder = {
-                Text("Örn. 50")
-            },
-            supportingText = {
-                Text(
-                    "1 ile 1000 arasında bir değer girin."
-                )
-            },
-            singleLine = true,
-            enabled = !uiState.isSubmitting,
-            keyboardOptions =
-                KeyboardOptions(
-                    keyboardType =
-                        KeyboardType.Number
-                ),
-            shape =
-                RoundedCornerShape(15.dp)
-        )
-    }
-
     Spacer(
         modifier = Modifier.height(22.dp)
     )
@@ -1299,12 +1243,6 @@ private fun ProducerApplicationStatusContent(
                         )
                 )
             }
-
-            ApplicationInformationRow(
-                title = "Günlük kapasite",
-                value =
-                    "${application.dailyCapacity} adet"
-            )
 
             ApplicationInformationRow(
                 title = "İşletme adresi",

@@ -25,9 +25,6 @@ data class AdminProducerApplicationResponse(
     val latitude: Double,
     val longitude: Double,
 
-    val dailyCapacity: Int,
-    val remainingCapacity: Int,
-
     val isAvailable: Boolean,
     val isApproved: Boolean,
 

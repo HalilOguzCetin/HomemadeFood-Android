@@ -15,6 +15,5 @@ data class ProducerApplicationRequest(
     val addressNote: String? = null,
 
     val latitude: Double,
-    val longitude: Double,
-    val dailyCapacity: Int
+    val longitude: Double
 )

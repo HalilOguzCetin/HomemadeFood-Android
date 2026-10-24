@@ -40,8 +40,6 @@ data class CustomerProducerApplicationUiState(
     val locationLookupMessage:
     String? = null,
 
-    val dailyCapacityText: String = "",
-
     val isComplianceLoading: Boolean = false,
     val isComplianceSaving: Boolean = false,
 

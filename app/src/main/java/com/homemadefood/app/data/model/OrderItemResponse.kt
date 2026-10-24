@@ -5,6 +5,7 @@ data class OrderItemResponse(
     val foodId: Int,
     val foodName: String,
     val quantity: Int,
+    val unitType: String,
     val unitPrice: Double,
     val totalPrice: Double
 )

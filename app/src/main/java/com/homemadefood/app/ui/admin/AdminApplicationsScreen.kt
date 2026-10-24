@@ -514,18 +514,6 @@ private fun AdminApplicationCard(
             )
 
             AdminApplicationInformation(
-                title = "Günlük kapasite",
-                value =
-                    "${application.dailyCapacity} adet"
-            )
-
-            AdminApplicationInformation(
-                title = "Kalan kapasite",
-                value =
-                    "${application.remainingCapacity} adet"
-            )
-
-            AdminApplicationInformation(
                 title = "Sipariş alma durumu",
                 value =
                     if (application.isAvailable) {

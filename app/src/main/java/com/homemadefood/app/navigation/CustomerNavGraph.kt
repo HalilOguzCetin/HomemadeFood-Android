@@ -2738,11 +2738,6 @@ private fun NavGraphBuilder
                 )
             },
 
-            onDailyCapacityChange = { value ->
-                applicationViewModel
-                    .updateDailyCapacityText(value)
-            },
-
             onSubmitClick = {
                 applicationViewModel
                     .submitApplication()

@@ -39,8 +39,6 @@ data class ProducerProfileUiState(
     val locationLookupMessage:
     String? = null,
 
-    val dailyCapacityText: String = "",
-
     val errorMessage: String? = null,
     val successMessage: String? = null
 ) {
@@ -70,10 +68,7 @@ data class ProducerProfileUiState(
                     street.isNotBlank() &&
                     buildingNo.isNotBlank() &&
                     selectedLocation
-                        ?.isValid() == true &&
-                    dailyCapacityText
-                        .toIntOrNull()
-                        ?.let { it in 1..1000 } == true
+                        ?.isValid() == true
 
     fun buildFullAddress(): String {
         val parts =

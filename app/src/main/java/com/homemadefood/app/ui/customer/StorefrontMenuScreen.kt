@@ -49,6 +49,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import com.homemadefood.app.data.model.FoodProductionOptions
 import com.homemadefood.app.data.model.ProducerStorefrontMenuCategoryResponse
 import com.homemadefood.app.data.model.ProducerStorefrontMenuFoodResponse
 import com.homemadefood.app.data.model.ProducerStorefrontMenuResponse
@@ -1047,7 +1048,10 @@ private fun StorefrontMenuFoodCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = formatPrice(food.price),
+                        text = formatPrice(
+                            price = food.price,
+                            unitType = food.unitType
+                        ),
                         style = MaterialTheme.typography.titleMedium,
                         color = CustomerHomeColors.Terracotta,
                         fontWeight = FontWeight.ExtraBold
@@ -1154,23 +1158,31 @@ private fun resolveVisibleCategoryId(
 }
 
 private fun formatPrice(
-    price: Double
+    price: Double,
+    unitType: String
 ): String {
     val locale = Locale("tr", "TR")
 
-    return if (price % 1.0 == 0.0) {
-        String.format(
-            locale,
-            "%.0f ₺",
-            price
-        )
-    } else {
-        String.format(
-            locale,
-            "%.2f ₺",
-            price
-        )
-    }
+    val formattedPrice =
+        if (price % 1.0 == 0.0) {
+            String.format(
+                locale,
+                "%.0f ₺",
+                price
+            )
+        } else {
+            String.format(
+                locale,
+                "%.2f ₺",
+                price
+            )
+        }
+
+    val unitDisplayName =
+        FoodProductionOptions
+            .unitDisplayName(unitType)
+
+    return "$formattedPrice / $unitDisplayName"
 }
 
 private fun formatRating(

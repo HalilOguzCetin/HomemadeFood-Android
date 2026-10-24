@@ -775,27 +775,6 @@ class CustomerProducerApplicationViewModel(
             }
     }
 
-    fun updateDailyCapacityText(
-        value: String
-    ) {
-        if (
-            value.isNotEmpty() &&
-            value.any { !it.isDigit() }
-        ) {
-            return
-        }
-
-        if (value.length > 4) {
-            return
-        }
-
-        _uiState.value =
-            _uiState.value.copy(
-                dailyCapacityText = value,
-                errorMessage = null
-            )
-    }
-
     fun showReapplicationForm() {
         val application =
             _uiState.value.application
@@ -855,10 +834,6 @@ class CustomerProducerApplicationViewModel(
 
                 selectedLocation =
                     storedLocation,
-
-                dailyCapacityText =
-                    application.dailyCapacity
-                        .toString(),
 
                 isResolvingAddress = false,
                 locationLookupMessage = null,
@@ -930,10 +905,6 @@ class CustomerProducerApplicationViewModel(
         val location =
             current.selectedLocation
 
-        val dailyCapacity =
-            current.dailyCapacityText
-                .toIntOrNull()
-
         when {
             businessName.length !in 2..150 -> {
                 showError(
@@ -995,14 +966,6 @@ class CustomerProducerApplicationViewModel(
             current.buildingNo.isBlank() -> {
                 showError(
                     "Bina numarası boş bırakılamaz."
-                )
-                return
-            }
-
-            dailyCapacity == null ||
-                    dailyCapacity !in 1..1000 -> {
-                showError(
-                    "Günlük kapasite 1 ile 1000 arasında olmalıdır."
                 )
                 return
             }
@@ -1142,10 +1105,7 @@ class CustomerProducerApplicationViewModel(
                                         location.latitude,
 
                                     longitude =
-                                        location.longitude,
-
-                                    dailyCapacity =
-                                        dailyCapacity
+                                        location.longitude
                                 ),
 
                             businessImage =

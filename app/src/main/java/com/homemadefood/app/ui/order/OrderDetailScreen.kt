@@ -39,6 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.homemadefood.app.data.model.OrderStatus
+import com.homemadefood.app.data.model.FoodProductionOptions
 import com.homemadefood.app.data.model.PaymentMethods
 import com.homemadefood.app.data.model.ReviewResponse
 import com.homemadefood.app.ui.customer.CustomerHomeColors
@@ -698,8 +699,13 @@ private fun OrderItemsCard(
                             modifier = Modifier.height(3.dp)
                         )
 
+                        val unitDisplayName =
+                            FoodProductionOptions.unitDisplayName(
+                                item.unitType
+                            )
+
                         Text(
-                            text = "${formatOrderPrice(item.unitPrice)} × ${item.quantity} adet",
+                            text = "${item.quantity} $unitDisplayName × ${formatOrderPrice(item.unitPrice)} / $unitDisplayName",
                             color = CustomerHomeColors.TextMuted,
                             style = MaterialTheme.typography.bodySmall
                         )

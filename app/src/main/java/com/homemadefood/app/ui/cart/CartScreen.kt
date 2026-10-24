@@ -32,12 +32,12 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.homemadefood.app.data.model.CartItemResponse
+import com.homemadefood.app.data.model.FoodProductionOptions
 import com.homemadefood.app.ui.components.AppErrorState
 import com.homemadefood.app.ui.components.AppLoadingState
 import com.homemadefood.app.ui.components.FoodImage
@@ -109,7 +109,6 @@ fun CartScreen(
 
                     CartLoadedContent(
                         businessName = cart.businessName,
-                        isCurrentlyOpen = cart.isCurrentlyOpen,
                         items = cart.items,
                         totalQuantity = cart.totalQuantity,
                         totalPrice = cart.totalPrice,
@@ -220,7 +219,6 @@ private fun CartHeader(
 @Composable
 private fun CartLoadedContent(
     businessName: String,
-    isCurrentlyOpen: Boolean,
     items: List<CartItemResponse>,
     totalQuantity: Int,
     totalPrice: Double,
@@ -258,40 +256,8 @@ private fun CartLoadedContent(
                     key = "cart_business"
                 ) {
                     BusinessInfoCard(
-                        businessName = businessName,
-                        isCurrentlyOpen = isCurrentlyOpen
+                        businessName = businessName
                     )
-                }
-            }
-
-            if (!isCurrentlyOpen) {
-                item(
-                    key = "cart_business_closed"
-                ) {
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        color = CustomerHomeColors.TerracottaSoft
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(14.dp)
-                        ) {
-                            Text(
-                                text = "İşletme şu anda kapalı",
-                                style = MaterialTheme.typography.titleSmall,
-                                color = CustomerHomeColors.Terracotta,
-                                fontWeight = FontWeight.Bold
-                            )
-
-                            Spacer(Modifier.height(4.dp))
-
-                            Text(
-                                text = "Sepetiniz korunur. Ürün miktarını azaltabilir veya ürünleri silebilirsiniz; ancak miktarı artıramaz ve yeni sipariş oluşturamazsınız.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = CustomerHomeColors.TextMuted
-                            )
-                        }
-                    }
                 }
             }
 
@@ -309,6 +275,26 @@ private fun CartLoadedContent(
                             modifier = Modifier.padding(12.dp),
                             style = MaterialTheme.typography.bodyMedium,
                             color = CustomerHomeColors.DeepOlive
+                        )
+                    }
+                }
+            }
+
+            if (items.any { !it.isUnitTypeCurrent }) {
+                item(
+                    key = "cart_unit_type_warning"
+                ) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        color = CustomerHomeColors.TerracottaSoft
+                    ) {
+                        Text(
+                            text = "Sepetinizde satış birimi değişmiş ürün var. Siparişe devam etmek için bu ürünü sepetten kaldırıp yeniden ekleyin.",
+                            modifier = Modifier.padding(12.dp),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = CustomerHomeColors.Error,
+                            fontWeight = FontWeight.Medium
                         )
                     }
                 }
@@ -336,7 +322,7 @@ private fun CartLoadedContent(
                     )
 
                     Text(
-                        text = "$totalQuantity adet",
+                        text = "$totalQuantity birim",
                         style = MaterialTheme.typography.bodyMedium,
                         color = CustomerHomeColors.TextMuted,
                         fontWeight = FontWeight.Medium
@@ -352,7 +338,6 @@ private fun CartLoadedContent(
             ) { item ->
                 CartItemCard(
                     item = item,
-                    isCurrentlyOpen = isCurrentlyOpen,
                     isUpdating =
                         updatingCartItemId ==
                                 item.cartItemId,
@@ -380,11 +365,13 @@ private fun CartLoadedContent(
         CartBottomSummary(
             totalQuantity = totalQuantity,
             totalPrice = totalPrice,
-            isCurrentlyOpen = isCurrentlyOpen,
             enabled =
-                isCurrentlyOpen &&
-                        !isClearingCart &&
-                        updatingCartItemId == null,
+                !isClearingCart &&
+                        updatingCartItemId == null &&
+                        items.all {
+                            it.isAvailable &&
+                                    it.isUnitTypeCurrent
+                        },
             onCreateOrderClick = onCreateOrderClick
         )
     }
@@ -392,18 +379,12 @@ private fun CartLoadedContent(
 
 @Composable
 private fun BusinessInfoCard(
-    businessName: String,
-    isCurrentlyOpen: Boolean
+    businessName: String
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
-        color =
-            if (isCurrentlyOpen) {
-                CustomerHomeColors.Surface
-            } else {
-                CustomerHomeColors.SurfaceSoft
-            },
+        color = CustomerHomeColors.Surface,
         border = BorderStroke(
             1.dp,
             CustomerHomeColors.Outline
@@ -437,9 +418,7 @@ private fun BusinessInfoCard(
                 modifier = Modifier.width(12.dp)
             )
 
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
+            Column {
                 Text(
                     text = "Sipariş verdiğiniz işletme",
                     style = MaterialTheme.typography.labelMedium,
@@ -453,44 +432,11 @@ private fun BusinessInfoCard(
                 Text(
                     text = businessName,
                     style = MaterialTheme.typography.titleMedium,
-                    color =
-                        if (isCurrentlyOpen) {
-                            CustomerHomeColors.DeepOlive
-                        } else {
-                            CustomerHomeColors.TextMuted
-                        },
+                    color = CustomerHomeColors.DeepOlive,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-
-                Spacer(Modifier.height(6.dp))
-
-                Surface(
-                    shape = RoundedCornerShape(50.dp),
-                    color =
-                        if (isCurrentlyOpen) {
-                            CustomerHomeColors.OliveSoft
-                        } else {
-                            CustomerHomeColors.TerracottaSoft
-                        }
-                ) {
-                    Text(
-                        text = if (isCurrentlyOpen) "Açık" else "Kapalı",
-                        modifier = Modifier.padding(
-                            horizontal = 10.dp,
-                            vertical = 4.dp
-                        ),
-                        style = MaterialTheme.typography.labelSmall,
-                        color =
-                            if (isCurrentlyOpen) {
-                                CustomerHomeColors.DeepOlive
-                            } else {
-                                CustomerHomeColors.Terracotta
-                            },
-                        fontWeight = FontWeight.Bold
-                    )
-                }
             }
         }
     }
@@ -499,7 +445,6 @@ private fun BusinessInfoCard(
 @Composable
 private fun CartItemCard(
     item: CartItemResponse,
-    isCurrentlyOpen: Boolean,
     isUpdating: Boolean,
     onIncreaseClick: () -> Unit,
     onDecreaseClick: () -> Unit,
@@ -509,12 +454,7 @@ private fun CartItemCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor =
-                if (isCurrentlyOpen) {
-                    CustomerHomeColors.Surface
-                } else {
-                    CustomerHomeColors.SurfaceSoft
-                }
+            containerColor = CustomerHomeColors.Surface
         ),
         border = BorderStroke(
             1.dp,
@@ -533,7 +473,6 @@ private fun CartItemCard(
                 contentDescription = item.foodName,
                 modifier = Modifier
                     .size(96.dp)
-                    .alpha(if (isCurrentlyOpen) 1f else 0.55f)
                     .clip(
                         RoundedCornerShape(16.dp)
                     )
@@ -578,19 +517,6 @@ private fun CartItemCard(
                     }
                 }
 
-                if (!isCurrentlyOpen) {
-                    Text(
-                        text = "İşletme kapalı",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = CustomerHomeColors.Terracotta,
-                        fontWeight = FontWeight.SemiBold
-                    )
-
-                    Spacer(
-                        modifier = Modifier.height(4.dp)
-                    )
-                }
-
                 if (!item.isAvailable) {
                     Text(
                         text = "Şu anda satışta değil",
@@ -604,8 +530,26 @@ private fun CartItemCard(
                     )
                 }
 
+                if (!item.isUnitTypeCurrent) {
+                    Text(
+                        text = "Satış birimi değişti. Kaldırıp yeniden ekleyin.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = CustomerHomeColors.Error,
+                        fontWeight = FontWeight.Medium
+                    )
+
+                    Spacer(
+                        modifier = Modifier.height(4.dp)
+                    )
+                }
+
+                val unitDisplayName =
+                    FoodProductionOptions.unitDisplayName(
+                        item.unitType
+                    )
+
                 Text(
-                    text = "${formatPrice(item.unitPrice)} / adet",
+                    text = "${formatPrice(item.unitPrice)} / $unitDisplayName",
                     style = MaterialTheme.typography.bodySmall,
                     color = CustomerHomeColors.TextMuted
                 )
@@ -634,8 +578,8 @@ private fun CartItemCard(
                             !isUpdating,
                         increaseEnabled =
                             !isUpdating &&
-                                    isCurrentlyOpen &&
                                     item.isAvailable &&
+                                    item.isUnitTypeCurrent &&
                                     item.quantity < 50,
                         onDecreaseClick =
                             onDecreaseClick,
@@ -737,7 +681,6 @@ private fun QuantityAction(
 private fun CartBottomSummary(
     totalQuantity: Int,
     totalPrice: Double,
-    isCurrentlyOpen: Boolean,
     enabled: Boolean,
     onCreateOrderClick: () -> Unit
 ) {
@@ -756,7 +699,7 @@ private fun CartBottomSummary(
         ) {
             CartSummaryRow(
                 title = "Toplam ürün",
-                value = "$totalQuantity adet"
+                value = "$totalQuantity birim"
             )
 
             Spacer(
@@ -813,12 +756,7 @@ private fun CartBottomSummary(
                 )
             ) {
                 Text(
-                    text =
-                        if (isCurrentlyOpen) {
-                            "Sipariş Oluşturmaya Devam Et"
-                        } else {
-                            "İşletme Kapalı"
-                        },
+                    text = "Sipariş Oluşturmaya Devam Et",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )

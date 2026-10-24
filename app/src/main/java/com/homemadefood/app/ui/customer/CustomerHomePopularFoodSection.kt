@@ -32,6 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.homemadefood.app.data.model.FoodProductionOptions
 import com.homemadefood.app.data.model.PopularFoodResponse
 import com.homemadefood.app.data.remote.ApiConfig
 import java.text.NumberFormat
@@ -432,7 +433,8 @@ private fun PopularFoodCard(
                     Text(
                         text =
                             formatFoodPrice(
-                                food.price
+                                price = food.price,
+                                unitType = food.unitType
                             ),
                         style =
                             MaterialTheme
@@ -570,7 +572,8 @@ private fun PopularFoodImage(
 }
 
 private fun formatFoodPrice(
-    price: Double
+    price: Double,
+    unitType: String
 ): String {
     val formatter =
         NumberFormat.getNumberInstance(
@@ -580,5 +583,9 @@ private fun formatFoodPrice(
     formatter.minimumFractionDigits = 0
     formatter.maximumFractionDigits = 2
 
-    return "${formatter.format(price)} ₺"
+    val unitDisplayName =
+        FoodProductionOptions
+            .unitDisplayName(unitType)
+
+    return "${formatter.format(price)} ₺ / $unitDisplayName"
 }

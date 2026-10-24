@@ -469,26 +469,6 @@ private fun ProducerDetailCard(
                         null -> "-"
                     }
             )
-
-            AdminUserDetailInformation(
-                title = "Günlük Kapasite",
-                value =
-                    user.dailyCapacity
-                        ?.let {
-                            "$it adet"
-                        }
-                        ?: "-"
-            )
-
-            AdminUserDetailInformation(
-                title = "Kalan Kapasite",
-                value =
-                    user.remainingCapacity
-                        ?.let {
-                            "$it adet"
-                        }
-                        ?: "-"
-            )
         }
     }
 }

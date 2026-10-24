@@ -39,6 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.homemadefood.app.data.model.FoodProductionOptions
 import com.homemadefood.app.ui.components.FoodImage
 import com.homemadefood.app.ui.customer.CustomerHomeCartButton
 import com.homemadefood.app.ui.customer.CustomerHomeColors
@@ -165,7 +166,10 @@ fun FoodDetailScreen(
                                 )
 
                                 Text(
-                                    text = formatPrice(food.price),
+                                    text = formatUnitPrice(
+                                        price = food.price,
+                                        unitType = food.unitType
+                                    ),
                                     color = CustomerHomeColors.Terracotta,
                                     style = MaterialTheme.typography.headlineSmall.copy(
                                         fontWeight = FontWeight.ExtraBold
@@ -221,12 +225,28 @@ fun FoodDetailScreen(
                                 }
                             }
 
+                            if (food.allergenCodes.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(14.dp))
+
+                                AllergenInfoPanel(
+                                    allergenCodes = food.allergenCodes
+                                )
+                            }
+
                             Spacer(modifier = Modifier.height(22.dp))
 
                             FoodInfoPanel(
                                 preparationTimeMinutes = food.preparationTimeMinutes,
                                 categoryName = food.categoryName,
                                 isAvailable = food.isAvailable
+                            )
+
+                            Spacer(modifier = Modifier.height(14.dp))
+
+                            FoodProductionOrderPanel(
+                                unitType = food.unitType,
+                                minimumOrderLeadTimeMinutes =
+                                    food.minimumOrderLeadTimeMinutes
                             )
 
                             Spacer(modifier = Modifier.height(18.dp))
@@ -349,6 +369,113 @@ private fun FoodDetailBusinessClosedNotice() {
                     lineHeight = 19.sp
                 )
             )
+        }
+    }
+}
+
+@Composable
+private fun AllergenInfoPanel(
+    allergenCodes: List<String>
+) {
+    val allergenText =
+        allergenCodes
+            .map(FoodProductionOptions::allergenDisplayName)
+            .distinct()
+            .joinToString(" • ")
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        color = CustomerHomeColors.TerracottaSoft,
+        border = BorderStroke(
+            1.dp,
+            CustomerHomeColors.Terracotta.copy(alpha = 0.24f)
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = "Alerjen Bilgisi",
+                color = CustomerHomeColors.Terracotta,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Bold
+                )
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = "İçerdiği bildirilen alerjenler: $allergenText",
+                color = CustomerHomeColors.Text,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    lineHeight = 21.sp
+                )
+            )
+        }
+    }
+}
+
+@Composable
+private fun FoodProductionOrderPanel(
+    unitType: String,
+    minimumOrderLeadTimeMinutes: Int
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        color = CustomerHomeColors.Surface,
+        border = BorderStroke(1.dp, CustomerHomeColors.Outline)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 15.dp),
+            horizontalArrangement = Arrangement.spacedBy(18.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = "Satış birimi",
+                    color = CustomerHomeColors.TextMuted,
+                    style = MaterialTheme.typography.labelMedium
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = FoodProductionOptions
+                        .unitDisplayName(unitType),
+                    color = CustomerHomeColors.DeepOlive,
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontWeight = FontWeight.Bold
+                    )
+                )
+            }
+
+            Column(
+                modifier = Modifier.weight(1.45f)
+            ) {
+                Text(
+                    text = "Minimum sipariş ön süresi",
+                    color = CustomerHomeColors.TextMuted,
+                    style = MaterialTheme.typography.labelMedium
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = formatLeadTime(
+                        minimumOrderLeadTimeMinutes
+                    ),
+                    color = CustomerHomeColors.DeepOlive,
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontWeight = FontWeight.Bold
+                    )
+                )
+            }
         }
     }
 }
@@ -827,12 +954,39 @@ private fun FoodDetailError(
     }
 }
 
-private fun formatPrice(
-    price: Double
+private fun formatUnitPrice(
+    price: Double,
+    unitType: String
 ): String {
+    val unitName =
+        FoodProductionOptions
+            .unitDisplayName(unitType)
+
     return String.format(
         Locale("tr", "TR"),
-        "%.2f ₺",
-        price
+        "%.2f ₺ / %s",
+        price,
+        unitName
     )
+}
+
+private fun formatLeadTime(
+    minutes: Int
+): String {
+    if (minutes <= 0) {
+        return "Ön sipariş gerekmiyor"
+    }
+
+    if (minutes < 60) {
+        return "$minutes dk önce"
+    }
+
+    val hours = minutes / 60
+    val remainingMinutes = minutes % 60
+
+    return if (remainingMinutes == 0) {
+        "$hours saat önce"
+    } else {
+        "$hours sa $remainingMinutes dk önce"
+    }
 }

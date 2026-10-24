@@ -259,36 +259,6 @@ fun ProducerApplicationScreen(
                     }
                 }
 
-                Card(
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp)
-                    ) {
-                        Text(
-                            text = "Kapasite Bilgileri",
-                            style =
-                                MaterialTheme.typography.titleLarge
-                        )
-
-                        Spacer(
-                            modifier = Modifier.height(12.dp)
-                        )
-
-                        ProducerApplicationInformationRow(
-                            title = "Günlük kapasite",
-                            value =
-                                "${application.dailyCapacity} adet"
-                        )
-
-                        ProducerApplicationInformationRow(
-                            title = "Kalan kapasite",
-                            value =
-                                "${application.remainingCapacity} adet"
-                        )
-                    }
-                }
-
                 if (
                     !application.rejectionReason
                         .isNullOrBlank()

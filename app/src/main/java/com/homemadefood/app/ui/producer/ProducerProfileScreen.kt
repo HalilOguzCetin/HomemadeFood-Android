@@ -62,8 +62,6 @@ fun ProducerProfileScreen(
     onApartmentNoChange: (String) -> Unit,
     onAddressNoteChange: (String) -> Unit,
     onSelectLocationClick: () -> Unit,
-
-    onDailyCapacityChange: (String) -> Unit,
     onSaveClick: () -> Unit,
     onMessageShown: () -> Unit,
     modifier: Modifier = Modifier
@@ -201,9 +199,6 @@ fun ProducerProfileScreen(
 
                     onSelectLocationClick =
                         onSelectLocationClick,
-
-                    onDailyCapacityChange =
-                        onDailyCapacityChange,
                     onSaveClick =
                         onSaveClick,
 
@@ -294,8 +289,6 @@ private fun ProducerProfileContent(
     onApartmentNoChange: (String) -> Unit,
     onAddressNoteChange: (String) -> Unit,
     onSelectLocationClick: () -> Unit,
-
-    onDailyCapacityChange: (String) -> Unit,
     onSaveClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -357,10 +350,6 @@ private fun ProducerProfileContent(
             modifier = Modifier.height(14.dp)
         )
 
-        ProducerCapacityCard(
-            profile = profile
-        )
-
         Spacer(
             modifier = Modifier.height(14.dp)
         )
@@ -407,9 +396,6 @@ private fun ProducerProfileContent(
 
                 onSelectLocationClick =
                     onSelectLocationClick,
-
-                onDailyCapacityChange =
-                    onDailyCapacityChange,
                 onSaveClick =
                     onSaveClick,
 
@@ -521,78 +507,6 @@ private fun ProducerProfileStatusCard(
                         )
                 )
             }
-        }
-    }
-}
-
-@Composable
-private fun ProducerCapacityCard(
-    profile: ProducerApplicationStatusResponse
-) {
-    val usedCapacity =
-        (
-                profile.dailyCapacity -
-                        profile.remainingCapacity
-                )
-            .coerceAtLeast(0)
-
-    Card(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(
-                text = "Günlük Kapasite",
-                style =
-                    MaterialTheme.typography
-                        .titleLarge
-            )
-
-            Spacer(
-                modifier = Modifier.height(12.dp)
-            )
-
-            ProducerProfileInfoLine(
-                title = "Toplam kapasite",
-                value =
-                    profile.dailyCapacity
-                        .toString()
-            )
-
-            Spacer(
-                modifier = Modifier.height(8.dp)
-            )
-
-            ProducerProfileInfoLine(
-                title = "Kalan kapasite",
-                value =
-                    profile.remainingCapacity
-                        .toString()
-            )
-
-            Spacer(
-                modifier = Modifier.height(8.dp)
-            )
-
-            ProducerProfileInfoLine(
-                title = "Kullanılan kapasite",
-                value =
-                    usedCapacity.toString()
-            )
-
-            Spacer(
-                modifier = Modifier.height(12.dp)
-            )
-
-            Text(
-                text =
-                    "Kapasiteyi değiştirdiğinizde, bugün daha önce kullanılan miktar korunur.",
-
-                style =
-                    MaterialTheme.typography
-                        .bodySmall
-            )
         }
     }
 }
@@ -744,8 +658,6 @@ private fun ProducerProfileEditForm(
     onApartmentNoChange: (String) -> Unit,
     onAddressNoteChange: (String) -> Unit,
     onSelectLocationClick: () -> Unit,
-
-    onDailyCapacityChange: (String) -> Unit,
     onSaveClick: () -> Unit,
     onCancelClick: () -> Unit
 ) {
@@ -1132,36 +1044,6 @@ private fun ProducerProfileEditForm(
 
             Spacer(
                 modifier = Modifier.height(14.dp)
-            )
-
-            OutlinedTextField(
-                value =
-                    uiState.dailyCapacityText,
-
-                onValueChange =
-                    onDailyCapacityChange,
-
-                modifier =
-                    Modifier.fillMaxWidth(),
-
-                label = {
-                    Text("Günlük Kapasite")
-                },
-
-                keyboardOptions =
-                    KeyboardOptions(
-                        keyboardType =
-                            KeyboardType.Number
-                    ),
-
-                supportingText = {
-                    Text(
-                        "1 ile 1000 arasında bir değer girin."
-                    )
-                },
-
-                singleLine = true,
-                enabled = !uiState.isSaving
             )
 
             Spacer(
